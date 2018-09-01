@@ -96,7 +96,6 @@ namespace SWS
 
     SpatialBlockField(const SpatialBlockField & o)
     {
-      // std::cout << "Building SpatialBlockField from SpatialBlockField\n";
       if (this != &o){
 	nx_=o.nx_;
 	ny_=o.ny_;
@@ -122,19 +121,6 @@ namespace SWS
       }
     }
 
-    // template <typename E>
-    // SpatialBlockField(const SpatialBlockFieldExpression<E> & e):nx_(e.nx()), ny_(e.ny()), nz_(e.nz()),
-    //                                                             n_(e.n()),
-    //                                                             px_(e.px()), py_(e.py()), pz_(e.pz())
-    // {
-    //   data_.resize(nx_, ny_);
-    //   for (int i=0; i<nx_; i++){
-    //     for (int j=0; j<ny_; j++){
-    //       data_(i,j).resize(1,nz_);
-    //       data_(i,j)=e.get(i,j);
-    //     }
-    //   }
-    // }
 
     ~SpatialBlockField()
     {
@@ -244,7 +230,6 @@ namespace SWS
 
     inline auto & operator=(const SpatialBlockField && o)
     {
-      // std::cout << "Building SpatialBlockField from SpatialBlockField through move semantics\n";
       if (this != &o){
 	nx_=o.nx_;
 	ny_=o.ny_;
@@ -335,17 +320,6 @@ namespace SWS
       }
       return *this;
     }
-
-    // template<typename E>
-    // inline auto & operator+=(const SpatialBlockFieldExpression<E> & e)
-    // {
-    //   for (int i=0; i<nx_; i++){
-    //     for (int j=0; j<ny_; j++){
-    //       data_(i,j)+=e.get(i,j);
-    //     }
-    //   }
-    //   return *this;
-    // }
 
     inline auto operator-(const SpatialBlockField & o) const
     {
