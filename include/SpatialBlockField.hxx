@@ -283,7 +283,6 @@ namespace SWS
     }
 
 
-
     inline const auto & get(const int i, const int j) const
     {
       return data_(i,j);
@@ -295,16 +294,16 @@ namespace SWS
     }
 
 
-
-    inline auto & operator()(const int i, const int j)
+    inline auto operator()(const int i, const int j)
     {
-      return data_(i,j);
+      return Eigen::VectorBlock<SpatialBlockField1D>(data_(i,j),kStart(),kEnd()-kStart());
     }
 
-    inline const auto & operator()(const int i, const int j) const
+    inline const auto operator()(const int i, const int j) const
     {
-      return data_(i,j);
+      return Eigen::VectorBlock<const SpatialBlockField1D>(data_(i,j),kStart(),kEnd()-kStart());
     }
+
 
     inline auto & operator()(const int i, const int j, const int k)
     {
