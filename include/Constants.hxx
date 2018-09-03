@@ -20,7 +20,11 @@
 
 namespace SWS
 {
-  enum Directions{
+  /* FIXME Do not modify the following three enumerations without also modifying sewas.jdf.
+     This is going to be fixed by defining them in a single place.
+  */
+
+enum Directions{
     X=0,
     Y,
     Z,

@@ -36,10 +36,6 @@ namespace SWS
 {
   constexpr int packetSize=Eigen::internal::packet_traits<RealType>::size;
 
-  /* FIXME Do not modify the following three enumerations without also modifying sewas.jdf.
-     This is going to be fixed by defining them in a single place.
-  */
-
   // (i, j, k)
   // TODO since Eigen::Tensor is unstable, using our internal SpatialBlockField class for the moment
   // typedef Eigen::Tensor<RealType, DIM, Eigen::AutoAlign> SpatialBlockField;
