@@ -22,10 +22,12 @@
 
 MetricsManager * MetricsManager::pInstance_ = nullptr;
 
-MetricsManager * MetricsManager::getInstance(const std::string applicationName)
+MetricsManager * MetricsManager::getInstance(const std::string applicationName,
+                                             const std::initializer_list<std::string> sampledEvents)
 {
   if (nullptr == pInstance_){
-    pInstance_ = new MetricsManager(applicationName);
+    pInstance_ = new MetricsManager(applicationName,
+                                    sampledEvents);
     return pInstance_;
   }
   else{
@@ -47,7 +49,9 @@ void MetricsManager::releaseInstance()
   }
 }
 
-MetricsManager::MetricsManager(const std::string applicationName) : applicationName_(applicationName)
+MetricsManager::MetricsManager(const std::string applicationName,
+                               const std::initializer_list<std::string> sampledEvents) : applicationName_(applicationName),
+                                                                                         sampledEvents_(sampledEvents)
 {
 }
 

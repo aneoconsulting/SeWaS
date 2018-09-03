@@ -20,7 +20,7 @@
 
 #include <chrono>
 #include <ctime>
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <tuple>
@@ -31,6 +31,9 @@
 #include <numeric>
 #include <utility>
 #include <queue>
+#include <thread>
+#include <atomic>
+#include <mutex>
 
 #ifdef COLLECT_STATS
 #include <tbb/concurrent_queue.h>
@@ -44,7 +47,8 @@
 
 class MetricsManager{
 public:
-  static MetricsManager * getInstance(const std::string applicationName);
+  static MetricsManager * getInstance(const std::string applicationName,
+                                      const std::initializer_list<std::string> sampledEvents);
   static MetricsManager * getInstance();
 
   static void releaseInstance();
@@ -67,9 +71,9 @@ private:
 
 #ifdef COLLECT_STATS
   template<Metric t, Measurement m>
-  inline auto get(const std::string & id)
+  inline auto get(const int tn, const std::string & eid)
   {
-    auto & events=events_[id][t][m];
+    auto & events=events_[tn][eid][t][m];
 
     double e=0.0;
     events.try_pop(e);
@@ -116,7 +120,6 @@ private:
     return n;
   }
 
-  // inline auto evalStats(std::deque<double> & q)
   inline auto evalStats(tbb::concurrent_queue<double> & q)
   {
     double avg=0.0, min=1.e99, max=0.0, tot=0.0, sd=0.0;
@@ -140,45 +143,67 @@ private:
 
     return ComputedStatistics{avg, min, max, tot, sd};
   }
+
+  inline auto getThreadNumber()
+  {
+    static std::atomic<int> tn{0};
+
+    auto tid=std::this_thread::get_id();
+
+#ifdef COLLECT_STATS
+    if (threadId2threadNumber_.find(tid) == threadId2threadNumber_.end()){
+      std::lock_guard<std::mutex> lock(guard_);
+
+      threadId2threadNumber_[tid]=tn++;
+
+      /* Allocate space for storing collected metrics per thread and for all sampled events */
+      buildEvents(threadId2threadNumber_[tid]);
+    }
+#endif
+
+    return threadId2threadNumber_[tid];
+  }
 #endif
 
 public:
-  inline void setSampledEvents(const std::initializer_list<std::string> events)
+  inline void buildEvents(const int tn)
   {
 #ifdef COLLECT_STATS
-    for (auto & id : events){
-      if (events_.find(id) == events_.end()){
-        events_[id].resize(NB_METRICS);
-        for (auto & event : events_[id]){
-          event.resize(NB_STATISTICS);
-        }
+    for (auto eid : sampledEvents_){
+      events_[tn][eid].resize(NB_METRICS);
+      for (auto & event : events_[tn][eid]){
+        event.resize(NB_STATISTICS);
       }
     }
 #endif
   }
 
-  inline void start(const std::string id, const double flops=0)
+  inline void start(const std::string eid, const double flops=0)
   {
 #ifdef COLLECT_STATS
-    if (events_.find(id) != events_.end()){
-      events_[id][Metric::ELAPSED][START].push(now<Metric::ELAPSED>());
-      events_[id][Metric::CPU][START].push(now<Metric::CPU>());
+    auto tn=getThreadNumber();
+
+    if (events_[tn].find(eid) != events_[tn].end()){
+      events_[tn][eid][Metric::ELAPSED][START].push(now<Metric::ELAPSED>());
+      events_[tn][eid][Metric::CPU][START].push(now<Metric::CPU>());
     }
 #endif
   }
 
-  inline void stop(const std::string id)
+  inline void stop(const std::string eid)
   {
 #ifdef COLLECT_STATS
-    if (events_.find(id) != events_.end()){
-      events_[id][Metric::ELAPSED][STOP].push(now<Metric::ELAPSED>());
-      events_[id][Metric::CPU][STOP].push(now<Metric::CPU>());
+    auto tn=getThreadNumber();
 
-      auto cpu    =get<Metric::CPU,     Measurement::STOP>(id)-get<Metric::CPU,     Measurement::START>(id);
-      auto elapsed=get<Metric::ELAPSED, Measurement::STOP>(id)-get<Metric::ELAPSED, Measurement::START>(id);
+    if (events_[tn].find(eid) != events_[tn].end()){
+      events_[tn][eid][Metric::ELAPSED][STOP].push(now<Metric::ELAPSED>());
+      events_[tn][eid][Metric::CPU][STOP].push(now<Metric::CPU>());
 
-      events_[id][Metric::CPU][DURATION].push(cpu);
-      events_[id][Metric::ELAPSED][DURATION].push(elapsed);
+      auto cpu    =get<Metric::CPU,     Measurement::STOP>(tn, eid)-get<Metric::CPU,     Measurement::START>(tn, eid);
+      auto elapsed=get<Metric::ELAPSED, Measurement::STOP>(tn, eid)-get<Metric::ELAPSED, Measurement::START>(tn, eid);
+
+      events_[tn][eid][Metric::CPU][DURATION].push(cpu);
+      events_[tn][eid][Metric::ELAPSED][DURATION].push(elapsed);
     }
 #endif
   }
@@ -201,67 +226,80 @@ public:
     std::cout << std::endl;
 
     /* Compute statistics from collected data */
-    for (auto & it : events_){
-      auto sname=it.first;
+    auto nthreads=events_.size();
+    cmetrics_.resize(nthreads);
+    for (auto tn=0; tn<nthreads; tn++){
+      for (auto & it : events_[tn]){
+        auto sname=it.first;
 
-      ComputedMetrics cm;
-      for (auto & metric : {ELAPSED, CPU}){
-        auto qmetric=it.second[metric][DURATION];
-        cm[metric]=evalStats(qmetric);
+        ComputedMetrics cm;
+        for (auto & metric : {ELAPSED, CPU}){
+          auto qmetric=it.second[metric][DURATION];
+          cm[metric]=evalStats(qmetric);
+        }
+
+        cmetrics_[tn].push_back(std::make_pair<std::string, ComputedMetrics>(std::move(sname), std::move(cm)));
       }
-
-      cmetrics_.push_back(std::make_pair<std::string, ComputedMetrics>(std::move(sname), std::move(cm)));
     }
 
-    /* Sort the statistics according to the avarage elapsed time */
+    /* Sort the statistics according to the average elapsed time */
     sort<ELAPSED, AVG>();
 
     /* Print the computed statistics */
-    for (auto & it : cmetrics_){
-      std::cout << it.first << "\n";
+    for (auto tn=0; tn<nthreads; tn++){
+      std::cout << "Thread ID: " << tn << "\n";
 
-      for (auto metric : {ELAPSED, CPU}){
-        const auto ncalls=events_[it.first][metric][DURATION].unsafe_size();
+      for (auto & it : cmetrics_[tn]){
+        std::cout << it.first << "\n";
 
-        switch(metric){
-        case ELAPSED:
-          std::cout << "\t#Calls           : " << "\t" << ncalls << std::endl;
-          std::cout << "\tElapsed Time (s) : ";
-          break;
-        case CPU:
-          std::cout << "\tCPU Time (s)     : ";
-          break;
-        default:
-          break;
+        for (auto metric : {ELAPSED, CPU}){
+          const auto ncalls=events_[tn][it.first][metric][DURATION].unsafe_size();
+
+          switch(metric){
+          case ELAPSED:
+            std::cout << "\t#Calls           : " << "\t" << ncalls << std::endl;
+            std::cout << "\tElapsed Time (s) : ";
+            break;
+          case CPU:
+            std::cout << "\tCPU Time (s)     : ";
+            break;
+          default:
+            break;
+          }
+
+          std::cout << std::scientific;
+
+          const auto & stats=it.second[metric];
+          std::cout << "\t" << stats[AVG];
+          std::cout << "\t" << stats[MIN];
+          std::cout << "\t" << stats[MAX];
+          std::cout << "\t" << stats[TOT];
+          std::cout << "\t" << stats[SD];
+          std::cout << std::endl;
         }
-
-        std::cout << std::scientific;
-
-        const auto & stats=it.second[metric];
-        std::cout << "\t" << stats[AVG];
-        std::cout << "\t" << stats[MIN];
-        std::cout << "\t" << stats[MAX];
-        std::cout << "\t" << stats[TOT];
-        std::cout << "\t" << stats[SD];
-        std::cout << std::endl;
       }
-    }
+      std::cout << "------------------------------------------\n";
+    } // tn
 #endif
   }
 
 private:
-  MetricsManager(const std::string applicationName);
+  MetricsManager(const std::string applicationName,
+                 const std::initializer_list<std::string> sampledEvents);
   ~MetricsManager();
 
 #ifdef COLLECT_STATS
   template<Metric m, MetricSummary ms>
   inline void sort()
   {
-    std::sort(cmetrics_.begin(), cmetrics_.end(),
-              [](const auto & cm1, const auto & cm2)
-              {
-                return cm1.second[m][ms] > cm2.second[m][ms];
-              });
+    auto nthreads=cmetrics_.size();
+    for (auto tn=0; tn<nthreads; tn++){
+      std::sort(cmetrics_[tn].begin(), cmetrics_[tn].end(),
+                [](const auto & cm1, const auto & cm2)
+                {
+                  return cm1.second[m][ms] > cm2.second[m][ms];
+                });
+    }
   }
 #endif
 
@@ -269,10 +307,18 @@ private:
 
   const std::string applicationName_;
 
-#ifdef COLLECT_STATS
-  // {"event id" : [ELAPSED, CPU][START, STOP]}
-  tbb::concurrent_unordered_map<std::string, CollectedMeasurements> events_;
+  const std::vector<std::string> sampledEvents_;
 
-  std::vector<std::pair<std::string, ComputedMetrics>> cmetrics_;
+#ifdef COLLECT_STATS
+  std::mutex guard_;
+
+  // {"thread id" : {"event id" : [ELAPSED, CPU][START, STOP]}}
+  std::unordered_map<int, tbb::concurrent_unordered_map<std::string, CollectedMeasurements>> events_;
+
+  /* The list of computed metrics from collected data */
+  std::vector<std::vector<std::pair<std::string, ComputedMetrics>>> cmetrics_;
+
+  // Map a thread id to a unique number
+  std::unordered_map<std::thread::id, int> threadId2threadNumber_;
 #endif
 };

@@ -73,13 +73,12 @@ int main (int argc, char* argv[])
   int status=0;
 
   /* Create a generic metrics manager */
-  if (nullptr == MetricsManager::getInstance("SEWAS")){
+  if (nullptr == MetricsManager::getInstance("SEWAS",
+                                             {"Global", "Core simulation", "Initialization", "ComputeVelocity", "ComputeStress"})){
     std::cerr << "Unable to create the metrics manager. Exiting...\n";
     return -1;
   }
   auto mm=MetricsManager::getInstance();
-
-  mm->setSampledEvents({"Global", "Core simulation", "Initialization", "ComputeVelocity", "ComputeStress"});
 
   mm->start("Global");
 
