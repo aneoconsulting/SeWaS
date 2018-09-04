@@ -142,7 +142,7 @@ private:
 
     sd=std::sqrt(sd-avg*avg);
 
-    return ComputedStatistics{(double) ncalls, avg, min, max, tot, sd};
+    return ComputedStatistics{double(ncalls), avg, min, max, tot, sd};
   }
 
   inline auto getThreadNumber()
@@ -328,7 +328,6 @@ public:
           }
 
           std::cout << std::scientific;
-
           std::cout << "\t" << stats[AVG];
           std::cout << "\t" << stats[MIN];
           std::cout << "\t" << stats[MAX];
