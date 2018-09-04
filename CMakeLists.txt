@@ -27,6 +27,11 @@ endif()
 option(COLLECT_STATS "Collect statistics during execution (default ON)" ON)
 if (COLLECT_STATS)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DCOLLECT_STATS>)
+
+  option(SHOW_PER_THREAD_STATS "Enable showing statistics at thread-level (default OFF)" OFF)
+  if(SHOW_PER_THREAD_STATS)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DSHOW_PER_THREAD_STATS>)
+  endif(SHOW_PER_THREAD_STATS)
 endif(COLLECT_STATS)
 
 option(PLOT_DATA "Enable ploting the data of a tile object (default OFF)" OFF)
@@ -87,7 +92,13 @@ if(SEWAS_WITH_PARSEC)
   # Compilation of the JDF
   include(RulesJDF)
   find_program(parsec_ptgpp_EXE parsec_ptgpp)
-  # set(PARSEC_PTGPP_CFLAGS "-M;index-array") # Workaround suggested by George to avoid sporadic non-termination
+
+  set(PARSEC_DEP_MGT "HASH_TABLE" CACHE STRING "PaRSEC dependency management (INDEX_ARRAY|HASH_TABLE)")
+  mark_as_advanced(FORCE PARSEC_DEP_MGT)
+  if ("${PARSEC_DEP_MGT}" STREQUAL "INDEX_ARRAY")
+    set(PARSEC_PTGPP_CFLAGS "-M;index-array") # Workaround suggested by George to avoid sporadic non-termination
+  endif()
+
   jdf_rules(JDF2C_SOURCES ${CMAKE_SOURCE_DIR}/src/runtimes/parsec/sewas.jdf)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif(SEWAS_WITH_PARSEC)
