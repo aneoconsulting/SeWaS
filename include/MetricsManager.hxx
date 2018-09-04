@@ -278,7 +278,7 @@ public:
             cm[metric][SD]+=(cm_n[metric][SD]*cm_n[metric][SD] + cm_n[metric][AVG]*cm_n[metric][AVG])*cm_n[metric][NCALLS];
           }
         }
-      }
+      } // tn
 
       for (auto metric : {ELAPSED, CPU}){
         cm[metric][AVG]=cm[metric][TOT]/cm[metric][NCALLS];
@@ -286,7 +286,7 @@ public:
       }
 
       cmetrics_[nthreads].push_back(std::make_pair<std::string, ComputedMetrics>(std::move(sevent), std::move(cm)));
-    }
+    } // sevent
 
 
     /* Sort the statistics according to the average elapsed time */
@@ -296,7 +296,11 @@ public:
     /* Print the computed statistics */
 #ifdef SHOW_PER_THREAD_STATS
     for (auto tn=0; tn<nthreads+1; tn++){
-      std::cout << "Thread ID: " << tn << "\n";
+      if (nthreads == tn)
+        std::cout << "Aggregated statistics\n";
+      else
+        std::cout << "Thread ID: " << tn << "\n";
+      std::cout << "------------------------------------------\n";
 #else
     for (auto tn=nthreads; tn<nthreads+1; tn++){
 #endif
