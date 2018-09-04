@@ -56,7 +56,7 @@ public:
 private:
   enum Metric{ELAPSED, CPU, FLOPS, NB_METRICS};
   enum Measurement{START, STOP, DURATION};
-  enum MetricSummary{AVG, MIN, MAX, TOT, SD, NB_STATISTICS};
+  enum MetricSummary{NCALLS, AVG, MIN, MAX, TOT, SD, NB_STATISTICS};
 
 #ifdef COLLECT_STATS
   // (ELAPSED|CPU)(START, STOP, DURATION)(measurements)
@@ -65,6 +65,7 @@ private:
   typedef std::array<double, NB_STATISTICS> ComputedStatistics;
   typedef std::array<ComputedStatistics, NB_METRICS> ComputedMetrics;
 
+  /* Origin of time */
   const std::chrono::high_resolution_clock::time_point oElapsedTime_=std::chrono::high_resolution_clock::now();
   const std::clock_t oCPUTime_=std::clock();
 #endif
@@ -141,7 +142,7 @@ private:
 
     sd=std::sqrt(sd-avg*avg);
 
-    return ComputedStatistics{avg, min, max, tot, sd};
+    return ComputedStatistics{(double) ncalls, avg, min, max, tot, sd};
   }
 
   inline auto getThreadNumber()
@@ -165,7 +166,6 @@ private:
   }
 #endif
 
-public:
   inline void buildEvents(const int tn)
   {
 #ifdef COLLECT_STATS
@@ -178,6 +178,7 @@ public:
 #endif
   }
 
+public:
   inline void start(const std::string eid, const double flops=0)
   {
 #ifdef COLLECT_STATS
@@ -225,12 +226,12 @@ public:
     std::cout << std::left << std::setw(12) << "SD";
     std::cout << std::endl;
 
-    /* Compute statistics from collected data */
+    /* Compute per-thread statistics from collected data */
     auto nthreads=events_.size();
-    cmetrics_.resize(nthreads);
+    cmetrics_.resize(nthreads+1);
     for (auto tn=0; tn<nthreads; tn++){
       for (auto & it : events_[tn]){
-        auto sname=it.first;
+        auto sevent=it.first;
 
         ComputedMetrics cm;
         for (auto & metric : {ELAPSED, CPU}){
@@ -238,26 +239,81 @@ public:
           cm[metric]=evalStats(qmetric);
         }
 
-        cmetrics_[tn].push_back(std::make_pair<std::string, ComputedMetrics>(std::move(sname), std::move(cm)));
+        cmetrics_[tn].push_back(std::make_pair<std::string, ComputedMetrics>(std::move(sevent), std::move(cm)));
       }
     }
+
+    /* Aggregate statistics for all threads */
+    for (auto sevent : sampledEvents_){
+
+      ComputedMetrics cm;
+      for (auto metric : {ELAPSED, CPU}){
+        cm[metric][NCALLS]=0.0;
+        cm[metric][AVG]=0.0;
+        cm[metric][MIN]=1.e99;
+        cm[metric][MAX]=0.0;
+        cm[metric][TOT]=0.0;
+        cm[metric][SD]=0.0;
+      }
+
+      // FIXME optimize the following reduction
+      for (auto tn=0; tn<nthreads; tn++){
+        for (auto & it : cmetrics_[tn]){
+          const auto & cm_n=it.second;
+
+          if (sevent != it.first)
+            continue;
+
+          for (auto metric : {ELAPSED, CPU}){
+            cm[metric][NCALLS]+=cm_n[metric][NCALLS];
+
+            if (0 == cm_n[metric][NCALLS]){
+              continue;
+            }
+
+            cm[metric][MIN]=std::min(cm[metric][MIN], cm_n[metric][MIN]);
+            cm[metric][MAX]=std::max(cm[metric][MAX], cm_n[metric][MAX]);
+            cm[metric][TOT]+=cm_n[metric][TOT];
+
+            cm[metric][SD]+=(cm_n[metric][SD]*cm_n[metric][SD] + cm_n[metric][AVG]*cm_n[metric][AVG])*cm_n[metric][NCALLS];
+          }
+        }
+      }
+
+      for (auto metric : {ELAPSED, CPU}){
+        cm[metric][AVG]=cm[metric][TOT]/cm[metric][NCALLS];
+        cm[metric][SD]=std::sqrt(cm[metric][SD]/cm[metric][NCALLS] - cm[metric][AVG]*cm[metric][AVG]);
+      }
+
+      cmetrics_[nthreads].push_back(std::make_pair<std::string, ComputedMetrics>(std::move(sevent), std::move(cm)));
+    }
+
 
     /* Sort the statistics according to the average elapsed time */
     sort<ELAPSED, AVG>();
 
-    /* Print the computed statistics */
-    for (auto tn=0; tn<nthreads; tn++){
-      std::cout << "Thread ID: " << tn << "\n";
 
+    /* Print the computed statistics */
+#ifdef SHOW_PER_THREAD_STATS
+    for (auto tn=0; tn<nthreads+1; tn++){
+      std::cout << "Thread ID: " << tn << "\n";
+#else
+    for (auto tn=nthreads; tn<nthreads+1; tn++){
+#endif
       for (auto & it : cmetrics_[tn]){
         std::cout << it.first << "\n";
 
         for (auto metric : {ELAPSED, CPU}){
-          const auto ncalls=events_[tn][it.first][metric][DURATION].unsafe_size();
+          const auto & stats=it.second[metric];
+
+          if (0 == stats[NCALLS]){
+            std::cout << "\tNONE" << std::endl;
+            continue;
+          }
 
           switch(metric){
           case ELAPSED:
-            std::cout << "\t#Calls           : " << "\t" << ncalls << std::endl;
+            std::cout << "\t#Calls           : " << "\t" << int(stats[NCALLS]) << std::endl;
             std::cout << "\tElapsed Time (s) : ";
             break;
           case CPU:
@@ -269,7 +325,6 @@ public:
 
           std::cout << std::scientific;
 
-          const auto & stats=it.second[metric];
           std::cout << "\t" << stats[AVG];
           std::cout << "\t" << stats[MIN];
           std::cout << "\t" << stats[MAX];
@@ -292,8 +347,7 @@ private:
   template<Metric m, MetricSummary ms>
   inline void sort()
   {
-    auto nthreads=cmetrics_.size();
-    for (auto tn=0; tn<nthreads; tn++){
+    for (auto tn=0; tn<cmetrics_.size(); tn++){
       std::sort(cmetrics_[tn].begin(), cmetrics_[tn].end(),
                 [](const auto & cm1, const auto & cm2)
                 {
@@ -312,7 +366,7 @@ private:
 #ifdef COLLECT_STATS
   std::mutex guard_;
 
-  // {"thread id" : {"event id" : [ELAPSED, CPU][START, STOP]}}
+  // {"thread num" : {"event id" : [ELAPSED, CPU][START, STOP]}}
   std::unordered_map<int, tbb::concurrent_unordered_map<std::string, CollectedMeasurements>> events_;
 
   /* The list of computed metrics from collected data */
