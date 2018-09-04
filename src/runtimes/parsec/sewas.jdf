@@ -569,11 +569,17 @@ CTL V    <- V ComputeVelocity(d, ts, ii, jj, kk)
 BODY
 {
 #ifdef VISUALIZE_EXECUTION
+
+#ifdef VERBOSE
   fprintf(stdout, "DisplayVelocity: %d, %d, %d, %d, %d, %d\n", d, ts, ii, jj, kk, 0);
+#endif
 
   ((displayVelocity_t) displayVelocity) (d, ts, ii, jj, kk, 0);
 
+#ifdef VERBOSE
   fprintf(stdout, "DisplayVelocity - Completed: %d, %d, %d, %d, %d, %d\n", d, ts, ii, jj, kk, 0);
+#endif
+
 #endif
 }
 END
@@ -604,11 +610,17 @@ CTL S    <- S ComputeStress(sc, ts, ii, jj, kk)
 BODY
 {
 #ifdef VISUALIZE_EXECUTION
+
+#ifdef VERBOSE
   fprintf(stdout, "DisplayStress: %d, %d, %d, %d, %d, %d\n", sc, ts, ii, jj, kk, 0);
+#endif
 
   ((displayStress_t) displayStress) (sc, ts, ii, jj, kk, 0);
 
+#ifdef VERBOSE
   fprintf(stdout, "DisplayStress - Completed: %d, %d, %d, %d, %d, %d\n", sc, ts, ii, jj, kk, 0);
+#endif
+
 #endif
 }
 END
