@@ -90,7 +90,7 @@ updateStress		        [type = "void *"]
 displayVelocity                 [type = "void *"]
 displayStress                   [type = "void *"]
 
-sewas_ddesc			[type = "parsec_data_collection_t *"]					/* Data descriptor */
+ddesc			        [type = "parsec_data_collection_t *"]					/* Data descriptor */
 
 
 
@@ -107,7 +107,7 @@ kk = 0 .. nzz-1
 
 
 // Parallel partitioning
-: sewas_ddesc(ii, jj, kk)
+: ddesc(ii, jj, kk)
 
 
 CTL I    -> I ComputeVelocity(0..dim-1, 2, ii, jj, kk)
@@ -140,20 +140,20 @@ kk = 0 .. nzz-1
 
 
 // Parallel partitioning
-: sewas_ddesc(ii, jj, kk)
+: ddesc(ii, jj, kk)
 
 
 // Data flow
 CTL I    <- (ts == 2)                      ? I    InitializeFields(ii, jj, kk)
 
-CTL SxxH <- ( d == X	        && ts > 2) ? SxxH UpdateStress(0..nl-1, XX, ts-1, ii, jj, kk)
-CTL SyyH <- ( d == Y	        && ts > 2) ? SyyH UpdateStress(0..nl-1, YY, ts-1, ii, jj, kk)
-CTL SzzH <- ( d == Z	        && ts > 2) ? SzzH UpdateStress(0..nl-1, ZZ, ts-1, ii, jj, kk)
-CTL SxyH <- ((d == X || d == Y) && ts > 2) ? SxyH UpdateStress(0..nl-1, XY, ts-1, ii, jj, kk)
-CTL SxzH <- ((d == X || d == Z) && ts > 2) ? SxzH UpdateStress(0..nl-1, XZ, ts-1, ii, jj, kk)
-CTL SyzH <- ((d == Y || d == Z) && ts > 2) ? SyzH UpdateStress(0..nl-1, YZ, ts-1, ii, jj, kk)
+CTL SxxH <- ( d == X	        && ts > 2) ? SxxH UpdateStress(XX, ts-1, ii, jj, kk)
+CTL SyyH <- ( d == Y	        && ts > 2) ? SyyH UpdateStress(YY, ts-1, ii, jj, kk)
+CTL SzzH <- ( d == Z	        && ts > 2) ? SzzH UpdateStress(ZZ, ts-1, ii, jj, kk)
+CTL SxyH <- ((d == X || d == Y) && ts > 2) ? SxyH UpdateStress(XY, ts-1, ii, jj, kk)
+CTL SxzH <- ((d == X || d == Z) && ts > 2) ? SxzH UpdateStress(XZ, ts-1, ii, jj, kk)
+CTL SyzH <- ((d == Y || d == Z) && ts > 2) ? SyzH UpdateStress(YZ, ts-1, ii, jj, kk)
 
-CTL V    -> V ExtractVelocityHalo(0..nl-1, d, ts, ii, jj, kk)
+CTL V    -> V ExtractVelocityHalo(d, ts, ii, jj, kk)
          -> V DisplayVelocity(d, ts, ii, jj, kk)
 
 BODY
@@ -172,10 +172,9 @@ END
 
 
 
-ExtractVelocityHalo(l, d, ts, ii, jj, kk)
+ExtractVelocityHalo(d, ts, ii, jj, kk)
 
 // Execution space
-l  = 0 .. nl-1
 d  = 0 .. dim-1
 ts = 2 .. nt-2 .. 2
 ii = 0 .. nxx-1
@@ -184,73 +183,61 @@ kk = 0 .. nzz-1
 
 
 // Parallel partitioning
-: sewas_ddesc(ii, jj, kk)
+: ddesc(ii, jj, kk)
 
 
 // Data flow
 CTL V           <- V ComputeVelocity(d, ts, ii, jj, kk)
-                -> V UpdateVelocity(l, d, ts, ii, jj, kk) /* Extraction must occur before Update to avoid RAW issues */
+                -> V UpdateVelocity(d, ts, ii, jj, kk) /* Extraction must occur before Update to avoid RAW issues */
 
 // TODO it is enough to just create the halo at the begining of the simulation and reuse the buffers for subsequent iterations
-WRITE VRight    -> (l == RIGHT    && ii < nxx-1) ? VLeft     UpdateVelocity(LEFT,     d, ts, ii+1, jj, kk) [type = VRIGHT_HALO]
-WRITE VLeft     -> (l == LEFT     && ii > 0    ) ? VRight    UpdateVelocity(RIGHT,    d, ts, ii-1, jj, kk) [type = VLEFT_HALO]
+WRITE VRight    -> (ii < nxx-1) ? VLeft     UpdateVelocity(d, ts, ii+1, jj, kk) [type = VRIGHT_HALO]
+WRITE VLeft     -> (ii > 0    ) ? VRight    UpdateVelocity(d, ts, ii-1, jj, kk) [type = VLEFT_HALO]
 
-WRITE VForward  -> (l == FORWARD  && jj < nyy-1) ? VBackward UpdateVelocity(BACKWARD, d, ts, ii, jj+1, kk) [type = VFORWARD_HALO]
-WRITE VBackward -> (l == BACKWARD && jj > 0    ) ? VForward  UpdateVelocity(FORWARD,  d, ts, ii, jj-1, kk) [type = VBACKWARD_HALO]
+WRITE VForward  -> (jj < nyy-1) ? VBackward UpdateVelocity(d, ts, ii, jj+1, kk) [type = VFORWARD_HALO]
+WRITE VBackward -> (jj > 0    ) ? VForward  UpdateVelocity(d, ts, ii, jj-1, kk) [type = VBACKWARD_HALO]
 
-WRITE VTop      -> (l == TOP      && kk < nzz-1) ? VBottom   UpdateVelocity(BOTTOM,   d, ts, ii, jj, kk+1) [type = VTOP_HALO]
-WRITE VBottom   -> (l == BOTTOM   && kk > 0    ) ? VTop      UpdateVelocity(TOP,      d, ts, ii, jj, kk-1) [type = VBOTTOM_HALO]
+WRITE VTop      -> (kk < nzz-1) ? VBottom   UpdateVelocity(d, ts, ii, jj, kk+1) [type = VTOP_HALO]
+WRITE VBottom   -> (kk > 0    ) ? VTop      UpdateVelocity(d, ts, ii, jj, kk-1) [type = VBOTTOM_HALO]
 
 
 BODY
 {
-  /* fprintf(stdout, "ExtractVelocityHalo(%d, %d, %d, %d, %d, %d)\n", l, d, ts, ii, jj, kk); */
+  // fprintf(stdout, "ExtractVelocityHalo(%d, %d, %d, %d, %d)\n", d, ts, ii, jj, kk);
 
-  switch(l){
-  case _LEFT:
-    if (ii > 0){
-      ((extractVelocityHalo_t) extractVelocityHalo) (l, d, ts, ii, jj, kk, VLeft);
-    }
-    break;
-  case _RIGHT:
-    if (ii < nxx-1){
-      ((extractVelocityHalo_t) extractVelocityHalo) (l, d, ts, ii, jj, kk, VRight);
-    }
-    break;
-  case _BACKWARD:
-    if (jj > 0){
-      ((extractVelocityHalo_t) extractVelocityHalo) (l, d, ts, ii, jj, kk, VBackward);
-    }
-    break;
-  case _FORWARD:
-    if (jj < nyy-1){
-      ((extractVelocityHalo_t) extractVelocityHalo) (l, d, ts, ii, jj, kk, VForward);
-    }
-    break;
-  case _BOTTOM:
-    if (kk > 0){
-      ((extractVelocityHalo_t) extractVelocityHalo) (l, d, ts, ii, jj, kk, VBottom);
-    }
-    break;
-  case _TOP:
-    if (kk < nzz-1){
-      ((extractVelocityHalo_t) extractVelocityHalo) (l, d, ts, ii, jj, kk, VTop);
-    }
-    break;
-  default:
-    fprintf(stdout, "ExtractVelocityHalo(%d, %d, %d, %d, %d, %d) - Unknown location (%d)\n", l, d, ts, ii, jj, kk, l);
+  if (ii > 0){
+    ((extractVelocityHalo_t) extractVelocityHalo) (LEFT, d, ts, ii, jj, kk, VLeft);
   }
 
-  /* fprintf(stdout, "ExtractVelocityHalo(%d, %d, %d, %d, %d, %d) - Completed\n", l, d, ts, ii, jj, kk); */
+  if (ii < nxx-1){
+    ((extractVelocityHalo_t) extractVelocityHalo) (RIGHT, d, ts, ii, jj, kk, VRight);
+  }
+
+  if (jj > 0){
+    ((extractVelocityHalo_t) extractVelocityHalo) (BACKWARD, d, ts, ii, jj, kk, VBackward);
+  }
+
+  if (jj < nyy-1){
+    ((extractVelocityHalo_t) extractVelocityHalo) (FORWARD, d, ts, ii, jj, kk, VForward);
+  }
+
+  if (kk > 0){
+    ((extractVelocityHalo_t) extractVelocityHalo) (BOTTOM, d, ts, ii, jj, kk, VBottom);
+  }
+
+  if (kk < nzz-1){
+    ((extractVelocityHalo_t) extractVelocityHalo) (TOP, d, ts, ii, jj, kk, VTop);
+  }
+
+  // fprintf(stdout, "ExtractVelocityHalo(%d, %d, %d, %d, %d) - Completed\n", d, ts, ii, jj, kk);
 }
 END
 
 
 
-UpdateVelocity(l, d, ts, ii, jj, kk)
+UpdateVelocity(d, ts, ii, jj, kk)
 
 // Execution space
-l  = 0 .. nl-1
 d  = 0 .. dim-1
 ts = 2 .. nt-2 .. 2
 ii = 0 .. nxx-1
@@ -259,27 +246,27 @@ kk = 0 .. nzz-1
 
 
 // Parallel partitioning
-: sewas_ddesc(ii, jj, kk)
+: ddesc(ii, jj, kk)
 
 
 // Data flow
-READ VLeft      <-  (l == LEFT     && ii > 0    ) ? VRight    ExtractVelocityHalo(RIGHT, d, ts, ii-1, jj, kk)    [type = VLEFT_HALO]
-                <- !(l == LEFT     && ii > 0    ) ? NULL
-READ VRight     <-  (l == RIGHT    && ii < nxx-1) ? VLeft     ExtractVelocityHalo(LEFT,  d, ts, ii+1, jj, kk)    [type = VRIGHT_HALO]
-                <- !(l == RIGHT    && ii < nxx-1) ? NULL
+READ VLeft      <-  (ii > 0    ) ? VRight    ExtractVelocityHalo(d, ts, ii-1, jj, kk)   [type = VLEFT_HALO]
+                <- !(ii > 0    ) ? NULL
+READ VRight     <-  (ii < nxx-1) ? VLeft     ExtractVelocityHalo(d, ts, ii+1, jj, kk)   [type = VRIGHT_HALO]
+                <- !(ii < nxx-1) ? NULL
 
-READ VBackward  <-  (l == BACKWARD && jj > 0    ) ? VForward  ExtractVelocityHalo(FORWARD,  d, ts, ii, jj-1, kk) [type = VBACKWARD_HALO]
-                <- !(l == BACKWARD && jj > 0    ) ? NULL
-READ VForward   <-  (l == FORWARD  && jj < nyy-1) ? VBackward ExtractVelocityHalo(BACKWARD, d, ts, ii, jj+1, kk) [type = VFORWARD_HALO]
-                <- !(l == FORWARD  && jj < nyy-1) ? NULL
+READ VBackward  <-  (jj > 0    ) ? VForward  ExtractVelocityHalo(d, ts, ii, jj-1, kk)   [type = VBACKWARD_HALO]
+                <- !(jj > 0    ) ? NULL
+READ VForward   <-  (jj < nyy-1) ? VBackward ExtractVelocityHalo(d, ts, ii, jj+1, kk)   [type = VFORWARD_HALO]
+                <- !(jj < nyy-1) ? NULL
 
-READ VBottom    <-  (l == BOTTOM   && kk > 0    ) ? VTop      ExtractVelocityHalo(TOP,    d, ts, ii, jj, kk-1)   [type = VBOTTOM_HALO]
-                <- !(l == BOTTOM   && kk > 0    ) ? NULL
-READ VTop       <-  (l == TOP      && kk < nzz-1) ? VBottom   ExtractVelocityHalo(BOTTOM, d, ts, ii, jj, kk+1)   [type = VTOP_HALO]
-                <- !(l == TOP      && kk < nzz-1) ? NULL
+READ VBottom    <-  (kk > 0    ) ? VTop      ExtractVelocityHalo(d, ts, ii, jj, kk-1)   [type = VBOTTOM_HALO]
+                <- !(kk > 0    ) ? NULL
+READ VTop       <-  (kk < nzz-1) ? VBottom   ExtractVelocityHalo(d, ts, ii, jj, kk+1)   [type = VTOP_HALO]
+                <- !(kk < nzz-1) ? NULL
 
 
-CTL V           <- V ExtractVelocityHalo(l, d, ts, ii, jj, kk)
+CTL V           <- V ExtractVelocityHalo(d, ts, ii, jj, kk)
 
 
 CTL VxH         -> (d == X) ? VxH ComputeStress(XX, ts+1, ii, jj, kk)
@@ -302,44 +289,33 @@ CTL VzH         -> (d == Z) ? VzH ComputeStress(XX, ts+1, ii, jj, kk)
 
 BODY
 {
-  /* fprintf(stdout, "UpdateVelocity(%d, %d, %d, %d, %d, %d)\n", l, d, ts, ii, jj, kk); */
+  // fprintf(stdout, "UpdateVelocity(%d, %d, %d, %d, %d)\n", d, ts, ii, jj, kk);
 
-  switch(l){
-  case _LEFT:
-    if (ii > 0){
-      ((updateVelocity_t) updateVelocity) (l, d, ts, ii, jj, kk, VLeft);
-    }
-    break;
-  case _RIGHT:
-    if (ii < nxx-1){
-      ((updateVelocity_t) updateVelocity) (l, d, ts, ii, jj, kk, VRight);
-    }
-    break;
-  case _BACKWARD:
-    if (jj > 0){
-      ((updateVelocity_t) updateVelocity) (l, d, ts, ii, jj, kk, VBackward);
-    }
-    break;
-  case _FORWARD:
-    if (jj < nyy-1){
-      ((updateVelocity_t) updateVelocity) (l, d, ts, ii, jj, kk, VForward);
-    }
-    break;
-  case _BOTTOM:
-    if (kk > 0){
-      ((updateVelocity_t) updateVelocity) (l, d, ts, ii, jj, kk, VBottom);
-    }
-    break;
-  case _TOP:
-    if (kk < nzz-1){
-      ((updateVelocity_t) updateVelocity) (l, d, ts, ii, jj, kk, VTop);
-    }
-    break;
-  default:
-    fprintf(stdout, "UpdateVelocity(%d, %d, %d, %d, %d, %d) - Unknown location\n", l, d, ts, ii, jj, kk);
+  if (ii > 0){
+    ((updateVelocity_t) updateVelocity) (LEFT, d, ts, ii, jj, kk, VLeft);
   }
 
-  /* fprintf(stdout, "UpdateVelocity(%d, %d, %d, %d, %d, %d) - Completed\n", l, d, ts, ii, jj, kk); */
+  if (ii < nxx-1){
+    ((updateVelocity_t) updateVelocity) (RIGHT, d, ts, ii, jj, kk, VRight);
+  }
+
+  if (jj > 0){
+    ((updateVelocity_t) updateVelocity) (BACKWARD, d, ts, ii, jj, kk, VBackward);
+  }
+
+  if (jj < nyy-1){
+    ((updateVelocity_t) updateVelocity) (FORWARD, d, ts, ii, jj, kk, VForward);
+  }
+
+  if (kk > 0){
+    ((updateVelocity_t) updateVelocity) (BOTTOM, d, ts, ii, jj, kk, VBottom);
+  }
+
+  if (kk < nzz-1){
+    ((updateVelocity_t) updateVelocity) (TOP, d, ts, ii, jj, kk, VTop);
+  }
+
+  // fprintf(stdout, "UpdateVelocity(%d, %d, %d, %d, %d) - Completed\n", d, ts, ii, jj, kk);
 }
 END
 
@@ -357,15 +333,15 @@ kk = 0 .. nzz-1
 
 
 // Parallel partitioning
-: sewas_ddesc(ii, jj, kk)
+: ddesc(ii, jj, kk)
 
 
 // Data flow
-CTL VxH <- (sc == XX || sc == YY || sc == ZZ || sc == XY || sc == XZ) ? VxH UpdateVelocity(0..nl-1, X, ts-1, ii, jj, kk)
-CTL VyH <- (sc == XX || sc == YY || sc == ZZ || sc == XY || sc == YZ) ? VyH UpdateVelocity(0..nl-1, Y, ts-1, ii, jj, kk)
-CTL VzH <- (sc == XX || sc == YY || sc == ZZ || sc == XZ || sc == YZ) ? VzH UpdateVelocity(0..nl-1, Z, ts-1, ii, jj, kk)
+CTL VxH <- (sc == XX || sc == YY || sc == ZZ || sc == XY || sc == XZ) ? VxH UpdateVelocity(X, ts-1, ii, jj, kk)
+CTL VyH <- (sc == XX || sc == YY || sc == ZZ || sc == XY || sc == YZ) ? VyH UpdateVelocity(Y, ts-1, ii, jj, kk)
+CTL VzH <- (sc == XX || sc == YY || sc == ZZ || sc == XZ || sc == YZ) ? VzH UpdateVelocity(Z, ts-1, ii, jj, kk)
 
-CTL S   -> S ExtractStressHalo(0..nl-1, sc, ts, ii, jj, kk)
+CTL S   -> (ts < nt-1) ? S ExtractStressHalo(sc, ts, ii, jj, kk)
         -> S DisplayStress(sc, ts, ii, jj, kk)
 
 BODY
@@ -383,10 +359,9 @@ BODY
 END
 
 
-ExtractStressHalo(l, sc, ts, ii, jj, kk)
+ExtractStressHalo(sc, ts, ii, jj, kk)
 
 // Execution space
-l  = 0 .. nl-1
 sc = 0 .. nsc-1
 ts = 3 .. nt-1 .. 2
 ii = 0 .. nxx-1
@@ -395,151 +370,128 @@ kk = 0 .. nzz-1
 
 
 // Parallel partitioning
-: sewas_ddesc(ii, jj, kk)
+: ddesc(ii, jj, kk)
 
 
 // Data flow
-CTL   S         <- S ComputeStress(sc, ts, ii, jj, kk)
-                -> (ts < nt-1) ? S UpdateStress(l, sc, ts, ii, jj, kk) /* Extraction must occur before Update to avoid RAW issues */
+CTL   S         <- (ts < nt-1) ? S ComputeStress(sc, ts, ii, jj, kk)
+                -> (ts < nt-1) ? S UpdateStress(sc, ts, ii, jj, kk) /* Extraction must occur before Update to avoid RAW issues */
 
-WRITE SRight    -> (l == RIGHT    && ii < nxx-1 && ts < nt-1) ? SLeft     UpdateStress(LEFT,     sc, ts, ii+1, jj, kk) [type = SRIGHT_HALO]
-WRITE SLeft     -> (l == LEFT     && ii > 0     && ts < nt-1) ? SRight    UpdateStress(RIGHT,    sc, ts, ii-1, jj, kk) [type = SLEFT_HALO]
+WRITE SRight    ->  (ii < nxx-1 && ts < nt-1) ? SLeft     UpdateStress(sc, ts, ii+1, jj, kk) [type = SRIGHT_HALO]
+WRITE SLeft     ->  (ii > 0     && ts < nt-1) ? SRight    UpdateStress(sc, ts, ii-1, jj, kk) [type = SLEFT_HALO]
 
-WRITE SForward  -> (l == FORWARD  && jj < nyy-1 && ts < nt-1) ? SBackward UpdateStress(BACKWARD, sc, ts, ii, jj+1, kk) [type = SFORWARD_HALO]
-WRITE SBackward -> (l == BACKWARD && jj > 0     && ts < nt-1) ? SForward  UpdateStress(FORWARD,  sc, ts, ii, jj-1, kk) [type = SBACKWARD_HALO]
+WRITE SForward  ->  (jj < nyy-1 && ts < nt-1) ? SBackward UpdateStress(sc, ts, ii, jj+1, kk) [type = SFORWARD_HALO]
+WRITE SBackward ->  (jj > 0     && ts < nt-1) ? SForward  UpdateStress(sc, ts, ii, jj-1, kk) [type = SBACKWARD_HALO]
 
-WRITE STop      -> (l == TOP      && kk < nzz-1 && ts < nt-1) ? SBottom   UpdateStress(BOTTOM,   sc, ts, ii, jj, kk+1) [type = STOP_HALO]
-WRITE SBottom   -> (l == BOTTOM   && kk > 0     && ts < nt-1) ? STop      UpdateStress(TOP,      sc, ts, ii, jj, kk-1) [type = SBOTTOM_HALO]
+WRITE STop      ->  (kk < nzz-1 && ts < nt-1) ? SBottom   UpdateStress(sc, ts, ii, jj, kk+1) [type = STOP_HALO]
+WRITE SBottom   ->  (kk > 0     && ts < nt-1) ? STop      UpdateStress(sc, ts, ii, jj, kk-1) [type = SBOTTOM_HALO]
 
 BODY
 {
-  /* fprintf(stdout, "ExtractStressHalo(%d, %d, %d, %d, %d, %d)\n", l, sc, ts, ii, jj, kk); */
+  // fprintf(stdout, "ExtractStressHalo(%d, %d, %d, %d, %d)\n", sc, ts, ii, jj, kk);
 
-  switch(l){
-  case _LEFT:
-    if (ii > 0 && ts < nt-1){
-      ((extractStressHalo_t) extractStressHalo) (l, sc, ts, ii, jj, kk, SLeft);
-    }
-    break;
-  case _RIGHT:
-    if (ii < nxx-1 && ts < nt-1){
-      ((extractStressHalo_t) extractStressHalo) (l, sc, ts, ii, jj, kk, SRight);
-    }
-    break;
-  case _BACKWARD:
-    if (jj > 0 && ts < nt-1){
-      ((extractStressHalo_t) extractStressHalo) (l, sc, ts, ii, jj, kk, SBackward);
-    }
-    break;
-  case _FORWARD:
-    if (jj < nyy-1 && ts < nt-1){
-      ((extractStressHalo_t) extractStressHalo) (l, sc, ts, ii, jj, kk, SForward);
-    }
-    break;
-  case _BOTTOM:
-    if (kk > 0 && ts < nt-1){
-      ((extractStressHalo_t) extractStressHalo) (l, sc, ts, ii, jj, kk, SBottom);
-    }
-    break;
-  case _TOP:
-    if (kk < nzz-1 && ts < nt-1){
-      ((extractStressHalo_t) extractStressHalo) (l, sc, ts, ii, jj, kk, STop);
-    }
-    break;
-  default:
-    fprintf(stdout, "ExtractStressHalo(%d, %d, %d, %d, %d, %d) - Unknown location\n", l, sc, ts, ii, jj, kk);
+  if (ii > 0 && ts < nt-1){
+    ((extractStressHalo_t) extractStressHalo) (LEFT, sc, ts, ii, jj, kk, SLeft);
   }
 
-  /* fprintf(stdout, "ExtractStressHalo(%d, %d, %d, %d, %d, %d) - Completed\n", l, sc, ts, ii, jj, kk); */
+  if (ii < nxx-1 && ts < nt-1){
+    ((extractStressHalo_t) extractStressHalo) (RIGHT, sc, ts, ii, jj, kk, SRight);
+  }
+
+  if (jj > 0 && ts < nt-1){
+    ((extractStressHalo_t) extractStressHalo) (BACKWARD, sc, ts, ii, jj, kk, SBackward);
+  }
+
+  if (jj < nyy-1 && ts < nt-1){
+    ((extractStressHalo_t) extractStressHalo) (FORWARD, sc, ts, ii, jj, kk, SForward);
+  }
+
+  if (kk > 0 && ts < nt-1){
+    ((extractStressHalo_t) extractStressHalo) (BOTTOM, sc, ts, ii, jj, kk, SBottom);
+  }
+
+  if (kk < nzz-1 && ts < nt-1){
+    ((extractStressHalo_t) extractStressHalo) (TOP, sc, ts, ii, jj, kk, STop);
+  }
+
+  // fprintf(stdout, "ExtractStressHalo(%d, %d, %d, %d, %d) - Completed\n", sc, ts, ii, jj, kk);
 }
 END
 
 
-UpdateStress(l, sc, ts, ii, jj, kk)
+UpdateStress(sc, ts, ii, jj, kk)
 
 // Execution space
-l  = 0 .. nl-1
 sc = 0 .. nsc-1
-ts = 1 .. nt-3 .. 2
+ts = 3 .. nt-1 .. 2
 ii = 0 .. nxx-1
 jj = 0 .. nyy-1
 kk = 0 .. nzz-1
 
 
 // Parallel partitioning
-: sewas_ddesc(ii, jj, kk)
+: ddesc(ii, jj, kk)
 
 
 // Data flow
-READ SLeft      <-  (l == LEFT     && ii > 0     && ts > 1) ? SRight    ExtractStressHalo(RIGHT, sc, ts, ii-1, jj, kk)    [type = SLEFT_HALO]
-                <- !(l == LEFT     && ii > 0     && ts > 1) ? NULL
-READ SRight     <-  (l == RIGHT    && ii < nxx-1 && ts > 1) ? SLeft     ExtractStressHalo(LEFT,  sc, ts, ii+1, jj, kk)    [type = SRIGHT_HALO]
-                <- !(l == RIGHT    && ii < nxx-1 && ts > 1) ? NULL
+READ SLeft      <-  (ii > 0     && ts < nt-1) ? SRight    ExtractStressHalo(sc, ts, ii-1, jj, kk)   [type = SLEFT_HALO]
+                <- !(ii > 0     && ts < nt-1) ? NULL
+READ SRight     <-  (ii < nxx-1 && ts < nt-1) ? SLeft     ExtractStressHalo(sc, ts, ii+1, jj, kk)   [type = SRIGHT_HALO]
+                <- !(ii < nxx-1 && ts < nt-1) ? NULL
 
-READ SBackward  <-  (l == BACKWARD && jj > 0     && ts > 1) ? SForward  ExtractStressHalo(FORWARD,  sc, ts, ii, jj-1, kk) [type = SBACKWARD_HALO]
-                <- !(l == BACKWARD && jj > 0     && ts > 1) ? NULL
-READ SForward   <-  (l == FORWARD  && jj < nyy-1 && ts > 1) ? SBackward ExtractStressHalo(BACKWARD, sc, ts, ii, jj+1, kk) [type = SFORWARD_HALO]
-                <- !(l == FORWARD  && jj < nyy-1 && ts > 1) ? NULL
+READ SBackward  <-  (jj > 0     && ts < nt-1) ? SForward  ExtractStressHalo(sc, ts, ii, jj-1, kk)   [type = SBACKWARD_HALO]
+                <- !(jj > 0     && ts < nt-1) ? NULL
+READ SForward   <-  (jj < nyy-1 && ts < nt-1) ? SBackward ExtractStressHalo(sc, ts, ii, jj+1, kk)   [type = SFORWARD_HALO]
+                <- !(jj < nyy-1 && ts < nt-1) ? NULL
 
-READ SBottom    <-  (l == BOTTOM   && kk > 0     && ts > 1) ? STop      ExtractStressHalo(TOP,    sc, ts, ii, jj, kk-1)   [type = SBOTTOM_HALO]
-                <- !(l == BOTTOM   && kk > 0     && ts > 1) ? NULL
-READ STop       <-  (l == TOP      && kk < nzz-1 && ts > 1) ? SBottom   ExtractStressHalo(BOTTOM, sc, ts, ii, jj, kk+1)   [type = STOP_HALO]
-                <- !(l == TOP      && kk < nzz-1 && ts > 1) ? NULL
-
-
-CTL S           <- (ts > 1) ? S ExtractStressHalo(l, sc, ts, ii, jj, kk)
+READ SBottom    <-  (kk > 0     && ts < nt-1) ? STop      ExtractStressHalo(sc, ts, ii, jj, kk-1)   [type = SBOTTOM_HALO]
+                <- !(kk > 0     && ts < nt-1) ? NULL
+READ STop       <-  (kk < nzz-1 && ts < nt-1) ? SBottom   ExtractStressHalo(sc, ts, ii, jj, kk+1)   [type = STOP_HALO]
+                <- !(kk < nzz-1 && ts < nt-1) ? NULL
 
 
-CTL SxxH        -> (sc == XX && ts > 1) ? SxxH ComputeVelocity(X, ts+1, ii, jj, kk)
-CTL SyyH        -> (sc == YY && ts > 1) ? SyyH ComputeVelocity(Y, ts+1, ii, jj, kk)
-CTL SzzH        -> (sc == ZZ && ts > 1) ? SzzH ComputeVelocity(Z, ts+1, ii, jj, kk)
-CTL SxyH        -> (sc == XY && ts > 1) ? SxyH ComputeVelocity(X, ts+1, ii, jj, kk)
-                -> (sc == XY && ts > 1) ? SxyH ComputeVelocity(Y, ts+1, ii, jj, kk)
-CTL SxzH        -> (sc == XZ && ts > 1) ? SxzH ComputeVelocity(X, ts+1, ii, jj, kk)
-                -> (sc == XZ && ts > 1) ? SxzH ComputeVelocity(Z, ts+1, ii, jj, kk)
-CTL SyzH        -> (sc == YZ && ts > 1) ? SyzH ComputeVelocity(Y, ts+1, ii, jj, kk)
-                -> (sc == YZ && ts > 1) ? SyzH ComputeVelocity(Z, ts+1, ii, jj, kk)
+CTL S           <- (ts < nt-1) ? S ExtractStressHalo(sc, ts, ii, jj, kk)
+
+
+CTL SxxH        -> (sc == XX && ts < nt-1) ? SxxH ComputeVelocity(X, ts+1, ii, jj, kk)
+CTL SyyH        -> (sc == YY && ts < nt-1) ? SyyH ComputeVelocity(Y, ts+1, ii, jj, kk)
+CTL SzzH        -> (sc == ZZ && ts < nt-1) ? SzzH ComputeVelocity(Z, ts+1, ii, jj, kk)
+CTL SxyH        -> (sc == XY && ts < nt-1) ? SxyH ComputeVelocity(X, ts+1, ii, jj, kk)
+                -> (sc == XY && ts < nt-1) ? SxyH ComputeVelocity(Y, ts+1, ii, jj, kk)
+CTL SxzH        -> (sc == XZ && ts < nt-1) ? SxzH ComputeVelocity(X, ts+1, ii, jj, kk)
+                -> (sc == XZ && ts < nt-1) ? SxzH ComputeVelocity(Z, ts+1, ii, jj, kk)
+CTL SyzH        -> (sc == YZ && ts < nt-1) ? SyzH ComputeVelocity(Y, ts+1, ii, jj, kk)
+                -> (sc == YZ && ts < nt-1) ? SyzH ComputeVelocity(Z, ts+1, ii, jj, kk)
 
 BODY
 {
-  /* fprintf(stdout, "UpdateStress(%d, %d, %d, %d, %d, %d)\n", l, sc, ts, ii, jj, kk); */
+  // fprintf(stdout, "UpdateStress(%d, %d, %d, %d, %d)\n", sc, ts, ii, jj, kk);
 
-  switch(l){
-  case _LEFT:
-    if (ii > 0 && ts > 1){
-      ((updateStress_t) updateStress) (l, sc, ts, ii, jj, kk, SLeft);
-    }
-    break;
-  case _RIGHT:
-    if (ii < nxx-1 && ts > 1){
-      ((updateStress_t) updateStress) (l, sc, ts, ii, jj, kk, SRight);
-    }
-    break;
-  case _BACKWARD:
-    if (jj > 0 && ts > 1){
-      ((updateStress_t) updateStress) (l, sc, ts, ii, jj, kk, SBackward);
-    }
-    break;
-  case _FORWARD:
-    if (jj < nyy-1 && ts > 1){
-      ((updateStress_t) updateStress) (l, sc, ts, ii, jj, kk, SForward);
-    }
-    break;
-  case _BOTTOM:
-    if (kk > 0 && ts > 1){
-      ((updateStress_t) updateStress) (l, sc, ts, ii, jj, kk, SBottom);
-    }
-    break;
-  case _TOP:
-    if (kk < nzz-1 && ts > 1){
-      ((updateStress_t) updateStress) (l, sc, ts, ii, jj, kk, STop);
-    }
-    break;
-  default:
-    fprintf(stdout, "UpdateStress(%d, %d, %d, %d, %d, %d) - Unknown location\n", l, sc, ts, ii, jj, kk);
+  if (ii > 0 && ts < nt-1){
+    ((updateStress_t) updateStress) (LEFT, sc, ts, ii, jj, kk, SLeft);
   }
 
-  /* fprintf(stdout, "UpdateStress(%d, %d, %d, %d, %d, %d) - Completed\n", l, sc, ts, ii, jj, kk); */
+  if (ii < nxx-1 && ts < nt-1){
+    ((updateStress_t) updateStress) (RIGHT, sc, ts, ii, jj, kk, SRight);
+  }
+
+  if (jj > 0 && ts < nt-1){
+    ((updateStress_t) updateStress) (BACKWARD, sc, ts, ii, jj, kk, SBackward);
+  }
+
+  if (jj < nyy-1 && ts < nt-1){
+    ((updateStress_t) updateStress) (FORWARD, sc, ts, ii, jj, kk, SForward);
+  }
+
+  if (kk > 0 && ts < nt-1){
+    ((updateStress_t) updateStress) (BOTTOM, sc, ts, ii, jj, kk, SBottom);
+  }
+
+  if (kk < nzz-1 && ts < nt-1){
+    ((updateStress_t) updateStress) (TOP, sc, ts, ii, jj, kk, STop);
+  }
+
+  // fprintf(stdout, "UpdateStress(%d, %d, %d, %d, %d) - Completed\n", sc, ts, ii, jj, kk);
 }
 END
 
@@ -556,7 +508,7 @@ kk = 0 .. nzz-1
 
 
 // Parallel partitioning (visualization is performed on the master process)
-: sewas_ddesc(0, 0, 0)
+: ddesc(0, 0, 0)
 
 
 CTL V    <- V ComputeVelocity(d, ts, ii, jj, kk)
@@ -591,7 +543,7 @@ kk = 0 .. nzz-1
 
 
 // Parallel partitioning (visualization is performed on the master process)
-: sewas_ddesc(0, 0, 0)
+: ddesc(0, 0, 0)
 
 
 CTL S    <- S ComputeStress(sc, ts, ii, jj, kk)
