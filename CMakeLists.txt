@@ -49,7 +49,7 @@ if(VISUALIZE_EXECUTION)
 
   # Adjust compile options accordingly
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DOPENGL2_SUPPORTED>) ## Not working for Raspberry PI 3
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DVISUALIZE_EXECUTION>)
+  add_compile_options(-DVISUALIZE_EXECUTION)
   if (ENABLE_VELOCITY_RENDERING)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DENABLE_VELOCITY_RENDERING>)
   endif(ENABLE_VELOCITY_RENDERING)
