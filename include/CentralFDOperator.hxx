@@ -88,8 +88,10 @@ public:
 
     const auto kStart=fijk.kStart(), kEnd=fijk.kEnd();
 
+#ifndef EIGEN_VECTORIZATION
     SWS::SpatialBlockField1D rij(1,cz);
     rij=0.0;
+#endif
 
 #ifdef BOOST_SIMD_VECTORIZATION
     const auto nkp=rij.size()/SWS::packetSize;
@@ -110,7 +112,7 @@ public:
       constexpr auto d4=_d4(d);
 
 #ifdef EIGEN_VECTORIZATION
-      rij = c1*fijk(i+d1,j)+c2*fijk(i-d2,j)+c3*fijk(i+d3,j)+c4*fijk(i-d4,j);
+      return c1*fijk(i+d1,j)+c2*fijk(i-d2,j)+c3*fijk(i+d3,j)+c4*fijk(i-d4,j);
 #elif  BOOST_SIMD_VECTORIZATION
       for (int kp=0; kp<nkp; kp++){
         auto rijkp=SWS::SpatialBlockField<SWS::RealType>::getPack(rij, kp);
@@ -140,7 +142,7 @@ public:
       constexpr auto d4=_d4(d);
 
 #ifdef EIGEN_VECTORIZATION
-      rij = c1*fijk(i,j+d1)+c2*fijk(i,j-d2)+c3*fijk(i,j+d3)+c4*fijk(i,j-d4);
+      return c1*fijk(i,j+d1)+c2*fijk(i,j-d2)+c3*fijk(i,j+d3)+c4*fijk(i,j-d4);
 #elif  BOOST_SIMD_VECTORIZATION
       for (int kp=0; kp<nkp; kp++){
         auto rijkp=SWS::SpatialBlockField<SWS::RealType>::getPack(rij, kp);
@@ -169,10 +171,15 @@ public:
       const auto d3=_d3(d)+DK;
       const auto d4=_d4(d)-DK;
 
+      auto _cz=kEnd-kStart;
+
+#ifdef EIGEN_VECTORIZATION
+      return c1*fijk.get(i,j).segment(kStart+d1,_cz)+c2*fijk.get(i,j).segment(kStart-d2,_cz)+c3*fijk.get(i,j).segment(kStart+d3,_cz)+c4*fijk.get(i,j).segment(kStart-d4,_cz);
+#else
       for (int k=kStart; k<kEnd; k++){
         rij(k) = c1*fijk(i,j,k+d1)+c2*fijk(i,j,k-d2)+c3*fijk(i,j,k+d3)+c4*fijk(i,j,k-d4);
       }
-
+#endif
       break;
     }
     default:
@@ -180,7 +187,9 @@ public:
       break;
     }
 
+#ifndef EIGEN_VECTORIZATION
     return rij;
+#endif
   }
 
   template<SWS::Directions d, short DI, short DJ, short DK>
