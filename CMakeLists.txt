@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(SEWAS)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # version number
 set(SEWAS_VERSION_MAJOR 1)
 set(SEWAS_VERSION_MINOR 0)
