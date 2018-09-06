@@ -59,10 +59,10 @@ private:
   std::array<SWS::RealType, SWS::DIM> c3_;
   std::array<SWS::RealType, SWS::DIM> c4_;
 
-  static constexpr std::array<short, SWS::DIM> d1_={1, 1, 1};
-  static constexpr std::array<short, SWS::DIM> d2_={2, 2, 2};
-  static constexpr std::array<short, SWS::DIM> d3_={0, 0, 0};
-  static constexpr std::array<short, SWS::DIM> d4_={1, 1, 1};
+  static constexpr short d1_=1;
+  static constexpr short d2_=2;
+  static constexpr short d3_=0;
+  static constexpr short d4_=1;
 
 
   inline auto _c1(const SWS::Directions & d) const { return c1_[d]; }
@@ -70,10 +70,10 @@ private:
   inline auto _c3(const SWS::Directions & d) const { return c3_[d]; }
   inline auto _c4(const SWS::Directions & d) const { return c4_[d]; }
 
-  static inline constexpr auto _d1(const SWS::Directions & d) { return d1_[d]; }
-  static inline constexpr auto _d2(const SWS::Directions & d) { return d2_[d]; }
-  static inline constexpr auto _d3(const SWS::Directions & d) { return d3_[d]; }
-  static inline constexpr auto _d4(const SWS::Directions & d) { return d4_[d]; }
+  static inline constexpr auto _d1(const SWS::Directions & d) { return d1_; }
+  static inline constexpr auto _d2(const SWS::Directions & d) { return d2_; }
+  static inline constexpr auto _d3(const SWS::Directions & d) { return d3_; }
+  static inline constexpr auto _d4(const SWS::Directions & d) { return d4_; }
 
 
 public:
@@ -220,9 +220,9 @@ private:
 
   /* Halo size */
   // TODO need to add padding for vectorization efficiency
-  static constexpr auto hnx_=std::max({d1_[SWS::X], d2_[SWS::X], d3_[SWS::X], d4_[SWS::X]});
-  static constexpr auto hny_=std::max({d1_[SWS::Y], d2_[SWS::Y], d3_[SWS::Y], d4_[SWS::Y]});
-  static constexpr auto hnz_=std::max({d1_[SWS::Z], d2_[SWS::Z], d3_[SWS::Z], d4_[SWS::Z]});
+  static constexpr auto hnx_=std::max({d1_, d2_, d3_, d4_});
+  static constexpr auto hny_=std::max({d1_, d2_, d3_, d4_});
+  static constexpr auto hnz_=std::max({d1_, d2_, d3_, d4_});
 
   /* Spatial grid spacing */
   SWS::RealType dx_;
