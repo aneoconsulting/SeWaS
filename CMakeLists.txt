@@ -23,7 +23,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-funroll-loops>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-march=native>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-mtune=native>)
-  # add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
+  # add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
 endif()
 
 option(COLLECT_STATS "Collect statistics during execution (default ON)" ON)
@@ -83,13 +83,6 @@ if(VECTORIZE_COMPUTATIONS)
   endif(BOOST_SIMD_VECTORIZATION)
 endif(VECTORIZE_COMPUTATIONS)
 
-option(IO_ENABLED "Perform IO operations (default OFF)" OFF)
-if (IO_ENABLED)
-  message("ADIOS will be used for performing IO operations")
-  add_compile_options(-DIO_ENABLED)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DUSE_ADIOS>)
-endif(IO_ENABLED)
-
 # ----------------------------------------------
 # Build configuration completed
 # ----------------------------------------------
@@ -133,8 +126,7 @@ set(SOURCES
   src/SEWASPaRSEC.cxx
   src/Mesh3DPartitioning.cxx
   src/VisualizationManager.cxx
-  src/MetricsManager.cxx
-  src/IOManager.cxx)
+  src/MetricsManager.cxx)
 
 include_directories(include)
 
@@ -192,10 +184,3 @@ if (VISUALIZE_EXECUTION)
   include_directories("${VTK_INCLUDE_DIRS}")
   target_link_libraries(sewas ${VTK_LIBRARIES})
 endif(VISUALIZE_EXECUTION)
-
-# ADIOS is used for performing IO operations
-if (IO_ENABLED)
-  find_package(ADIOS 1.13 REQUIRED)
-  include_directories("${ADIOS_INCLUDE_DIRS}")
-  target_link_libraries(sewas ${ADIOS_LIBRARIES})
-endif(IO_ENABLED)
