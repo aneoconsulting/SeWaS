@@ -21,7 +21,7 @@
 #include <memory>
 #include <thread>
 
-#include <mpi.h>
+#include "ExecutionContext.hxx"
 
 #ifdef SEWAS_WITH_PARSEC
 #include <parsec/parsec_config.h>
@@ -96,13 +96,7 @@ int main (int argc, char* argv[])
   const auto P=pm.P(), Q=pm.Q(), R=pm.R();
   const auto nthreads=pm.nthreads();
 
-  /* Start the MPI runtime */
-  {
-    int provided;
-    MPI_Init_thread(&argc, &argv, MPI_THREAD_SERIALIZED, &provided);
-    if (MPI_THREAD_SERIALIZED != provided)
-      std::cerr << "WARNING: The thread level supported by the MPI implementation is " << provided << "\n";
-  }
+  ExecutionContext::init(argc, argv);
 
 #ifdef SEWAS_WITH_PARSEC
   /* PaRSEC initialization */
@@ -166,8 +160,7 @@ int main (int argc, char* argv[])
   }
   auto pSEWAS=LinearSeismicWaveModel::getInstance();
 
-  int rank=0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  auto rank=ExecutionContext::rank();
 
 #ifdef VISUALIZE_EXECUTION
   if (0 == rank){
@@ -182,7 +175,7 @@ int main (int argc, char* argv[])
   }
 #endif
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  ExecutionContext::barrier();
 
   mm->stop("Initialization");
 
@@ -202,7 +195,7 @@ int main (int argc, char* argv[])
 
   std::cout << "I am " << rank << " and I completed the simulation...\n";
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  ExecutionContext::barrier();
 
 #if 0
   const auto & Sxx=pSEWAS->sigma(SWS::XX);
@@ -248,8 +241,6 @@ int main (int argc, char* argv[])
   status=parsec_fini(&g_parsec);
   PARSEC_CHECK_ERROR(status, "parsec_fini");
 #endif
-
-  MPI_Finalize();
 
   mm->stop("Global");
 

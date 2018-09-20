@@ -5,13 +5,13 @@ project(SEWAS)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # version number
-set(SEWAS_VERSION_MAJOR 1)
-set(SEWAS_VERSION_MINOR 0)
-
-set(CMAKE_C_COMPILER mpicc)
-set(CMAKE_CXX_COMPILER mpicxx)
+set(SEWAS_VERSION_MAJOR 0)
+set(SEWAS_VERSION_MINOR 1)
+set(SEWAS_VERSION_PATCH 0)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules" CACHE STRING "")
+
+option(SEWAS_DISTRIBUTED "Build SeWaS for distributed memory platforms (default OFF)" OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are None, Debug, Release, RelWithDebInfo and MinSizeRel." FORCE)
@@ -23,7 +23,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-funroll-loops>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-march=native>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-mtune=native>)
-  # add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
 endif()
 
 option(COLLECT_STATS "Collect statistics during execution (default ON)" ON)
@@ -88,6 +88,15 @@ endif(VECTORIZE_COMPUTATIONS)
 # ----------------------------------------------
 
 option(SEWAS_WITH_PARSEC "Use PaRSEC for task-scheduling (default ON)" ON)
+
+if (SEWAS_DISTRIBUTED AND NOT SEWAS_WITH_PARSEC)
+  message(FATAL_ERROR "The distributed version of SeWaS relies on PaRSEC.")
+endif(SEWAS_DISTRIBUTED AND NOT SEWAS_WITH_PARSEC)
+
+if (SEWAS_DISTRIBUTED)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DSEWAS_DISTRIBUTED>)
+endif(SEWAS_DISTRIBUTED)
+
 if(SEWAS_WITH_PARSEC)
   add_compile_options(-DSEWAS_WITH_PARSEC)
 
@@ -123,6 +132,13 @@ include_directories(include)
 
 add_executable(sewas ${SOURCES} ${JDF2C_SOURCES})
 set_property(TARGET sewas PROPERTY CXX_STANDARD 14)
+
+if (SEWAS_DISTRIBUTED)
+  # MPI
+  find_package(MPI 2.0 REQUIRED)
+  include_directories("${MPI_CXX_INCLUDE_PATH}")
+  target_link_libraries(sewas ${MPI_CXX_LIBRARIES})
+endif(SEWAS_DISTRIBUTED)
 
 if(SEWAS_WITH_PARSEC)
   # PaRSEC
