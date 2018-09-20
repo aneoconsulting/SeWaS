@@ -1,0 +1,44 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "SeWaS configure",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/build && cmake -DIO_ENABLED=ON ..",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "SeWaS build",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/build && make -j4",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "SeWaS clean",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/build && make clean",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "SeWaS distclean",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/build && rm -rf CMakeCache.txt CMakeFiles cmake_install.cmake Makefile sewas.[ch]",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+
+    ]
+}

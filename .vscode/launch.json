@@ -1,0 +1,55 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/sewas",
+            "args": [
+                "--cx", "50",
+                "--cy", "50",
+                "--cz", "100",
+                "--P", "1",
+                "--Q", "1",
+                "--R", "1",
+                "--nthreads", "2",
+                "--dfile=${workspaceFolder}/data/input/TestA.json"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/sewas",
+            "args": [
+                "--cx", "50",
+                "--cy", "50",
+                "--cz", "100",
+                "--P", "1",
+                "--Q", "1",
+                "--R", "1",
+                "--nthreads", "2",
+                "--dfile=${workspaceFolder}/data/input/TestA.json"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "externalConsole": true,
+            "setupCommands": []
+        }
+    ]
+}
