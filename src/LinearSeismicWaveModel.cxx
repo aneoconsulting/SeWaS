@@ -18,7 +18,7 @@
 
 #include <iostream>
 
-#include <mpi.h>
+#include "ExecutionContext.hxx"
 
 #ifdef SEWAS_WITH_PARSEC
 #include <parsec/parsec_config.h>
@@ -587,8 +587,7 @@ void LinearSeismicWaveModel::setVelocitySourceLocations()
     const auto js=j%cy + v_(0)(ii,jj,kk).jStart();
     const auto ks=k%cz + v_(0)(ii,jj,kk).kStart();
 
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    auto rank=ExecutionContext::rank();
 
     if (rank == Mesh3DPartitioning::getInstance()->rank_of(ii, jj, kk)){
       std::cerr << "Source : (" << is << ", " << js << ", " << ks << ") within tile (" << ii << ", " << jj << ", " << kk << ")\n";

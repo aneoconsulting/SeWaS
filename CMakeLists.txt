@@ -23,7 +23,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-funroll-loops>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-march=native>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-mtune=native>)
-  # add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
 endif()
 
 option(COLLECT_STATS "Collect statistics during execution (default ON)" ON)

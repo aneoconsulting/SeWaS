@@ -17,7 +17,7 @@
 ==============================================================================*/
 
 #ifdef SEWAS_WITH_PARSEC
-#include <mpi.h>
+#include "ExecutionContext.hxx"
 
 #include <parsec/parsec_config.h>
 #include <parsec/datatype.h>
@@ -62,12 +62,12 @@ int SEWASPaRSEC::run()
 {
   int status=0;
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  ExecutionContext::barrier();
 
   status=parsec_context_start(g_parsec);
   PARSEC_CHECK_ERROR(status, "parsec_context_start");
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  ExecutionContext::barrier();
 
   status=parsec_context_wait(g_parsec);
   PARSEC_CHECK_ERROR(status, "parsec_context_wait");
@@ -124,7 +124,7 @@ void SEWASPaRSEC::enqueueDAG()
 
 void SEWASPaRSEC::addArena(const short arena_idx, const SWS::Locations l)
 {
-  parsec_datatype_t oldtype = SWS::MPIRealType;
+  parsec_datatype_t oldtype = SWS::PARSECRealType;
   parsec_datatype_t newtype;
   ptrdiff_t lb, extent;
 
@@ -148,8 +148,8 @@ SEWASPaRSEC::SEWASPaRSEC(const int nt,
 								    nyy_(nyy),
 								    nzz_(nzz)
 {
-  MPI_Comm_size(MPI_COMM_WORLD, &world_);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
+  world_=ExecutionContext::world();
+  rank_=ExecutionContext::rank();
 
   buildEngine();
   buildDataDescriptor();
