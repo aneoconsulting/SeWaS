@@ -17,6 +17,8 @@
 ==============================================================================*/
 
 #include <iostream>
+#define _USE_MATH_DEFINES // for C++  
+#include <cmath>
 
 #include "ExecutionContext.hxx"
 
@@ -98,6 +100,8 @@ int LinearSeismicWaveModel::initializeFieldsWrapper(const int ii, const int jj, 
 
   /* Initialize velocity and stress fields */
   pInstance_->initialize(ii, jj, kk);
+
+  return 0;
 }
 
 int LinearSeismicWaveModel::computeVelocityWrapper(const int d,

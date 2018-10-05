@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <array>
 #include <tuple>
 #include <iomanip>
 #include <algorithm>
@@ -271,8 +272,8 @@ public:
               continue;
             }
 
-            cm[metric][MIN]=std::min(cm[metric][MIN], cm_n[metric][MIN]);
-            cm[metric][MAX]=std::max(cm[metric][MAX], cm_n[metric][MAX]);
+            cm[metric][MIN]=(std::min)(cm[metric][MIN], cm_n[metric][MIN]);
+            cm[metric][MAX]=(std::max)(cm[metric][MAX], cm_n[metric][MAX]);
             cm[metric][TOT]+=cm_n[metric][TOT];
 
             cm[metric][SD]+=(cm_n[metric][SD]*cm_n[metric][SD] + cm_n[metric][AVG]*cm_n[metric][AVG])*cm_n[metric][NCALLS];

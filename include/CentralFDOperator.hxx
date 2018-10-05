@@ -54,10 +54,10 @@ private:
     "3D Elastic Finite-Difference Modeling of Seismic Motion Using Staggered Grids with Nonuniform Spacing"
   */
 
-  std::array<SWS::RealType, SWS::DIM> c1_;
-  std::array<SWS::RealType, SWS::DIM> c2_;
-  std::array<SWS::RealType, SWS::DIM> c3_;
-  std::array<SWS::RealType, SWS::DIM> c4_;
+  std::array<SWS::RealType, SWS::Directions::DIM> c1_;
+  std::array<SWS::RealType, SWS::Directions::DIM> c2_;
+  std::array<SWS::RealType, SWS::Directions::DIM> c3_;
+  std::array<SWS::RealType, SWS::Directions::DIM> c4_;
 
   static constexpr short d1_=1;
   static constexpr short d2_=2;
@@ -220,9 +220,9 @@ private:
 
   /* Halo size */
   // TODO need to add padding for vectorization efficiency
-  static constexpr auto hnx_=std::max({d1_, d2_, d3_, d4_});
-  static constexpr auto hny_=std::max({d1_, d2_, d3_, d4_});
-  static constexpr auto hnz_=std::max({d1_, d2_, d3_, d4_});
+  static constexpr auto hnx_=(std::max)({d1_, d2_, d3_, d4_});
+  static constexpr auto hny_=(std::max)({d1_, d2_, d3_, d4_});
+  static constexpr auto hnz_=(std::max)({d1_, d2_, d3_, d4_});
 
   /* Spatial grid spacing */
   SWS::RealType dx_;
