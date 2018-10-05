@@ -6,3 +6,12 @@ include/*~
 build/*
 
 doc/*
+*.db
+*.sqlite
+*.opendb
+*.ipch
+.vs/SeWaS/v15/.suo
+.vs/config/applicationhost.config
+.vs/VSWorkspaceState.json
+.vs/ProjectSettings.json
+.vs/tasks.vs.json
