@@ -1,0 +1,29 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "sewas.exe (RelWithDebInfo\\sewas.exe)",
+      "name": "sewas.exe (RelWithDebInfo\\sewas.exe)",
+      "args": [
+        "--cx",
+        "50",
+        "--cy",
+        "50",
+        "--cz",
+        "100",
+        "--P",
+        "1",
+        "--Q",
+        "1",
+        "--R",
+        "1",
+        "--nthreads",
+        "1",
+        "--dfile=C:\\Projects\\HPC\\SeWaS\\data\\input\\TestA.json"
+      ]
+    }
+  ]
+}
