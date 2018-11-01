@@ -36,7 +36,7 @@ public:
 
   static inline auto world()
   {
-    int w=0;
+    int w=1;
 #if SEWAS_DISTRIBUTED
     MPI_Comm_size(MPI_COMM_WORLD, &w);
 #endif
