@@ -126,7 +126,8 @@ set(SOURCES
   src/SEWASPaRSEC.cxx
   src/Mesh3DPartitioning.cxx
   src/VisualizationManager.cxx
-  src/MetricsManager.cxx)
+  src/MetricsManager.cxx
+  src/ExecutionContext.cxx)
 
 include_directories(include)
 

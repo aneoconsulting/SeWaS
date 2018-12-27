@@ -23,17 +23,6 @@
 
 #include "ExecutionContext.hxx"
 
-#ifdef SEWAS_WITH_PARSEC
-#include <parsec/parsec_config.h>
-#include <parsec.h>
-#include <parsec/data_distribution.h>
-#include <parsec/datatype.h>
-#include <parsec/utils/mca_param.h>
-#include <parsec/scheduling.h>
-
-#include "sewas.h"
-#endif
-
 #include "Config.hxx"
 #include "SEWASParameterManager.hxx"
 #include "CartesianMesh3D.hxx"
@@ -64,10 +53,6 @@ void render()
 }
 #endif
 
-#ifdef SEWAS_WITH_PARSEC
-parsec_context_t * g_parsec;
-#endif
-
 int main (int argc, char* argv[])
 {
   int status=0;
@@ -85,8 +70,7 @@ int main (int argc, char* argv[])
   mm->start("Initialization");
 
   /* Intialize application parameters */
-  auto pm=*std::make_unique<SEWASParameterManager>();
-  pm.parse(argc, argv);
+  auto pm=*std::make_unique<SEWASParameterManager>(&argc, &argv);
 
   const auto tmax=pm.tmax();
   const auto nt=pm.nt();
@@ -96,32 +80,7 @@ int main (int argc, char* argv[])
   const auto P=pm.P(), Q=pm.Q(), R=pm.R();
   const auto nthreads=pm.nthreads();
 
-  ExecutionContext::init(argc, argv);
-
-#ifdef SEWAS_WITH_PARSEC
-  /* PaRSEC initialization */
-
-  int parsec_argc=0;
-  char ** parsec_argv=(char **) calloc(argc, sizeof(char *));
-
-  parsec_argv[parsec_argc++]=argv[0]; /* App name */
-
-  for (int i=1; i<argc; i++){
-    if (0 == strcmp("--", argv[i])){
-      /* We are done reading the application arguments;
-         all the remaining arguments will be passed to the PaRSEC engine */
-      for (int j=i+1; j<argc; j++){
-        parsec_argv[parsec_argc++]=argv[j];
-      }
-      break;
-    }
-  }
-
-  g_parsec = parsec_init(nthreads, &parsec_argc, &parsec_argv);
-
-  free(parsec_argv);
-
-#endif
+  ExecutionContext::init(pm);
 
   // Create the computational domain
   if (nullptr == CartesianMesh3D::getInstance(nx, ny, nz, ds)){
@@ -237,11 +196,6 @@ int main (int argc, char* argv[])
   }
 #endif
 
-#ifdef SEWAS_WITH_PARSEC
-  status=parsec_fini(&g_parsec);
-  PARSEC_CHECK_ERROR(status, "parsec_fini");
-#endif
-
   mm->stop("Global");
 
   if (0 == rank){
@@ -249,6 +203,8 @@ int main (int argc, char* argv[])
   }
 
   MetricsManager::releaseInstance();
+
+  ExecutionContext::finalize();
 
   return status;
 }

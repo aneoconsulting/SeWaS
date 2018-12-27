@@ -16,12 +16,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ==============================================================================*/
 
-#ifdef SEWAS_WITH_PARSEC
 #include "ExecutionContext.hxx"
 
-#include <parsec/parsec_config.h>
-#include <parsec/datatype.h>
-#include <parsec/arena.h>
+#ifdef SEWAS_WITH_PARSEC
 
 #include "Config.hxx"
 #include "Mesh3DPartitioning.hxx"
@@ -32,11 +29,9 @@
 #include "VisualizationManager.hxx"
 #endif
 
-#include "sewas.h"
-
-extern parsec_context_t * g_parsec;
-
 SEWASPaRSEC * SEWASPaRSEC::pInstance_ = nullptr;
+
+parsec_context_t * SEWASPaRSEC::pPContext_ = nullptr;
 
 SEWASPaRSEC * SEWASPaRSEC::getInstance(const int nt,
 				     const int nxx, const int nyy, const int nzz)
@@ -64,20 +59,47 @@ int SEWASPaRSEC::run()
 
   ExecutionContext::barrier();
 
-  status=parsec_context_start(g_parsec);
-  PARSEC_CHECK_ERROR(status, "parsec_context_start");
+  status=parsec_context_start(pPContext_);
+  PARSEC_CHECK_ERROR(status, "pPaRSECContext_start");
 
   ExecutionContext::barrier();
 
-  status=parsec_context_wait(g_parsec);
+  status=parsec_context_wait(pPContext_);
   PARSEC_CHECK_ERROR(status, "parsec_context_wait");
 
   return status;
 }
 
-void SEWASPaRSEC::buildEngine()
+void SEWASPaRSEC::init(SEWASParameterManager & pm)
 {
-  // TODO create and initialize the PaRSEC engine here
+  auto & argc=pm.argc();
+  auto & argv=pm.argv();
+
+  int parsec_argc=0;
+  char ** parsec_argv=(char **) calloc(argc, sizeof(char *));
+
+  parsec_argv[parsec_argc++]=argv[0]; /* App name */
+
+  for (int i=1; i<argc; i++){
+    if (0 == strcmp("--", argv[i])){
+      /* We are done reading the application arguments;
+         all the remaining arguments will be passed to the PaRSEC engine */
+      for (int j=i+1; j<argc; j++){
+        parsec_argv[parsec_argc++]=argv[j];
+      }
+      break;
+    }
+  }
+
+  pPContext_ = parsec_init(pm.nthreads(), &parsec_argc, &parsec_argv);
+
+  free(parsec_argv);
+}
+
+void SEWASPaRSEC::finalize()
+{
+  int status=parsec_fini(&pPContext_);
+  PARSEC_CHECK_ERROR(status, "parsec_fini");
 }
 
 void SEWASPaRSEC::buildDataDescriptor()
@@ -97,28 +119,29 @@ void SEWASPaRSEC::buildDataDescriptor()
 void SEWASPaRSEC::buildDAG()
 {
   pDAG_ = (parsec_sewas_taskpool_t *) parsec_sewas_new(nt_,
-                                                     nxx_, nyy_, nzz_,
-                                                     (void *) &LinearSeismicWaveModel::initializeFieldsWrapper,
-                                                     (void *) &LinearSeismicWaveModel::computeVelocityWrapper,
-                                                     (void *) &HaloManager::extractVelocityHaloWrapper,
-                                                     (void *) &HaloManager::updateVelocityWrapper,
-                                                     (void *) &LinearSeismicWaveModel::computeStressWrapper,
-                                                     (void *) &HaloManager::extractStressHaloWrapper,
-                                                     (void *) &HaloManager::updateStressWrapper,
+                                                       nxx_, nyy_, nzz_,
+                                                       (void *) &LinearSeismicWaveModel::initializeFieldsWrapper,
+                                                       (void *) &LinearSeismicWaveModel::computeVelocityWrapper,
+                                                       (void *) &HaloManager::extractVelocityHaloWrapper,
+                                                       (void *) &HaloManager::updateVelocityWrapper,
+                                                       (void *) &LinearSeismicWaveModel::computeStressWrapper,
+                                                       (void *) &HaloManager::extractStressHaloWrapper,
+                                                       (void *) &HaloManager::updateStressWrapper,
 #ifdef USE_VTK
-                                                     (void *) &VisualizationManager::displayVelocityWrapper,
-                                                     (void *) &VisualizationManager::displayStressWrapper,
+                                                       (void *) &VisualizationManager::displayVelocityWrapper,
+                                                       (void *) &VisualizationManager::displayStressWrapper,
 #else
-                                                     nullptr,
-                                                     nullptr,
+                                                       nullptr,
+                                                       nullptr,
 #endif
-                                                     pDDesc_);
+                                                       (int *) &Mesh3DPartitioning::TaskPriorityManager::getPriorityWrapper,
+                                                       pDDesc_);
   assert(nullptr != pDAG_);
 }
 
 void SEWASPaRSEC::enqueueDAG()
 {
-  int status = parsec_enqueue(g_parsec, (parsec_taskpool_t *) pDAG_);
+  int status = parsec_enqueue(pPContext_, (parsec_taskpool_t *) pDAG_);
   PARSEC_CHECK_ERROR(status, "parsec_enqueue");
 }
 
@@ -151,7 +174,9 @@ SEWASPaRSEC::SEWASPaRSEC(const int nt,
   world_=ExecutionContext::world();
   rank_=ExecutionContext::rank();
 
-  buildEngine();
+  /* Evaluate task priorities */
+  Mesh3DPartitioning::getInstance()->getTaskPriorityManager()->evaluate();
+
   buildDataDescriptor();
   buildDAG();
 
@@ -182,4 +207,5 @@ SEWASPaRSEC::~SEWASPaRSEC()
   parsec_taskpool_free((parsec_taskpool_t *) pDAG_);
   parsec_data_collection_destroy(pDDesc_);
 }
-#endif
+
+#endif // SEWAS_WITH_PARSEC

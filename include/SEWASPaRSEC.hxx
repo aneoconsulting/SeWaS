@@ -28,21 +28,25 @@
 #include "Config.hxx"
 
 #include "sewas.h"
+#include "SEWASParameterManager.hxx"
 
-class SEWASPaRSEC{
+class SEWASPaRSEC
+{
 public:
   static SEWASPaRSEC * getInstance(const int nt=1,
 				  const int nxx=1, const int nyy=1, const int nzz=1);
   static void releaseInstance();
 
+  static void init(SEWASParameterManager & pm);
+  static void finalize();
+
   int run();
 
 private:
   SEWASPaRSEC(const int nt,
-	     const int nxx, const int nyy, const int nzz);
+              const int nxx, const int nyy, const int nzz);
   ~SEWASPaRSEC();
 
-  void buildEngine();
   void buildDataDescriptor();
   void buildDAG();
   void enqueueDAG();
@@ -61,7 +65,7 @@ private:
   int nyy_;
   int nzz_;
 
-  parsec_context_t         * pEngine_;
+  static parsec_context_t         * pPContext_;
   parsec_data_collection_t * pDDesc_;
   parsec_sewas_taskpool_t   * pDAG_;
 };
