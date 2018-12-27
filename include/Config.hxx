@@ -77,6 +77,15 @@ namespace SWS
   // (ii, jj, kk)(i, j, k)
   typedef SpatialField MaterialDensity;
 
+  // (ii, jj, kk)
+  typedef Eigen::Tensor<int, DIM, Eigen::AutoAlign> PriorityField;
+
+  // (taskType)(ii, jj, kk)
+  typedef Eigen::Array<PriorityField, 1, NB_TASK_TYPES, Eigen::RowMajor|Eigen::AutoAlign> TaskPriorities;
+
+  // (taskType)
+  typedef Eigen::Array<int, 1, NB_TASK_TYPES, Eigen::RowMajor|Eigen::AutoAlign> TaskGroups;
+
 #ifdef USE_VTK
   // Data structure for storing VTK actors
   // (ii,jj,kk)(actor)
