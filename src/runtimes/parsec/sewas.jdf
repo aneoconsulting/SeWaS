@@ -31,16 +31,16 @@ extern "C" %{
   typedef void (*displayVelocity_t    )(const int d,  const int ts, const int ii, const int jj, const int kk, const int tid);
   typedef void (*displayStress_t      )(const int sc, const int ts, const int ii, const int jj, const int kk, const int tid);
 
-  /* Reflections of enums defined in Config.hxx */
-  enum {_X, _Y, _Z, _DIM};
-  enum {_XX, _YY, _ZZ, _XY, _XZ, _YZ, _NB_STRESS_FIELD_COMPONENTS};
-  enum {_LEFT, _RIGHT, _BACKWARD, _FORWARD, _BOTTOM, _TOP, _NB_LOCATIONS};
+  /* Priority evaluator */
+  typedef int  (*getPriority_t        )(const int taskType, const int ts, const int ii, const int jj, const int kk);
+
+#include "constants.h"
 %}
 
 
 
 /* Directions */
-X				[type = "int" hidden = on default = _X]
+X				[type = "int" hidden = on default = X]
 Y				[type = "int" hidden = on default = _Y]
 Z				[type = "int" hidden = on default = _Z]
 DIM				[type = "int" hidden = on default = _DIM]
@@ -90,6 +90,8 @@ updateStress		        [type = "void *"]
 displayVelocity                 [type = "void *"]
 displayStress                   [type = "void *"]
 
+getPriority                     [type = "int *"]
+
 ddesc			        [type = "parsec_data_collection_t *"]					/* Data descriptor */
 
 
@@ -111,6 +113,9 @@ kk = 0 .. nzz-1
 
 
 CTL I    -> I ComputeVelocity(0..dim-1, 2, ii, jj, kk)
+
+// Priority
+; %{ return ((getPriority_t) getPriority)(INITIALIZE_FIELDS, 0, ii, jj, kk); %}
 
 
 BODY
@@ -156,6 +161,8 @@ CTL SyzH <- ((d == Y || d == Z) && ts > 2) ? SyzH UpdateStress(YZ, ts-1, ii, jj,
 CTL V    -> V ExtractVelocityHalo(d, ts, ii, jj, kk)
          -> V DisplayVelocity(d, ts, ii, jj, kk)
 
+; %{ return ((getPriority_t) getPriority)(COMPUTE_VELOCITY, ts, ii, jj, kk); %}
+
 BODY
 {
 #ifdef VERBOSE
@@ -200,6 +207,7 @@ WRITE VBackward -> (jj > 0    ) ? VForward  UpdateVelocity(d, ts, ii, jj-1, kk) 
 WRITE VTop      -> (kk < nzz-1) ? VBottom   UpdateVelocity(d, ts, ii, jj, kk+1) [type = VTOP_HALO]
 WRITE VBottom   -> (kk > 0    ) ? VTop      UpdateVelocity(d, ts, ii, jj, kk-1) [type = VBOTTOM_HALO]
 
+; %{ return ((getPriority_t) getPriority)(EXTRACT_VELOCITY_HALO, ts, ii, jj, kk); %}
 
 BODY
 {
@@ -287,6 +295,8 @@ CTL VzH         -> (d == Z) ? VzH ComputeStress(XX, ts+1, ii, jj, kk)
                 -> (d == Z) ? VzH ComputeStress(XZ, ts+1, ii, jj, kk)
                 -> (d == Z) ? VzH ComputeStress(YZ, ts+1, ii, jj, kk)
 
+; %{ return ((getPriority_t) getPriority)(UPDATE_VELOCITY, ts, ii, jj, kk); %}
+
 BODY
 {
   // fprintf(stdout, "UpdateVelocity(%d, %d, %d, %d, %d)\n", d, ts, ii, jj, kk);
@@ -344,6 +354,8 @@ CTL VzH <- (sc == XX || sc == YY || sc == ZZ || sc == XZ || sc == YZ) ? VzH Upda
 CTL S   -> (ts < nt-1) ? S ExtractStressHalo(sc, ts, ii, jj, kk)
         -> S DisplayStress(sc, ts, ii, jj, kk)
 
+; %{ return ((getPriority_t) getPriority)(COMPUTE_STRESS, ts, ii, jj, kk); %}
+
 BODY
 {
 #ifdef VERBOSE
@@ -385,6 +397,8 @@ WRITE SBackward ->  (jj > 0     && ts < nt-1) ? SForward  UpdateStress(sc, ts, i
 
 WRITE STop      ->  (kk < nzz-1 && ts < nt-1) ? SBottom   UpdateStress(sc, ts, ii, jj, kk+1) [type = STOP_HALO]
 WRITE SBottom   ->  (kk > 0     && ts < nt-1) ? STop      UpdateStress(sc, ts, ii, jj, kk-1) [type = SBOTTOM_HALO]
+
+; %{ return ((getPriority_t) getPriority)(EXTRACT_STRESS_HALO, ts, ii, jj, kk); %}
 
 BODY
 {
@@ -463,6 +477,8 @@ CTL SxzH        -> (sc == XZ && ts < nt-1) ? SxzH ComputeVelocity(X, ts+1, ii, j
 CTL SyzH        -> (sc == YZ && ts < nt-1) ? SyzH ComputeVelocity(Y, ts+1, ii, jj, kk)
                 -> (sc == YZ && ts < nt-1) ? SyzH ComputeVelocity(Z, ts+1, ii, jj, kk)
 
+; %{ return ((getPriority_t) getPriority)(UPDATE_STRESS, ts, ii, jj, kk); %}
+
 BODY
 {
   // fprintf(stdout, "UpdateStress(%d, %d, %d, %d, %d)\n", sc, ts, ii, jj, kk);
@@ -515,7 +531,7 @@ CTL V    <- V ComputeVelocity(d, ts, ii, jj, kk)
 
 
 // Priority
-; (nxx-ii)*(nyy-jj)*(nzz-kk)*(nt-ts+1)
+; %{ return ((getPriority_t) getPriority)(DISPLAY_VELOCITY, ts, ii, jj, kk); %}
 
 
 BODY
@@ -556,7 +572,7 @@ CTL S    <- S ComputeStress(sc, ts, ii, jj, kk)
 
 
 // Priority
-; (nxx-ii)*(nyy-jj)*(nzz-kk)*(nt-ts+1)
+; %{ return ((getPriority_t) getPriority)(DISPLAY_STRESS, ts, ii, jj, kk); %}
 
 
 BODY

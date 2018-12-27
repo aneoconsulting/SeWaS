@@ -136,6 +136,7 @@ Mesh3DPartitioning::data_of(parsec_data_collection_t *desc, ...)
 }
 #endif
 
+
 Mesh3DPartitioning::Mesh3DPartitioning(const int cx, const int cy, const int cz,
 				       const int hnx, const int hny, const int hnz,
 				       const int P, const int Q, const int R):cx_(cx), cy_(cy), cz_(cz),
@@ -172,8 +173,12 @@ Mesh3DPartitioning::Mesh3DPartitioning(const int cx, const int cy, const int cz,
   for (int kk=0; kk<lnzz_; kk++)
     ccz_[kk]=hnz+cz+hnz;
 
+  /* Create an instance of the task priority manager */
+  pTaskPriorityManager_ = new TaskPriorityManager();
 }
 
 Mesh3DPartitioning::~Mesh3DPartitioning()
 {
+  delete pTaskPriorityManager_;
+  pTaskPriorityManager_=nullptr;
 }
