@@ -92,7 +92,7 @@ void LogManager::setVerbosityLevel()
       logger_->set_level(spdlog::level::trace);
     }
     else{
-      spdlog::warn("Unrecognized token {}. Accepted values for verbosity level are: {}. Falling back to INFO mode", vl, "OFF, CRITICAL, ERROR, WARN, INFO, DEBUG, TRACE");
+      spdlog::warn("Unrecognized token {} when selecting verbosity level. Accepted values are: {}. Falling back to INFO mode", vl, "OFF, CRITICAL, ERROR, WARN, INFO, DEBUG, TRACE");
       logger_->set_level(spdlog::level::info);
     }
   }
