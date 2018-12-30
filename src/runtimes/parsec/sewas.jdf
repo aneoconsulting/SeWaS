@@ -120,15 +120,9 @@ CTL I    -> I ComputeVelocity(0..dim-1, 2, ii, jj, kk)
 
 BODY
 {
-#ifdef VERBOSE
-  fprintf(stdout, "InitializeFields: %d, %d, %d\n", ii, jj, kk);
-#endif
 
   ((initializeFields_t) initializeFields) (ii, jj, kk);
 
-#ifdef VERBOSE
-  fprintf(stdout, "InitializeFields -- Completed: %d, %d, %d\n", ii, jj, kk);
-#endif
 }
 END
 
@@ -165,15 +159,9 @@ CTL V    -> V ExtractVelocityHalo(d, ts, ii, jj, kk)
 
 BODY
 {
-#ifdef VERBOSE
-  fprintf(stdout, "ComputeVelocity: %d, %d, %d, %d, %d\n", d, ts, ii, jj, kk);
-#endif
 
   ((computeVelocity_t) computeVelocity) (d, ts, ii, jj, kk);
 
-#ifdef VERBOSE
-  fprintf(stdout, "ComputeVelocity -- Completed: %d, %d, %d, %d, %d\n", d, ts, ii, jj, kk);
-#endif
 }
 END
 
@@ -211,7 +199,6 @@ WRITE VBottom   -> (kk > 0    ) ? VTop      UpdateVelocity(d, ts, ii, jj, kk-1) 
 
 BODY
 {
-  // fprintf(stdout, "ExtractVelocityHalo(%d, %d, %d, %d, %d)\n", d, ts, ii, jj, kk);
 
   if (ii > 0){
     ((extractVelocityHalo_t) extractVelocityHalo) (LEFT, d, ts, ii, jj, kk, VLeft);
@@ -237,7 +224,6 @@ BODY
     ((extractVelocityHalo_t) extractVelocityHalo) (TOP, d, ts, ii, jj, kk, VTop);
   }
 
-  // fprintf(stdout, "ExtractVelocityHalo(%d, %d, %d, %d, %d) - Completed\n", d, ts, ii, jj, kk);
 }
 END
 
@@ -299,7 +285,6 @@ CTL VzH         -> (d == Z) ? VzH ComputeStress(XX, ts+1, ii, jj, kk)
 
 BODY
 {
-  // fprintf(stdout, "UpdateVelocity(%d, %d, %d, %d, %d)\n", d, ts, ii, jj, kk);
 
   if (ii > 0){
     ((updateVelocity_t) updateVelocity) (LEFT, d, ts, ii, jj, kk, VLeft);
@@ -325,7 +310,6 @@ BODY
     ((updateVelocity_t) updateVelocity) (TOP, d, ts, ii, jj, kk, VTop);
   }
 
-  // fprintf(stdout, "UpdateVelocity(%d, %d, %d, %d, %d) - Completed\n", d, ts, ii, jj, kk);
 }
 END
 
@@ -358,15 +342,9 @@ CTL S   -> (ts < nt-1) ? S ExtractStressHalo(sc, ts, ii, jj, kk)
 
 BODY
 {
-#ifdef VERBOSE
-  fprintf(stdout, "ComputeStress: %d, %d, %d, %d, %d\n", sc, ts, ii, jj, kk);
-#endif
 
   ((computeStress_t) computeStress) (sc, ts, ii, jj, kk);
 
-#ifdef VERBOSE
-  fprintf(stdout, "ComputeStress -- Completed: %d, %d, %d, %d, %d\n", sc, ts, ii, jj, kk);
-#endif
 }
 END
 
@@ -402,7 +380,6 @@ WRITE SBottom   ->  (kk > 0     && ts < nt-1) ? STop      UpdateStress(sc, ts, i
 
 BODY
 {
-  // fprintf(stdout, "ExtractStressHalo(%d, %d, %d, %d, %d)\n", sc, ts, ii, jj, kk);
 
   if (ii > 0 && ts < nt-1){
     ((extractStressHalo_t) extractStressHalo) (LEFT, sc, ts, ii, jj, kk, SLeft);
@@ -428,7 +405,6 @@ BODY
     ((extractStressHalo_t) extractStressHalo) (TOP, sc, ts, ii, jj, kk, STop);
   }
 
-  // fprintf(stdout, "ExtractStressHalo(%d, %d, %d, %d, %d) - Completed\n", sc, ts, ii, jj, kk);
 }
 END
 
@@ -481,7 +457,6 @@ CTL SyzH        -> (sc == YZ && ts < nt-1) ? SyzH ComputeVelocity(Y, ts+1, ii, j
 
 BODY
 {
-  // fprintf(stdout, "UpdateStress(%d, %d, %d, %d, %d)\n", sc, ts, ii, jj, kk);
 
   if (ii > 0 && ts < nt-1){
     ((updateStress_t) updateStress) (LEFT, sc, ts, ii, jj, kk, SLeft);
@@ -507,7 +482,6 @@ BODY
     ((updateStress_t) updateStress) (TOP, sc, ts, ii, jj, kk, STop);
   }
 
-  // fprintf(stdout, "UpdateStress(%d, %d, %d, %d, %d) - Completed\n", sc, ts, ii, jj, kk);
 }
 END
 
@@ -538,15 +512,7 @@ BODY
 {
 #ifdef VISUALIZE_EXECUTION
 
-#ifdef VERBOSE
-  fprintf(stdout, "DisplayVelocity: %d, %d, %d, %d, %d, %d\n", d, ts, ii, jj, kk, 0);
-#endif
-
   ((displayVelocity_t) displayVelocity) (d, ts, ii, jj, kk, 0);
-
-#ifdef VERBOSE
-  fprintf(stdout, "DisplayVelocity - Completed: %d, %d, %d, %d, %d, %d\n", d, ts, ii, jj, kk, 0);
-#endif
 
 #endif
 }
@@ -579,15 +545,7 @@ BODY
 {
 #ifdef VISUALIZE_EXECUTION
 
-#ifdef VERBOSE
-  fprintf(stdout, "DisplayStress: %d, %d, %d, %d, %d, %d\n", sc, ts, ii, jj, kk, 0);
-#endif
-
   ((displayStress_t) displayStress) (sc, ts, ii, jj, kk, 0);
-
-#ifdef VERBOSE
-  fprintf(stdout, "DisplayStress - Completed: %d, %d, %d, %d, %d, %d\n", sc, ts, ii, jj, kk, 0);
-#endif
 
 #endif
 }

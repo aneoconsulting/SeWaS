@@ -184,7 +184,7 @@ public:
       break;
     }
     default:
-      LogManager::getInstance()->log<SWS::ERROR>("Unknown direction {} requested within CentralFDOperator::apply()", d);
+      LOG(SWS::ERROR, "Unknown direction {} requested within CentralFDOperator::apply()", d);
       break;
     }
 

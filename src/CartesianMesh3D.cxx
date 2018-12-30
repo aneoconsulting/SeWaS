@@ -56,7 +56,7 @@ CartesianMesh3D::CartesianMesh3D(const int nx, const int ny, const int nz,
   ly_=ny*dy_;
   lz_=nz*dz_;
 
-  LogManager::getInstance()->log<SWS::INFO>("(dx, dy, dz)=({}, {}, {}), (lx, ly, lz)=({}, {}, {})", dx_, dy_, dz_, lx_, ly_, lz_);
+  LOG(SWS::INFO, "(dx, dy, dz)=({}, {}, {}), (lx, ly, lz)=({}, {}, {})", dx_, dy_, dz_, lx_, ly_, lz_);
 }
 
 CartesianMesh3D::~CartesianMesh3D(){

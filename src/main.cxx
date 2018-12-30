@@ -43,8 +43,8 @@ std::thread tRenderer;
 void render()
 {
   if (nullptr == VisualizationManager::getInstance()){
-    std::cerr << "Visualization Manager is not initialized. Exiting...\n";
-    exit(-1);
+    LOG("Visualization Manager is not yet instantiated in render(). Exiting...");
+    exit(SWS::INSTANCE_ACCESS_VIOLATION);
   }
 
   while(bContinueRendering){
@@ -68,7 +68,7 @@ int main (int argc, char* argv[])
   /* Create a generic metrics manager */
   if (nullptr == MetricsManager::getInstance("SEWAS",
                                              {"Global", "Core simulation", "Initialization", "ComputeVelocity", "ComputeStress"})){
-    std::cerr << "Unable to create the metrics manager. Exiting...\n";
+    LOG(SWS::CRITICAL, "Unable to create the metrics manager. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto mm=MetricsManager::getInstance();
@@ -92,7 +92,7 @@ int main (int argc, char* argv[])
 
   // Create the computational domain
   if (nullptr == CartesianMesh3D::getInstance(nx, ny, nz, ds)){
-    std::cerr << "Unable to create the mesh. Exiting...\n";
+    LOG(SWS::CRITICAL, "Unable to create the mesh. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pCartesianMesh=CartesianMesh3D::getInstance();
@@ -104,7 +104,7 @@ int main (int argc, char* argv[])
   if (nullptr == Mesh3DPartitioning::getInstance(cx, cy, cz,
                                                  fdo.hnx(), fdo.hny(), fdo.hnz(),
                                                  P, Q, R)){
-    std::cerr << "Unable to partition the mesh. Exiting...\n";
+    LOG(SWS::CRITICAL, "Unable to partition the mesh. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pMeshPartitioning=Mesh3DPartitioning::getInstance();
@@ -115,14 +115,14 @@ int main (int argc, char* argv[])
      - velocities of primary and seconday waves
   */
   if (nullptr == DataSet::getInstance(pm)){
-    std::cerr << "Unable to create the dataset. Exiting...\n";
+    LOG(SWS::CRITICAL, "Unable to create the dataset. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pDataSet=DataSet::getInstance();
 
   // Create the seismic wave model
   if (nullptr == LinearSeismicWaveModel::getInstance(fdo, pm, nt, tmax)){
-    std::cerr << "Unable to create the linear seismic wave model. Exiting...\n";
+    LOG(SWS::CRITICAL, "Unable to create the linear seismic wave model. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pSEWAS=LinearSeismicWaveModel::getInstance();
@@ -135,8 +135,8 @@ int main (int argc, char* argv[])
     if (nullptr == VisualizationManager::getInstance(pSEWAS->nt(),
                                                      pMeshPartitioning->nxx(), pMeshPartitioning->nyy(), pMeshPartitioning->nzz(),
                                                      nthreads)){
-      std::cerr << "Unable to create the visualization engine. Exiting...\n";
-    return SWS::OBJECT_CREATION_FAILURE;
+      LOG(SWS::CRITICAL, "Unable to create the visualization engine. Exiting...");
+      return SWS::OBJECT_CREATION_FAILURE;
     }
     tRenderer = std::thread(render);
   }
@@ -153,14 +153,14 @@ int main (int argc, char* argv[])
 
   mm->stop("Core simulation");
 
+  LOG(SWS::INFO, "MPI process {} completed the simulation", rank);
+
 #ifdef VISUALIZE_EXECUTION
   if (0 == rank){
     bContinueRendering = false;
     tRenderer.join();
   }
 #endif
-
-  std::cout << "I am " << rank << " and I completed the simulation...\n";
 
   ExecutionContext::barrier();
 

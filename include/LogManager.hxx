@@ -34,6 +34,18 @@ public:
   static LogManager * getInstance();
   static void releaseInstance();
 
+
+#ifdef VERBOSE
+#define LOG(LEVEL, ...)                                 \
+  LogManager::getInstance()->log<LEVEL>(__VA_ARGS__);
+#else
+#define LOG(LEVEL, ...)                                 \
+  if constexpr (LEVEL <= SWS::ERROR){                   \
+    LogManager::getInstance()->log<LEVEL>(__VA_ARGS__); \
+  }
+#endif
+
+
   inline auto & getLogger()
   {
     return logger_;
@@ -71,6 +83,8 @@ public:
 private:
   LogManager();
   ~LogManager();
+
+  void setVerbosityLevel();
 
   static LogManager * pInstance_;
 

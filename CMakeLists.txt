@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.8.2)
 
 project(SEWAS)
 
@@ -25,6 +25,11 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-mtune=native>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
 endif()
+
+option(VERBOSE "Enable collecting and displaying of traced events at runtime (default OFF)" OFF)
+if (VERBOSE)
+  add_compile_options(-DVERBOSE)
+endif(VERBOSE)
 
 option(COLLECT_STATS "Collect statistics during execution (default ON)" ON)
 if (COLLECT_STATS)
@@ -133,7 +138,7 @@ set(SOURCES
 include_directories(include)
 
 add_executable(sewas ${SOURCES} ${JDF2C_SOURCES})
-set_property(TARGET sewas PROPERTY CXX_STANDARD 14)
+set_property(TARGET sewas PROPERTY CXX_STANDARD 17)
 
 # spdlog
 find_package(spdlog 1.3 CONFIG REQUIRED)

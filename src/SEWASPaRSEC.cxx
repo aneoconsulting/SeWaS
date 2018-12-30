@@ -93,6 +93,8 @@ void SEWASPaRSEC::init(SEWASParameterManager & pm)
 
   pPContext_ = parsec_init(pm.nthreads(), &parsec_argc, &parsec_argv);
 
+  LOG(SWS::INFO, "Thread number: {}", pm.nthreads());
+
   free(parsec_argv);
 }
 

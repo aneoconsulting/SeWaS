@@ -82,14 +82,14 @@ const auto DataSet::getLayer(const int k, const int ii, const int jj, const int 
       return layer;
   }
 
-  LogManager::getInstance()->log<SWS::CRITICAL>("The plane {} from the tile {} does not belong to any layer. Check the topology file configuration. Exiting...");
+  LOG(SWS::CRITICAL, "The plane {} from the tile {} does not belong to any layer. Check the topology file configuration. Exiting...");
 
   exit(SWS::BAD_TOPOLOGY_FILE_CONFIGURATION);
 }
 
 void DataSet::initialize(const int ii, const int jj, const int kk)
 {
-  LogManager::getInstance()->log<SWS::INFO>("[start] Initializing Lamé parameters on tile ({}, {}, {})", ii, jj, kk);
+  LOG(SWS::INFO, "[start] Initializing Lamé parameters on tile ({}, {}, {})", ii, jj, kk);
 
   auto pMesh=Mesh3DPartitioning::getInstance();
 
@@ -137,5 +137,5 @@ void DataSet::initialize(const int ii, const int jj, const int kk)
 
   } // k
 
-  LogManager::getInstance()->log<SWS::INFO>("[stop] Initializing Lamé parameters on tile ({}, {}, {})", ii, jj, kk);
+  LOG(SWS::INFO, "[stop] Initializing Lamé parameters on tile ({}, {}, {})", ii, jj, kk);
 }

@@ -453,12 +453,12 @@ private:
         return SWS::TIME_STEP;
       }
       else{
-        LogManager::getInstance()->log<SWS::WARN>("Unknown colorization strategy {}. Accepted values are CORE and TIME_STEP. Fallback to CORE", cs);
+        LOG(SWS::WARN, "Unknown colorization strategy {}. Accepted values are CORE and TIME_STEP. Fallback to CORE", cs);
         return SWS::CORE;
       }
     }
     else{
-      LogManager::getInstance()->log<SWS::WARN>("Colorization strategy is not set. Using default strategy: CORE");
+      LOG(SWS::WARN, "Colorization strategy is not set. Using default strategy: CORE");
       return SWS::CORE;
     }
   }
