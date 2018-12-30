@@ -23,6 +23,7 @@
 #include "CartesianMesh3D.hxx"
 #include "Mesh3DPartitioning.hxx"
 #include "MetricsManager.hxx"
+#include "LogManager.hxx"
 
 HaloManager * HaloManager::pInstance_ = nullptr;
 
@@ -147,7 +148,7 @@ size_t HaloManager::getHaloSize(const SWS::Locations l,
     hs=cx*cy*hnz_;
     break;
   default:
-    std::cerr << "HaloManager::getHaloSize() - Unknown location: " << l << "\n";
+    LogManager::getInstance()->log<SWS::ERROR>("Unknown location {} requested within HaloManager::getHaloSize()", l);
     break;
   }
 
@@ -365,8 +366,8 @@ void HaloManager::setExtractOffsets(const SWS::Locations l,
     kShift=kEnd-hnz_;
     break;
   default:
-    std::cerr << "HaloManager::setExtractOffsets() - Unkown location: " << l << "\n";
-    exit(-1);
+    LogManager::getInstance()->log<SWS::ERROR>("Unknown halo location {} requested within HaloManager::setExtractOffsets()", l);
+    break;
   }
 }
 
@@ -425,8 +426,8 @@ void HaloManager::setUpdateOffsets(const SWS::Locations l,
     kShift=kEnd;
     break;
   default:
-    std::cerr << "HaloManager::setUpdateOffsets() - Unkown location: " << l << "\n";
-    exit(-1);
+    LogManager::getInstance()->log<SWS::ERROR>("Unknown halo location {} requested within HaloManager::setUpdateOffsets()", l);
+    break;
   }
 }
 

@@ -22,10 +22,6 @@
 
 namespace SWS
 {
-  /* FIXME Do not modify the following three enumerations without also modifying sewas.jdf.
-     This is going to be fixed by defining them in a single place.
-  */
-
   enum Directions{
     X=_X,
     Y=_Y,
@@ -53,6 +49,21 @@ namespace SWS
     NB_LOCATIONS=_NB_LOCATIONS
   };
 
+  enum Errors{
+    OBJECT_CREATION_FAILURE=10,
+    BAD_TOPOLOGY_FILE_CONFIGURATION,
+    UNKNOWN_SPATIAL_DIRECTION
+  };
+
+  enum LogLevels{
+    TRACE,
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR,
+    CRITICAL,
+    OFF
+  };
 
   enum DIJK {DI=0, DJ=0, DK=0}; // Identifiers to be used when applying the finite-difference operator
 

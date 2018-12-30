@@ -37,7 +37,7 @@
 #endif
 
 #include "Constants.hxx"
-
+#include "LogManager.hxx"
 
 /*
   This class represents a 3D block of spatial cells. It internally uses Eigen::Array to store its data.
@@ -141,8 +141,8 @@ namespace SWS
 	dim=nz_;
 	break;
       default:
-	std::cerr << "SpatialBlockField::dimension() - Unknown dimension: " << d << "\n";
-	exit(-1);
+        LogManager::getInstance()->log<SWS::CRITICAL>("Unknown dimension {} requested within SpatialBlockField::dimension()", d);
+	exit(SWS::UNKNOWN_SPATIAL_DIRECTION);
       }
 
       return dim;
@@ -468,12 +468,12 @@ namespace SWS
     inline void display() const
     {
       for (int k=kStart(); k<kEnd(); k++){
-        std::cerr << "k = " << k-hnz_ << " *********************************" << std::endl;
+        std::cout << "k = " << k-hnz_ << " *********************************" << std::endl;
         for (int i=iStart(); i<iEnd(); i++){
           for (int j=jStart(); j<jEnd(); j++){
-            std::cerr << data_(i,j)(k) << " ";
+            std::cout << data_(i,j)(k) << " ";
           }
-          std::cerr << std::endl;
+          std::cout << std::endl;
         }
       }
     }

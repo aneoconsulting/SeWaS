@@ -52,20 +52,12 @@ public:
 
   static inline auto rank()
   {
-    int r=0;
-#if SEWAS_DISTRIBUTED
-    MPI_Comm_rank(MPI_COMM_WORLD, &r);
-#endif
-    return r;
+    return rank_;
   }
 
   static inline auto world()
   {
-    int w=0;
-#if SEWAS_DISTRIBUTED
-    MPI_Comm_size(MPI_COMM_WORLD, &w);
-#endif
-    return w;
+    return world_;
   }
 
   static inline void barrier()
@@ -87,4 +79,8 @@ public:
   }
 
 private:
+#if SEWAS_DISTRIBUTED
+  static int world_;
+  static int rank_;
+#endif
 };

@@ -127,12 +127,17 @@ set(SOURCES
   src/Mesh3DPartitioning.cxx
   src/VisualizationManager.cxx
   src/MetricsManager.cxx
-  src/ExecutionContext.cxx)
+  src/ExecutionContext.cxx
+  src/LogManager.cxx)
 
 include_directories(include)
 
 add_executable(sewas ${SOURCES} ${JDF2C_SOURCES})
 set_property(TARGET sewas PROPERTY CXX_STANDARD 14)
+
+# spdlog
+find_package(spdlog 1.3 CONFIG REQUIRED)
+target_link_libraries(sewas spdlog::spdlog)
 
 if (SEWAS_DISTRIBUTED)
   # MPI

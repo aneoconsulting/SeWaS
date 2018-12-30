@@ -18,26 +18,8 @@
 
 #pragma once
 
-#include <type_traits>
+#define SEWAS_VERSION_MAJOR 0
+#define SEWAS_VERSION_MINOR 1
+#define SEWAS_VERSION_PATCH 0
 
-#ifdef SEWAS_WITH_PARSEC
-#include <parsec/parsec_config.h>
-#include <parsec/datatype.h>
-#endif
-
-#include <Eigen/Core>
-
-namespace SWS
-{
-  using RealType=double;
-
-#ifdef SEWAS_WITH_PARSEC
-  constexpr auto PARSECRealType=parsec_datatype_double_t;
-#endif
-
-  // Data alignment
-  constexpr int Alignment=64;
-
-  // (k)
-  typedef Eigen::Array<RealType, 1, Eigen::Dynamic, Eigen::RowMajor|Eigen::AutoAlign> SpatialBlockField1D;
-}
+#define SEWAS_VERSION (SEWAS_VERSION_MAJOR * 10000 + SEWAS_VERSION_MINOR * 100 + SEWAS_VERSION_PATCH)

@@ -22,8 +22,8 @@
 #include <thread>
 
 #include "ExecutionContext.hxx"
-
 #include "Config.hxx"
+#include "LogManager.hxx"
 #include "SEWASParameterManager.hxx"
 #include "CartesianMesh3D.hxx"
 #include "DataSet.hxx"
@@ -57,11 +57,19 @@ int main (int argc, char* argv[])
 {
   int status=0;
 
+  // Create the logger
+  if (nullptr == LogManager::getInstance()){
+    std::cerr << "Failed to create the logger. Exiting...\n";
+    return SWS::OBJECT_CREATION_FAILURE;
+  }
+  auto pLogger=LogManager::getInstance();
+
+
   /* Create a generic metrics manager */
   if (nullptr == MetricsManager::getInstance("SEWAS",
                                              {"Global", "Core simulation", "Initialization", "ComputeVelocity", "ComputeStress"})){
     std::cerr << "Unable to create the metrics manager. Exiting...\n";
-    return -1;
+    return SWS::OBJECT_CREATION_FAILURE;
   }
   auto mm=MetricsManager::getInstance();
 
@@ -85,7 +93,7 @@ int main (int argc, char* argv[])
   // Create the computational domain
   if (nullptr == CartesianMesh3D::getInstance(nx, ny, nz, ds)){
     std::cerr << "Unable to create the mesh. Exiting...\n";
-    return -1;
+    return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pCartesianMesh=CartesianMesh3D::getInstance();
 
@@ -97,7 +105,7 @@ int main (int argc, char* argv[])
                                                  fdo.hnx(), fdo.hny(), fdo.hnz(),
                                                  P, Q, R)){
     std::cerr << "Unable to partition the mesh. Exiting...\n";
-    return -1;
+    return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pMeshPartitioning=Mesh3DPartitioning::getInstance();
 
@@ -108,14 +116,14 @@ int main (int argc, char* argv[])
   */
   if (nullptr == DataSet::getInstance(pm)){
     std::cerr << "Unable to create the dataset. Exiting...\n";
-    return -1;
+    return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pDataSet=DataSet::getInstance();
 
   // Create the seismic wave model
   if (nullptr == LinearSeismicWaveModel::getInstance(fdo, pm, nt, tmax)){
     std::cerr << "Unable to create the linear seismic wave model. Exiting...\n";
-    return -1;
+    return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pSEWAS=LinearSeismicWaveModel::getInstance();
 
@@ -128,7 +136,7 @@ int main (int argc, char* argv[])
                                                      pMeshPartitioning->nxx(), pMeshPartitioning->nyy(), pMeshPartitioning->nzz(),
                                                      nthreads)){
       std::cerr << "Unable to create the visualization engine. Exiting...\n";
-      return -1;
+    return SWS::OBJECT_CREATION_FAILURE;
     }
     tRenderer = std::thread(render);
   }
@@ -205,6 +213,8 @@ int main (int argc, char* argv[])
   MetricsManager::releaseInstance();
 
   ExecutionContext::finalize();
+
+  LogManager::releaseInstance();
 
   return status;
 }

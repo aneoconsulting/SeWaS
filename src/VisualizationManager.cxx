@@ -256,7 +256,7 @@ VisualizationManager::VisualizationManager(const int nt,
   // renderingWindow_->SetFullScreen(true);
   renderingWindow_->SetSize(1920, 1080);
   // renderingWindow_->SetSize(800, 600);
-  renderingWindow_->SetWindowName("Linear Seismic Wave Model - Task Based Implementation for Distributed Heterogeneous Architectures");
+  renderingWindow_->SetWindowName("SeWaS");
 
   VRenderers_.resize(SWS::DIM);
 #ifdef ENABLE_STRESS_RENDERING
