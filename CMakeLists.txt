@@ -223,8 +223,10 @@ endif(BUILD_TESTING)
 # -------------------------------------------------------------------
 # spdlog
 # -------------------------------------------------------------------
-find_package(spdlog 1.3 CONFIG REQUIRED)
-set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} spdlog::spdlog)
+if (ENABLE_LOGGER)
+  find_package(spdlog 1.3 CONFIG REQUIRED)
+  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} spdlog::spdlog)
+endif(ENABLE_LOGGER)
 
 # -------------------------------------------------------------------
 # MPI
