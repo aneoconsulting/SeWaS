@@ -18,4 +18,5 @@ before_install:
 script:
   - mkdir build
   - cd build
+  - cmake --version
   - cmake .. -DBUILD_TESTING=OFF -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF
