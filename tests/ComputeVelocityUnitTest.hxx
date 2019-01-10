@@ -42,16 +42,9 @@ protected:
     char ** argv=(char **) calloc(argc_, sizeof(char *));
     for (int i=0; i<argc_; i++){
       argv[i]=argv_[i];
-      std::cout << argv[i] << "\n";
     }
 
-    int i=0;
-
-    std::cout << "HERE 0 : " << argv_[15] << "\n";
-
     auto pm=*std::make_unique<SEWASParameterManager>(&argc_, &argv);
-
-    std::cout << "HERE 01\n";
 
     nx_=pm.nx();
     ny_=pm.ny();
@@ -134,23 +127,10 @@ protected:
     } // sc
 
 
-    std::cout << "HERE 00\n";
-
-    std::cout << "HERE : \n";
-
     CentralFDOperator fdo(CartesianMesh3D::getInstance()->dx(), CartesianMesh3D::getInstance()->dy(), CartesianMesh3D::getInstance()->dz());
 
-    std::cout << "HERE 000\n";
-
-    auto a=DataSet::getInstance(pm);
-    std::cout << "HERE 0001\n";
-    auto b=LinearSeismicWaveModel::getInstance(fdo, pm, pm.nt(), pm.tmax());
-    std::cout << "HERE 0002\n";
-
-    // ASSERT_NE(nullptr, DataSet::getInstance(pm));
-    // std::cout << "HERE : " << pm.tmax() << " " << pm.nt();
-
-    // ASSERT_NE(nullptr, LinearSeismicWaveModel::getInstance(fdo, pm, pm.nt(), pm.tmax()));
+    ASSERT_NE(nullptr, DataSet::getInstance(pm));
+    ASSERT_NE(nullptr, LinearSeismicWaveModel::getInstance(fdo, pm, pm.nt(), pm.tmax()));
 
 
     /* k == 2
@@ -192,8 +172,6 @@ protected:
       11
     */
 
-    std::cout << "HERE 1\n";
-
     const auto lnxx=Mesh3DPartitioning::getInstance()->lnxx();
     const auto lnyy=Mesh3DPartitioning::getInstance()->lnyy();
     const auto lnzz=Mesh3DPartitioning::getInstance()->lnzz();
@@ -209,8 +187,6 @@ protected:
         } // ljj
       } // lkk
     }
-
-    std::cout << "HERE 2\n";
 
     for (auto sc : {SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ}){
       sigmaH_(sc).resize(lnxx,lnyy,lnzz);
