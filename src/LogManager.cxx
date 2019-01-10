@@ -19,8 +19,6 @@
 #include "LogManager.hxx"
 #include "Version.hxx"
 
-LogManager * LogManager::pInstance_ = nullptr;
-
 LogManager * LogManager::getInstance()
 {
   if (nullptr == pInstance_){

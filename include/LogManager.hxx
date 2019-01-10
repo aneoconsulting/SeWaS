@@ -86,7 +86,7 @@ private:
 
   void setVerbosityLevel();
 
-  static LogManager * pInstance_;
+  static inline LogManager * pInstance_ = nullptr;
 
   std::string logFileName_;
 
