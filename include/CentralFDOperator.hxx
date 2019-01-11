@@ -23,6 +23,7 @@
 #include <array>
 
 #include "Config.hxx"
+#include "LogManager.hxx"
 
 class CentralFDOperator
 {
@@ -183,7 +184,7 @@ public:
       break;
     }
     default:
-      std::cerr << "CentralFDOperator::apply() - Unknown direction " << d << "\n";
+      LOG(SWS::ERROR, "Unknown direction {} requested within CentralFDOperator::apply()", d);
       break;
     }
 

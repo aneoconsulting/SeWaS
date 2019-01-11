@@ -21,18 +21,22 @@
 
 #include "SEWASParameterManager.hxx"
 
-SEWASParameterManager::SEWASParameterManager()
+SEWASParameterManager::SEWASParameterManager(int * pargc, char *** pargv)
 {
+  pargc_=pargc;
+  pargv_=pargv;
+
+  parse();
 }
 
 SEWASParameterManager::~SEWASParameterManager()
 {
 }
 
-int SEWASParameterManager::parse(int argc, char * argv[])
+int SEWASParameterManager::parse()
 {
   /* Parse command line arguments */
-  parseArgs(argc, argv);
+  parseArgs();
 
   /* Read the geophysic data file */
   parseDataFile();

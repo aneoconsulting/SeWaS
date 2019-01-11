@@ -22,6 +22,7 @@
 
 #include "Config.hxx"
 #include "HaloManager.hxx"
+#include "LogManager.hxx"
 
 class SEWASSequential{
 public:
@@ -123,7 +124,8 @@ private:
       }
       break;
     default:
-      fprintf(stdout, "send(%d, %d, %d, %d) - Unknown location (%d)\n", ii, jj, kk, l, l);
+      LOG(SWS::ERROR, "Unknown location {} requested within SEWASSequential::sendreceive()", l);
+      break;
     }
 
     return status;
@@ -172,7 +174,7 @@ private:
       }
       break;
     default:
-      fprintf(stdout, "send(%d, %d, %d, %d) - Unknown location (%d)\n", ii, jj, kk, l, l);
+      LOG(SWS::ERROR, "Unknown location {} requested within SEWASSequential::sendreceive()", l);
     }
 
     return status;

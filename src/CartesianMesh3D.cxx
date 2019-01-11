@@ -17,6 +17,7 @@
 ==============================================================================*/
 
 #include "CartesianMesh3D.hxx"
+#include "LogManager.hxx"
 
 CartesianMesh3D * CartesianMesh3D::pInstance_ = nullptr;
 
@@ -54,6 +55,8 @@ CartesianMesh3D::CartesianMesh3D(const int nx, const int ny, const int nz,
   lx_=nx*dx_;
   ly_=ny*dy_;
   lz_=nz*dz_;
+
+  LOG(SWS::INFO, "(dx, dy, dz)=({}, {}, {}), (lx, ly, lz)=({}, {}, {})", dx_, dy_, dz_, lx_, ly_, lz_);
 }
 
 CartesianMesh3D::~CartesianMesh3D(){

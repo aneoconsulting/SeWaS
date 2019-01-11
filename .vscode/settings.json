@@ -53,5 +53,10 @@
         "utility": "cpp",
         "tensor": "cpp"
     },
-    "cmake.configureSettings": {"IO_ENABLED" : "ON"}
+    "cmake.configureSettings": 
+    {
+        "IO_ENABLED" : "ON",
+        "SEWAS_DISTRIBUTED" : "ON",
+        "SEWAS_WITH_PARSEC" : "ON"
+    }
 }

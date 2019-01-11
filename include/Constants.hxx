@@ -18,39 +18,54 @@
 
 #pragma once
 
+#include "constants.h"
+
 namespace SWS
 {
-  /* FIXME Do not modify the following three enumerations without also modifying sewas.jdf.
-     This is going to be fixed by defining them in a single place.
-  */
-
-enum Directions{
-    X=0,
-    Y,
-    Z,
-    DIM
+  enum Directions{
+    X=_X,
+    Y=_Y,
+    Z=_Z,
+    DIM=_DIM
   };
 
   enum StressFieldComponents{
-    XX=0,
-    YY,
-    ZZ,
-    XY,
-    XZ,
-    YZ,
-    NB_STRESS_FIELD_COMPONENTS
+    XX=_XX,
+    YY=_YY,
+    ZZ=_ZZ,
+    XY=_XY,
+    XZ=_XZ,
+    YZ=_YZ,
+    NB_STRESS_FIELD_COMPONENTS=_NB_STRESS_FIELD_COMPONENTS
   };
 
   enum Locations{
-    LEFT=0,
-    RIGHT,
-    BACKWARD,
-    FORWARD,
-    BOTTOM,
-    TOP,
-    NB_LOCATIONS
+    LEFT=_LEFT,
+    RIGHT=_RIGHT,
+    BACKWARD=_BACKWARD,
+    FORWARD=_FORWARD,
+    BOTTOM=_BOTTOM,
+    TOP=_TOP,
+    NB_LOCATIONS=_NB_LOCATIONS
   };
 
+  enum Errors{
+    OBJECT_CREATION_FAILURE=10,
+    BAD_TOPOLOGY_FILE_CONFIGURATION,
+    UNKNOWN_SPATIAL_DIRECTION,
+    INSTANCE_ACCESS_VIOLATION,
+    INVALID_REAL_TYPE
+  };
+
+  enum LogLevels{
+    OFF,
+    CRITICAL,
+    ERROR,
+    WARN,
+    INFO,
+    DEBUG,
+    TRACE
+  };
 
   enum DIJK {DI=0, DJ=0, DK=0}; // Identifiers to be used when applying the finite-difference operator
 

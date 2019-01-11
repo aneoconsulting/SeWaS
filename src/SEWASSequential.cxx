@@ -65,11 +65,11 @@ int SEWASSequential::run()
 
   for (int ts=2; ts<=nt_-2; ts+=2){
 
+    LOG(SWS::TRACE, "[start] Processing time-step {}", ts);
+
     for (int ii=0; ii<nxx_; ii++){
       for (int jj=0; jj<nyy_; jj++){
         for (int kk=0; kk<nzz_; kk++){
-
-          fprintf(stdout, "ts=%d, ii=%d, jj=%d, kk=%d\n", ts, ii, jj, kk);
 
           for (auto l : {SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP}){
             for (auto sc : {SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ}){
@@ -115,6 +115,8 @@ int SEWASSequential::run()
         } // kk
       } // jj
     } // ii
+
+    LOG(SWS::TRACE, "[stop] Processing time-step {}", ts);
 
   } // ts
 

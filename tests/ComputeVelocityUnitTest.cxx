@@ -16,28 +16,22 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ==============================================================================*/
 
-#pragma once
-
 #include <type_traits>
 
-#ifdef SEWAS_WITH_PARSEC
-#include <parsec/parsec_config.h>
-#include <parsec/datatype.h>
-#endif
+#include <gtest/gtest.h>
 
-#include <Eigen/Core>
+#include "ComputeVelocityUnitTest.hxx"
 
-namespace SWS
+
+TEST_F(ComputeVelocityTest, ComputeVelocityX)
 {
-  using RealType=double;
+  auto d=SWS::X;
 
-#ifdef SEWAS_WITH_PARSEC
-  constexpr auto PARSECRealType=parsec_datatype_double_t;
-#endif
+  int ts=2;
 
-  // Data alignment
-  constexpr int Alignment=64;
+  int ii=0;
+  int jj=0;
+  int kk=0;
 
-  // (k)
-  typedef Eigen::Array<RealType, 1, Eigen::Dynamic, Eigen::RowMajor|Eigen::AutoAlign> SpatialBlockField1D;
+  // LinearSeismicWaveModel::computeVelocityWrapper(d, ts, ii, jj, kk);
 }

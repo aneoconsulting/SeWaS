@@ -33,10 +33,11 @@
 
 class SEWASParameterManager{
 public:
-  SEWASParameterManager();
+  SEWASParameterManager(int * pargc, char *** pargv);
   ~SEWASParameterManager();
 
-  int parse(int argc, char * argv[]);
+  inline auto & argc() { return *pargc_; }
+  inline auto & argv() { return *pargv_; }
 
   inline const auto & cx() const{ return getOption<int>("cx"); }
   inline const auto & cy() const{ return getOption<int>("cy"); }
@@ -94,9 +95,14 @@ private:
     }
   }
 
-  inline int parseArgs(int argc, char * argv[])
+  int parse();
+
+  inline int parseArgs()
   {
     namespace po=boost::program_options;
+
+    auto & argc=this->argc();
+    auto & argv=this->argv();
 
     constexpr char caption[]="Seismic Wave Simulator (SeWaS) \n\nAllowed options";
 
@@ -143,6 +149,7 @@ private:
       std::cerr << e.what() << "\n";
       return -1;
     }
+
 
     return 0;
   }
@@ -229,6 +236,9 @@ private:
 
   }
 
+
+  int * pargc_;
+  char *** pargv_;
 
   boost::program_options::variables_map vm_;
 

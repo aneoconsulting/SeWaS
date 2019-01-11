@@ -18,7 +18,7 @@
 
 #include "DataSet.hxx"
 #include "Mesh3DPartitioning.hxx"
-
+#include "LogManager.hxx"
 
 DataSet * DataSet::pInstance_ = nullptr;
 
@@ -82,14 +82,16 @@ const auto DataSet::getLayer(const int k, const int ii, const int jj, const int 
       return layer;
   }
 
-  std::cerr << "WARNING: the plane " << k << " from the tile (" << ii << ", " << jj << ", " << kk << ") does not belong to any layer. Exiting...";
+  LOG(SWS::CRITICAL, "The plane {} from the tile {} does not belong to any layer. Check the topology file configuration. Exiting...");
 
-  exit(-1);
+  exit(SWS::BAD_TOPOLOGY_FILE_CONFIGURATION);
 }
 
 void DataSet::initialize(const int ii, const int jj, const int kk)
 {
-  auto * pMesh=Mesh3DPartitioning::getInstance();
+  LOG(SWS::INFO, "[start] Initializing Lamé parameters on tile ({}, {}, {})", ii, jj, kk);
+
+  auto pMesh=Mesh3DPartitioning::getInstance();
 
   const int lii=pMesh->lii(ii);
   const int ljj=pMesh->ljj(jj);
@@ -134,4 +136,6 @@ void DataSet::initialize(const int ii, const int jj, const int kk)
     } // i
 
   } // k
+
+  LOG(SWS::INFO, "[stop] Initializing Lamé parameters on tile ({}, {}, {})", ii, jj, kk);
 }

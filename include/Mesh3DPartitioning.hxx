@@ -14,13 +14,14 @@
 
   You should have received a copy of the GNU Affero General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-==============================================================================*/
+  ==============================================================================*/
 
 #pragma once
 
 #include <iostream>
 #include <cassert>
 #include <cstdarg>
+#include <vector>
 
 #ifdef SEWAS_WITH_PARSEC
 #include <parsec/parsec_config.h>
@@ -30,6 +31,7 @@
 #include "Config.hxx"
 #include "LinearSeismicWaveModel.hxx"
 #include "DataSet.hxx"
+#include "MinimumCommunicationPriorityEvaluator.hxx"
 
 class Mesh3DPartitioning{
 public:
@@ -93,7 +95,8 @@ public:
   data_of(parsec_data_collection_t *desc, ...);
 
   static inline parsec_data_key_t
-  data_key(parsec_data_collection_t *desc, ...){
+  data_key(parsec_data_collection_t *desc, ...)
+  {
     int k;
     va_list ap;
     (void)desc;
@@ -104,6 +107,54 @@ public:
   }
 #endif
 
+  class TaskPriorityManager
+  {
+  public:
+    TaskPriorityManager()
+    {
+    }
+
+    ~TaskPriorityManager()
+    {
+    }
+
+    inline void evaluate()
+    {
+      auto pMeshPartitioning=Mesh3DPartitioning::getInstance();
+
+      auto nxx=pMeshPartitioning->nxx();
+      auto nyy=pMeshPartitioning->nyy();
+      auto nzz=pMeshPartitioning->nzz();
+
+      auto lnxx=pMeshPartitioning->lnxx();
+      auto lnyy=pMeshPartitioning->lnyy();
+      auto lnzz=pMeshPartitioning->lnzz();
+
+      auto priorityEvaluator=std::make_unique<MinimumCommunicationPriorityEvaluator>(nxx, nyy, nzz,
+                                                                                     lnxx, lnyy, lnzz);
+
+      priorityEvaluator->evaluate<Mesh3DPartitioning>(taskPriorities_);
+    }
+
+    static inline int getPriorityWrapper(const int taskType, const int ts, const int ii, const int jj, const int kk)
+    {
+      return Mesh3DPartitioning::getInstance()->getTaskPriorityManager()->getPriority(taskType, ts, ii, jj, kk);
+    }
+
+    inline int getPriority(const int taskType, const int ts, const int ii, const int jj, const int kk)
+    {
+      return taskPriorities_(taskType)(ii, jj, kk);
+    }
+
+  private:
+    SWS::TaskPriorities taskPriorities_;
+  };
+
+
+  inline TaskPriorityManager * getTaskPriorityManager()
+  {
+    return pTaskPriorityManager_;
+  }
 
 private:
   Mesh3DPartitioning(const int cx, const int cy, const int cz,
@@ -112,7 +163,11 @@ private:
   ~Mesh3DPartitioning();
 
 
+
   static Mesh3DPartitioning * pInstance_;
+
+  /* Priority manager */
+  TaskPriorityManager * pTaskPriorityManager_;
 
   /* Size of a single sub-block */
   const int cx_;

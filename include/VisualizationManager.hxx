@@ -48,6 +48,7 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 
 #include "Config.hxx"
 #include "Mesh3DPartitioning.hxx"
+#include "LogManager.hxx"
 
 class VisualizationManager{
 public:
@@ -452,12 +453,12 @@ private:
         return SWS::TIME_STEP;
       }
       else{
-        std::cerr << "Unknown colorization strategy: " << cs << ". Accepted values are CORE and TIME_STEP. Fallback to CORE.\n";
+        LOG(SWS::WARN, "Unknown colorization strategy {}. Accepted values are CORE and TIME_STEP. Fallback to CORE", cs);
         return SWS::CORE;
       }
     }
     else{
-      std::cerr << "Colorization strategy is not step. Using default strategy: CORE\n";
+      LOG(SWS::WARN, "Colorization strategy is not set. Using default strategy: CORE");
       return SWS::CORE;
     }
   }
