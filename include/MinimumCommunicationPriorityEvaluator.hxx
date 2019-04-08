@@ -60,21 +60,21 @@ public:
     }
 
     // Compute Maximum priority
-    int nCoucheMax = std::max({lnxx_, lnyy_, lnzz_});
+    int nCoucheMax = (std::max)({lnxx_, lnyy_, lnzz_});
     int offsetRankZero = 0;
     if ( nxx_!=lnxx_ ){
-      nCoucheMax = std::min(nCoucheMax, lnxx_);
-      offsetRankZero = std::max(offsetRankZero, lnxx_);
+      nCoucheMax = (std::min)(nCoucheMax, lnxx_);
+      offsetRankZero = (std::max)(offsetRankZero, lnxx_);
     }
 
     if ( nyy_!=lnyy_ ){
-      nCoucheMax = std::min(nCoucheMax, lnyy_);
-      offsetRankZero = std::max(offsetRankZero, lnyy_);
+      nCoucheMax = (std::min)(nCoucheMax, lnyy_);
+      offsetRankZero = (std::max)(offsetRankZero, lnyy_);
     }
 
     if ( nzz_!=lnzz_ ){
-      nCoucheMax = std::min(nCoucheMax, lnzz_);
-      offsetRankZero = std::max(offsetRankZero, lnzz_);
+      nCoucheMax = (std::min)(nCoucheMax, lnzz_);
+      offsetRankZero = (std::max)(offsetRankZero, lnzz_);
     }
 
     const int priorityMax = 4*( nCoucheMax ) * ( ( offsetRankZero ) + ( offsetRankZero - nCoucheMax + 1  ) ) / 2 - 1;
@@ -92,7 +92,7 @@ public:
         } else if (ii > nxx_-lnxx_) { // Last node
           distanceToCommunicationBorderXArray[ii]=lii;
         } else{
-          distanceToCommunicationBorderXArray[ii]=std::min(lnxx_-lii-1, lii);
+          distanceToCommunicationBorderXArray[ii]=(std::min)(lnxx_-lii-1, lii);
         }
       }
     }
@@ -110,7 +110,7 @@ public:
         } else if ( jj > nyy_-lnyy_) { // Last node
           distanceToCommunicationBorderYArray[jj]=ljj;
         } else {
-          distanceToCommunicationBorderYArray[jj]=std::min(lnyy_-ljj-1, ljj);
+          distanceToCommunicationBorderYArray[jj]=(std::min)(lnyy_-ljj-1, ljj);
         }
       }
     }
@@ -127,7 +127,7 @@ public:
         } else if ( kk > nzz_-lnzz_) { // Last node
           distanceToCommunicationBorderZArray[kk]=lkk;
         } else {
-          distanceToCommunicationBorderZArray[kk]=std::min(lnzz_-lkk-1, lkk);
+          distanceToCommunicationBorderZArray[kk]=(std::min)(lnzz_-lkk-1, lkk);
         }
       }
     }
@@ -146,14 +146,14 @@ public:
         minDistanceToCommunicationBorderX = distanceToCommunicationBorderXArray[ii];
         maxDistanceToCommunicationBorderX = distanceToCommunicationBorderXArray[ii];
       } else{
-        minDistanceToCommunicationBorderX = std::max({lnxx_, lnyy_, lnzz_});
+        minDistanceToCommunicationBorderX = (std::max)({lnxx_, lnyy_, lnzz_});
         maxDistanceToCommunicationBorderX = 0;
       }
 
       for(int jj=0; jj<nyy_; jj++){
         if(nyy_!=lnyy_) {
-          minDistanceToCommunicationBorderXY = std::min(minDistanceToCommunicationBorderX, distanceToCommunicationBorderYArray[jj]);
-          maxDistanceToCommunicationBorderXY = std::max(maxDistanceToCommunicationBorderX, distanceToCommunicationBorderYArray[jj]);
+          minDistanceToCommunicationBorderXY = (std::min)(minDistanceToCommunicationBorderX, distanceToCommunicationBorderYArray[jj]);
+          maxDistanceToCommunicationBorderXY = (std::max)(maxDistanceToCommunicationBorderX, distanceToCommunicationBorderYArray[jj]);
         } else {
           minDistanceToCommunicationBorderXY = minDistanceToCommunicationBorderX;
           maxDistanceToCommunicationBorderXY = maxDistanceToCommunicationBorderX;
@@ -161,8 +161,8 @@ public:
 
         for(int kk=0; kk<nzz_; kk++){
           if(nzz_!=lnzz_){
-            minDistanceToCommunicationBorder = std::min(minDistanceToCommunicationBorderXY, distanceToCommunicationBorderZArray[kk]);
-            maxDistanceToCommunicationBorder = std::max(maxDistanceToCommunicationBorderXY, distanceToCommunicationBorderZArray[kk]);
+            minDistanceToCommunicationBorder = (std::min)(minDistanceToCommunicationBorderXY, distanceToCommunicationBorderZArray[kk]);
+            maxDistanceToCommunicationBorder = (std::max)(maxDistanceToCommunicationBorderXY, distanceToCommunicationBorderZArray[kk]);
           }else{
             minDistanceToCommunicationBorder = minDistanceToCommunicationBorderXY;
             maxDistanceToCommunicationBorder = maxDistanceToCommunicationBorderXY;
@@ -188,8 +188,8 @@ public:
 
 
     // Version de Wil
-    // const int a=std::max({lnxx_, lnyy_, lnzz_});
-    // const int b=std::min(ii+1, lnxx_-lii) + std::min(jj+1, lnyy_-ljj) + std::min(kk+1, lnzz_-lkk);
+    // const int a=(std::max)({lnxx_, lnyy_, lnzz_});
+    // const int b=(std::min)(ii+1, lnxx_-lii) + (std::min)(jj+1, lnyy_-ljj) + (std::min)(kk+1, lnzz_-lkk);
     // const int c=(lnxx_ + lnyy_ + lnzz_)/2;
 
     // p=3*a-b-c;
