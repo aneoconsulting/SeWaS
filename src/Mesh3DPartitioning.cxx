@@ -161,15 +161,15 @@ Mesh3DPartitioning::Mesh3DPartitioning(const int cx, const int cy, const int cz,
   // This need to be generalized to take into account a custom mapping
   // For each dimension, we are adding halo (hnx,hny,hnz) to the orginal size of the Sub-block of cells
 
-  ccx_.reserve(lnxx_);
+  ccx_.resize(lnxx_);
   for (int ii=0; ii<lnxx_; ii++)
     ccx_[ii]=hnx+cx+hnx;
 
-  ccy_.reserve(lnyy_);
+  ccy_.resize(lnyy_);
   for (int jj=0; jj<lnyy_; jj++)
     ccy_[jj]=hny+cy+hny;
 
-  ccz_.reserve(lnzz_);
+  ccz_.resize(lnzz_);
   for (int kk=0; kk<lnzz_; kk++)
     ccz_[kk]=hnz+cz+hnz;
 
