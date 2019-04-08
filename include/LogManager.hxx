@@ -40,7 +40,7 @@ public:
   LogManager::getInstance()->log<LEVEL>(__VA_ARGS__);
 #else
 #define LOG(LEVEL, ...)                                 \
-  if constexpr (LEVEL <= SWS::ERROR){                   \
+  if constexpr (LEVEL <= SWS::LOG_ERROR){                   \
     LogManager::getInstance()->log<LEVEL>(__VA_ARGS__); \
   }
 #endif
@@ -55,22 +55,22 @@ public:
   inline void log(LogMsg &&... msg)
   {
     switch(level){
-    case SWS::TRACE:
+    case SWS::LOG_TRACE:
       logger_->trace(msg...);
       break;
-    case SWS::DEBUG:
+    case SWS::LOG_DEBUG:
       logger_->debug(msg...);
       break;
-    case SWS::INFO:
+    case SWS::LOG_INFO:
       logger_->info(msg...);
       break;
-    case SWS::WARN:
+    case SWS::LOG_WARN:
       logger_->warn(msg...);
       break;
-    case SWS::ERROR:
+    case SWS::LOG_ERROR:
       logger_->error(msg...);
       break;
-    case SWS::CRITICAL:
+    case SWS::LOG_CRITICAL:
       logger_->critical(msg...);
       break;
     default:

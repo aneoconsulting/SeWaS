@@ -34,6 +34,8 @@
 #include "VisualizationManager.hxx"
 #endif
 #include "MetricsManager.hxx"
+#include "SingletonFactory.hxx"
+
 
 
 #ifdef VISUALIZE_EXECUTION
@@ -64,11 +66,13 @@ int main (int argc, char* argv[])
   }
   auto pLogger=LogManager::getInstance();
 
+  auto aa = SingletonFactory<LogManager>::getInstance();
+  //auto bb = SingletonFactory<LogManager>::getInstance();
 
   /* Create a generic metrics manager */
   if (nullptr == MetricsManager::getInstance("SEWAS",
                                              {"Global", "Core simulation", "Initialization", "ComputeVelocity", "ComputeStress"})){
-    LOG(SWS::CRITICAL, "Unable to create the metrics manager. Exiting...");
+    LOG(SWS::LOG_CRITICAL, "Unable to create the metrics manager. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto mm=MetricsManager::getInstance();
@@ -92,7 +96,7 @@ int main (int argc, char* argv[])
 
   // Create the computational domain
   if (nullptr == CartesianMesh3D::getInstance(nx, ny, nz, ds)){
-    LOG(SWS::CRITICAL, "Unable to create the mesh. Exiting...");
+    LOG(SWS::LOG_CRITICAL, "Unable to create the mesh. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pCartesianMesh=CartesianMesh3D::getInstance();
@@ -104,7 +108,7 @@ int main (int argc, char* argv[])
   if (nullptr == Mesh3DPartitioning::getInstance(cx, cy, cz,
                                                  fdo.hnx(), fdo.hny(), fdo.hnz(),
                                                  P, Q, R)){
-    LOG(SWS::CRITICAL, "Unable to partition the mesh. Exiting...");
+    LOG(SWS::LOG_CRITICAL, "Unable to partition the mesh. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pMeshPartitioning=Mesh3DPartitioning::getInstance();
@@ -115,14 +119,14 @@ int main (int argc, char* argv[])
      - velocities of primary and seconday waves
   */
   if (nullptr == DataSet::getInstance(pm)){
-    LOG(SWS::CRITICAL, "Unable to create the dataset. Exiting...");
+    LOG(SWS::LOG_CRITICAL, "Unable to create the dataset. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pDataSet=DataSet::getInstance();
 
   // Create the seismic wave model
   if (nullptr == LinearSeismicWaveModel::getInstance(fdo, pm, nt, tmax)){
-    LOG(SWS::CRITICAL, "Unable to create the linear seismic wave model. Exiting...");
+    LOG(SWS::LOG_CRITICAL, "Unable to create the linear seismic wave model. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pSEWAS=LinearSeismicWaveModel::getInstance();
@@ -153,7 +157,7 @@ int main (int argc, char* argv[])
 
   mm->stop("Core simulation");
 
-  LOG(SWS::INFO, "MPI process {} completed the simulation", rank);
+  LOG(SWS::LOG_INFO, "MPI process {} completed the simulation", rank);
 
 #ifdef VISUALIZE_EXECUTION
   if (0 == rank){

@@ -58,13 +58,13 @@ namespace SWS
   };
 
   enum LogLevels{
-    OFF,
-    CRITICAL,
-    ERROR,
-    WARN,
-    INFO,
-    DEBUG,
-    TRACE
+    LOG_OFF,
+    LOG_CRITICAL,
+    LOG_ERROR,
+    LOG_WARN,
+    LOG_INFO,
+    LOG_DEBUG,
+    LOG_TRACE
   };
 
   enum DIJK {DI=0, DJ=0, DK=0}; // Identifiers to be used when applying the finite-difference operator

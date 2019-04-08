@@ -141,7 +141,7 @@ namespace SWS
 	dim=nz_;
 	break;
       default:
-        LOG(SWS::CRITICAL, "Unknown dimension {} requested within SpatialBlockField::dimension()", d);
+        LOG(SWS::LOG_CRITICAL, "Unknown dimension {} requested within SpatialBlockField::dimension()", d);
 	exit(SWS::UNKNOWN_SPATIAL_DIRECTION);
       }
 
