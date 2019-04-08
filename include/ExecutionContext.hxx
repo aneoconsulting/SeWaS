@@ -79,8 +79,6 @@ public:
   }
 
 private:
-#if SEWAS_DISTRIBUTED
-  static int world_;
-  static int rank_;
-#endif
+  static inline int world_=1;
+  static inline int rank_=0;
 };
