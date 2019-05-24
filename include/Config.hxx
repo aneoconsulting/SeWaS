@@ -32,7 +32,7 @@
 #include "Constants.hxx"
 #include "SpatialBlockField.hxx"
 
-#include "os.hxx"
+#include "OS.hxx"
 
 namespace SWS
 {
