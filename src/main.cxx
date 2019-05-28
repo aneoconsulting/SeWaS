@@ -34,7 +34,7 @@
 #include "VisualizationManager.hxx"
 #endif
 #include "MetricsManager.hxx"
-#include "SingletonFactory.hxx"
+//#include "SingletonFactory.hxx"
 
 
 
@@ -66,7 +66,7 @@ int main (int argc, char* argv[])
   }
   auto pLogger=LogManager::getInstance();
 
-  auto aa = SingletonFactory<LogManager>::getInstance();
+  //auto aa = SingletonFactory<LogManager>::getInstance();
   //auto bb = SingletonFactory<LogManager>::getInstance();
 
   /* Create a generic metrics manager */
