@@ -22,7 +22,7 @@
 
 #ifdef SEWAS_WITH_PARSEC
 #include <parsec/parsec_config.h>
-#include <parsec/vpmap.h>
+//#include <parsec/vpmap.h>
 #endif
 
 Mesh3DPartitioning * Mesh3DPartitioning::pInstance_ = nullptr;
@@ -90,8 +90,9 @@ Mesh3DPartitioning::rank_of(parsec_data_collection_t *desc, ...)
 int
 Mesh3DPartitioning::vpid_of(parsec_data_collection_t *desc, ...)
 {
-  int vpid;
+  int vpid=0;
 
+/*
   int ii, jj, kk;
   va_list ap;
   (void)desc;
@@ -108,6 +109,7 @@ Mesh3DPartitioning::vpid_of(parsec_data_collection_t *desc, ...)
   vpid=lii/(pInstance_->lnxx() / nb_vp);
 
   assert(vpid < nb_vp);
+*/
 
   return vpid;
 }
