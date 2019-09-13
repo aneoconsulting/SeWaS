@@ -434,7 +434,7 @@ namespace SWS
       std::vector<RealType> x(n), y(n);
       for(int i=0; i<nx_; i++){
         x.at(i)=i;
-        y.at(i)=data_(i,j0)(k0);
+        y.at(i)=operator()(i,j0,k0);
 
         of << int(x.at(i)) << " " << std::scientific << y.at(i) << std::endl;
       }
@@ -463,7 +463,7 @@ namespace SWS
 
       for(int i=0; i<nx_; i++){
         for(int j=0; j<ny_; j++){
-          of << i << " " << j << " " << std::scientific << data_(i,j)(k0) << std::endl;
+          of << i << " " << j << " " << std::scientific << operator()(i,j,k0) << std::endl;
         }
       }
 
@@ -552,8 +552,7 @@ namespace SWS
     std::vector<int> js_;
     std::vector<int> ks_;
 
-    // (i,j)(k)
-    // Eigen::Array<SpatialBlockField1D, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor|Eigen::AutoAlign> data_;
+    // (u)
     Eigen::Array<RealType, 1, Eigen::Dynamic, Eigen::RowMajor|Eigen::AutoAlign> data_;
   };
 
