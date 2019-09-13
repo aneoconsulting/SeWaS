@@ -182,7 +182,7 @@ namespace SWS
     inline const auto kStart() const { return hnz_; }
     inline const auto kEnd() const { return nz_-hnz_-pz_; }
 
-    inline auto index(const int i, const int j, const int k) const { return k*nx_*ny_+j*nx_+i; }
+    inline auto index(const int i, const int j, const int k) const { return (j * nx_ + i) * nz_ + k; }
 
     inline const auto & hasSource() const { return hasSource_; }
 
@@ -229,29 +229,27 @@ namespace SWS
 
     inline const auto get(const int i, const int j, const int shift = 0) const
     {
-      return data_.segment((j * nx_ + i) * nz_ + shift, nz_);
+      return data_.segment(index(i, j, shift), nz_);
     }
 
     inline auto operator()(const int i, const int j)
     {
-      // return Eigen::VectorBlock<SpatialBlockField1D>(data_(i, j), kStart(), kEnd() - kStart());
-      return data_.segment((j * nx_ + i) * nz_ + kStart(), kEnd() - kStart());
+      return data_.segment(index(i, j, kStart()), kEnd() - kStart());
     }
 
     inline const auto operator()(const int i, const int j) const
     {
-      // return Eigen::VectorBlock<const SpatialBlockField1D>(data_(i, j), kStart(), kEnd() - kStart());
-      return data_.segment((j * nx_ + i) * nz_ + kStart(), kEnd() - kStart());
+      return data_.segment(index(i, j, kStart()), kEnd() - kStart());
     }
 
     inline auto & operator()(const int i, const int j, const int k)
     {
-      return data_((j * nx_ + i) * nz_ + k);
+      return data_(index(i, j, k));
     }
 
     inline const auto & operator()(const int i, const int j, const int k) const
     {
-      return data_((j * nx_ + i) * nz_ + k);
+      return data_(index(i, j, k));
     }
 
     inline auto operator+(const SpatialBlockField & o) const
