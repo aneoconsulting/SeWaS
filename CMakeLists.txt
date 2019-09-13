@@ -58,6 +58,12 @@ if (PLOT_DATA)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DUSE_MATPLOTLIB>)
 endif(PLOT_DATA)
 
+option(ENABLE_IO "Enable performing IO at runtime (default OFF)" OFF)
+if (ENABLE_IO)
+  # Adjust compile options accordingly
+  add_compile_options(-DENABLE_IO)
+endif(ENABLE_IO)
+
 option(VISUALIZE_EXECUTION "Visualize the tasks execution (default OFF)" OFF)
 if(VISUALIZE_EXECUTION)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DUSE_VTK>)
