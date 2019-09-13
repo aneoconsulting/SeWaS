@@ -50,48 +50,20 @@ namespace SWS
   {
 
   public:
-    SpatialBlockField():nx_(1),
-			ny_(1),
-			nz_(1)
+    SpatialBlockField() : SpatialBlockField(1, 1, 1)
     {
-      // Add padding along z-axis for vectorization efficiency
-      px_=0;
-      py_=0;
-      pz_=std::ceil(RealType(nz_)/packetSize_)*packetSize_-nz_;
-
-      nz_+=pz_;
-
-      n_=nx_*ny_*nz_;
-
-      data_.resize(nx_,ny_);
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          auto & dij=data_(i,j);
-          dij.resize(1,nz_);
-        }
-      }
     }
 
-    SpatialBlockField(const int nx, const int ny, const int nz):nx_(nx),
-                                                                ny_(ny),
-                                                                nz_(nz)
+    SpatialBlockField(const int nx, const int ny, const int nz) : nx_(nx),
+                                                                  ny_(ny),
+                                                                  nz_(nz)
     {
-      // Add padding along z-axis for vectorization efficiency
-      px_=0;
-      py_=0;
-      pz_=std::ceil(RealType(nz_)/packetSize_)*packetSize_-nz_;
+      n_ = nx_ * ny_ * nz_;
 
-      nz_+=pz_;
+      // Add padding for vectorization efficiency
+      n_ = packetSize_ * ((n_ + packetSize_ - 1) / packetSize_);
 
-      n_=nx_*ny_*nz_;
-
-      data_.resize(nx_,ny_);
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          auto & dij=data_(i,j);
-          dij.resize(1,nz_);
-        }
-      }
+      data_.resize(1, n_);
     }
 
     SpatialBlockField(const SpatialBlockField & o)
@@ -166,22 +138,12 @@ namespace SWS
       ny_=ny;
       nz_=nz;
 
-      // Add padding along z-axis for vectorization efficiency
-      px_=0;
-      py_=0;
-      pz_=std::ceil(RealType(nz_)/packetSize_)*packetSize_-nz_;
-
-      nz_+=pz_;
-
       n_=nx_*ny_*nz_;
 
-      data_.resize(nx_,ny_);
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          auto & dij=data_(i,j);
-          dij.resize(1,nz_);
-        }
-      }
+      // Add padding for vectorization efficiency
+      n_ = packetSize_ * ((n_ + packetSize_ - 1) / packetSize_);
+
+      data_.resize(1,n_);
     }
 
     inline void addSource(const int is, const int js, const int ks)
@@ -228,22 +190,23 @@ namespace SWS
     inline const auto & js() const { return js_; }
     inline const auto & ks() const { return ks_; }
 
-    inline auto & operator=(const SpatialBlockField && o)
+    inline auto &operator=(const SpatialBlockField &&o)
     {
-      if (this != &o){
-	nx_=o.nx_;
-	ny_=o.ny_;
-	nz_=o.nz_;
+      if (this != &o)
+      {
+        nx_ = o.nx_;
+        ny_ = o.ny_;
+        nz_ = o.nz_;
 
-	n_=o.n_;
+        n_ = o.n_;
 
-        hnx_=o.hnx_;
-        hny_=o.hny_;
-        hnz_=o.hnz_;
+        hnx_ = o.hnx_;
+        hny_ = o.hny_;
+        hnz_ = o.hnz_;
 
-        px_=o.px_;
-        py_=o.py_;
-        pz_=o.pz_;
+        px_ = o.px_;
+        py_ = o.py_;
+        pz_ = o.pz_;
 
         // FIXME we just need to copy the data without modifying source locations
         // hasSource_=o.hasSource_;
@@ -252,202 +215,159 @@ namespace SWS
         // js_=o.js_;
         // ks_=o.ks_;
 
-        data_=o.data_;
+        data_ = o.data_;
       }
       return *this;
     }
 
-    inline auto & operator=(const RealType & v)
+    inline auto &operator=(const RealType &v)
     {
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          data_(i,j)=v;
-        }
-      }
+      data_ = v;
+
       return *this;
     }
 
-
-    inline const auto & get(const int i, const int j) const
+    inline const auto get(const int i, const int j, const int shift = 0) const
     {
-      return data_(i,j);
+      return data_.segment((j * nx_ + i) * nz_ + shift, nz_);
     }
-
-    inline const auto & get(const int i, const int j, const int k) const
-    {
-      return data_(i,j)(k);
-    }
-
 
     inline auto operator()(const int i, const int j)
     {
-      return Eigen::VectorBlock<SpatialBlockField1D>(data_(i,j),kStart(),kEnd()-kStart());
+      // return Eigen::VectorBlock<SpatialBlockField1D>(data_(i, j), kStart(), kEnd() - kStart());
+      return data_.segment((j * nx_ + i) * nz_ + kStart(), kEnd() - kStart());
     }
 
     inline const auto operator()(const int i, const int j) const
     {
-      return Eigen::VectorBlock<const SpatialBlockField1D>(data_(i,j),kStart(),kEnd()-kStart());
+      // return Eigen::VectorBlock<const SpatialBlockField1D>(data_(i, j), kStart(), kEnd() - kStart());
+      return data_.segment((j * nx_ + i) * nz_ + kStart(), kEnd() - kStart());
     }
-
 
     inline auto & operator()(const int i, const int j, const int k)
     {
-      return data_(i,j)(k);
+      return data_((j * nx_ + i) * nz_ + k);
     }
 
     inline const auto & operator()(const int i, const int j, const int k) const
     {
-      return data_(i,j)(k);
+      return data_((j * nx_ + i) * nz_ + k);
     }
 
     inline auto operator+(const SpatialBlockField & o) const
     {
-      SpatialBlockField r(nx_,ny_,nz_);
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          r.data_(i,j)=data_(i,j)+o.data()(i,j);
-        }
-      }
+      SpatialBlockField r(nx_, ny_, nz_);
+
+      r.data_ = data_ + o.data_;
+
       return r;
     }
 
     inline auto & operator+=(const SpatialBlockField & o)
     {
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          data_(i,j)+=o.data()(i,j);
-        }
-      }
+      data_ += o.data_;
+
       return *this;
     }
 
     inline auto operator-(const SpatialBlockField & o) const
     {
-      SpatialBlockField r(nx_,ny_,nz_);
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          r.data_(i,j)=data_(i,j)-o.data()(i,j);
-        }
-      }
+      SpatialBlockField r(nx_, ny_, nz_);
+
+      r.data_ = data_ - o.data_;
+
       return r;
     }
 
     inline auto & operator-=(const SpatialBlockField & o)
     {
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          data_(i,j)-=o.data()(i,j);
-        }
-      }
+      data_ -= o.data_;
+
       return *this;
     }
 
     inline auto operator*(const SpatialBlockField & o) const
     {
-      SpatialBlockField r(nx_,ny_,nz_);
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          r.data_(i,j)=data_(i,j)*o.data()(i,j);
-        }
-      }
+      SpatialBlockField r(nx_, ny_, nz_);
+
+      r.data_ = data_ * o.data_;
+
       return r;
     }
 
     inline auto operator*(const RealType & v) const
     {
-      SpatialBlockField r(nx_,ny_,nz_);
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          r.data_(i,j)=v*data_(i,j);
-        }
-      }
+      SpatialBlockField r(nx_, ny_, nz_);
+
+      r.data_ = v * data_;
+
       return r;
     }
 
     inline friend SpatialBlockField operator*(const RealType & v, const SpatialBlockField & o)
     {
-      auto nx=o.dimension(X);
-      auto ny=o.dimension(Y);
-      auto nz=o.dimension(Z);
+      auto nx = o.dimension(X);
+      auto ny = o.dimension(Y);
+      auto nz = o.dimension(Z);
 
-      SpatialBlockField r(nx,ny,nz);
-      for (int i=0; i<nx; i++){
-        for (int j=0; j<ny; j++){
-          r.data_(i,j)=v*o.data_(i,j);
-        }
-      }
+      SpatialBlockField r(nx, ny, nz);
+
+      r.data_ = v * o.data_;
+
       return r;
     }
 
     inline auto & operator*=(const RealType & v)
     {
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          data_(i,j)*=v;
-        }
-      }
+      data_ *= v;
+
       return *this;
     }
 
     inline auto & operator*=(const SpatialBlockField & o)
     {
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          data_(i,j)*=o.data()(i,j);
-        }
-      }
+      data_ *= o.data_;
+
       return *this;
     }
 
     inline friend SpatialBlockField operator/(const RealType & v, const SpatialBlockField & o)
     {
-      auto nx=o.dimension(X);
-      auto ny=o.dimension(Y);
-      auto nz=o.dimension(Z);
+      auto nx = o.dimension(X);
+      auto ny = o.dimension(Y);
+      auto nz = o.dimension(Z);
 
-      SpatialBlockField r(nx,ny,nz);
-      for (int i=0; i<nx; i++){
-        for (int j=0; j<ny; j++){
-          r.data_(i,j)=v/o.data_(i,j);
-        }
-      }
+      SpatialBlockField r(nx, ny, nz);
+
+      r.data_ = v / o.data_;
 
       return r;
     }
 
     inline friend SpatialBlockField operator/(const SpatialBlockField & o, const RealType & v)
     {
-      auto nx=o.dimension(X);
-      auto ny=o.dimension(Y);
-      auto nz=o.dimension(Z);
+      auto nx = o.dimension(X);
+      auto ny = o.dimension(Y);
+      auto nz = o.dimension(Z);
 
-      SpatialBlockField r(nx,ny,nz);
-      for (int i=0; i<nx; i++){
-        for (int j=0; j<ny; j++){
-          r.data_(i,j)=o.data_(i,j)/v;
-        }
-      }
+      SpatialBlockField r(nx, ny, nz);
+
+      r.data_ = o.data_ / v;
 
       return r;
     }
 
     inline auto & operator/=(const RealType & v)
     {
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          data_(i,j)/=v;
-        }
-      }
+      data_ /= v;
+
       return *this;
     }
 
     inline auto & operator/=(const SpatialBlockField & o)
     {
-      for (int i=0; i<nx_; i++){
-        for (int j=0; j<ny_; j++){
-          data_(i,j)/=o.data()(i,j);
-        }
-      }
+      data_ /= o.data_;
+
       return *this;
     }
 
@@ -480,20 +400,23 @@ namespace SWS
 
     inline const auto norm2() const
     {
-      const auto _iStart=iStart();
-      const auto _jStart=jStart();
-      const auto _kStart=kStart();
+      const auto _iStart = iStart();
+      const auto _jStart = jStart();
+      const auto _kStart = kStart();
 
-      const auto _iEnd=iEnd();
-      const auto _jEnd=jEnd();
-      const auto _kEnd=kEnd();
+      const auto _iEnd = iEnd();
+      const auto _jEnd = jEnd();
+      const auto _kEnd = kEnd();
 
-      SWS::RealType n2=0.0;
+      SWS::RealType n2 = 0.0;
 
-      for (int i=_iStart; i<_iEnd; i++){
-        for (int j=_jStart; j<_jEnd; j++){
-          for (int k=_kStart; k<_kEnd; k++){
-            n2+=get(i,j,k)*get(i,j,k);
+      for (int i = _iStart; i < _iEnd; i++)
+      {
+        for (int j = _jStart; j < _jEnd; j++)
+        {
+          for (int k = _kStart; k < _kEnd; k++)
+          {
+            n2 += operator()(i, j, k) * operator()(i, j, k);
           }
         }
       }
@@ -632,7 +555,8 @@ namespace SWS
     std::vector<int> ks_;
 
     // (i,j)(k)
-    Eigen::Array<SpatialBlockField1D, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor|Eigen::AutoAlign> data_;
+    // Eigen::Array<SpatialBlockField1D, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor|Eigen::AutoAlign> data_;
+    Eigen::Array<RealType, 1, Eigen::Dynamic, Eigen::RowMajor|Eigen::AutoAlign> data_;
   };
 
 }

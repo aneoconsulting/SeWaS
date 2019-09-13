@@ -175,7 +175,7 @@ public:
       auto _cz=kEnd-kStart;
 
 #ifdef EIGEN_VECTORIZATION
-      return c1*fijk.get(i,j).segment(kStart+d1,_cz)+c2*fijk.get(i,j).segment(kStart-d2,_cz)+c3*fijk.get(i,j).segment(kStart+d3,_cz)+c4*fijk.get(i,j).segment(kStart-d4,_cz);
+      return c1 * fijk.get(i, j, kStart + d1) + c2 * fijk.get(i, j, kStart - d2) + c3 * fijk.get(i, j, kStart + d3) + c4 * fijk.get(i, j, kStart - d4);
 #else
       for (int k=kStart; k<kEnd; k++){
         rij(k) = c1*fijk(i,j,k+d1)+c2*fijk(i,j,k-d2)+c3*fijk(i,j,k+d3)+c4*fijk(i,j,k-d4);
