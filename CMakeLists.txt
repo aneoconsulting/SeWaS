@@ -111,9 +111,9 @@ endif(VECTORIZE_COMPUTATIONS)
 
 option(SEWAS_WITH_PARSEC "Use PaRSEC for task-scheduling (default ON)" ON)
 
-if (SEWAS_DISTRIBUTED AND NOT SEWAS_WITH_PARSEC)
+if (SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
   message(FATAL_ERROR "The distributed version of SeWaS relies on PaRSEC.")
-endif(SEWAS_DISTRIBUTED AND NOT SEWAS_WITH_PARSEC)
+endif(SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
 
 if (SEWAS_DISTRIBUTED)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DSEWAS_DISTRIBUTED>)
@@ -237,6 +237,14 @@ endif(BUILD_TESTING)
 # -------------------------------------------------------------------
 find_package(spdlog 1.3 CONFIG REQUIRED)
 set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} spdlog::spdlog)
+
+# -------------------------------------------------------------------
+# ADIOS2 is used for IO
+# -------------------------------------------------------------------
+if (ENABLE_IO)
+  find_package(ADIOS2 REQUIRED)
+  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${ADIOS2_LIBRARIES})
+endif(ENABLE_IO)
 
 # -------------------------------------------------------------------
 # MPI
