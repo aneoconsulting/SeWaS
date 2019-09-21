@@ -37,7 +37,7 @@ namespace SWS
   constexpr auto PARSECRealType=parsec_datatype_double_t;
 #endif
 
-  constexpr auto Ordering = Orderings::X_MAJOR;
+  constexpr auto Ordering = Orderings::Y_MAJOR;
 
   // Data alignment
   constexpr int Alignment=64;
