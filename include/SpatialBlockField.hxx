@@ -229,7 +229,7 @@ namespace SWS
 
     inline const auto get(const int i, const int j, const int shift = 0) const
     {
-      return data_.segment(index(i, j, shift), nz_);
+      return data_.segment(index(i, j, shift), kEnd() - kStart());
     }
 
     inline auto operator()(const int i, const int j)
