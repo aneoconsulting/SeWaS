@@ -476,8 +476,29 @@ namespace SWS
 #endif
     }
 
-    inline void plot3D() const
+    inline void plot3D(std::string name) const
     {
+      std::ofstream of(name + ".txt");
+
+      const auto _iStart = iStart();
+      const auto _jStart = jStart();
+      const auto _kStart = kStart();
+
+      const auto _iEnd = iEnd();
+      const auto _jEnd = jEnd();
+      const auto _kEnd = kEnd();
+
+      for (int i = _iStart; i < _iEnd; i++)
+      {
+        for (int j = _jStart; j < _jEnd; j++)
+        {
+          for (int k = _kStart; k < _kEnd; k++)
+    {
+            of << i << " " << j << " " << k << " " << std::scientific << operator()(i, j, k) << std::endl;
+          }
+        }
+      }
+      of.close();
     }
 
     inline void plotHalo(const SWS::Locations l, const std::string name) const
