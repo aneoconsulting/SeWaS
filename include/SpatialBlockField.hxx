@@ -512,7 +512,7 @@ namespace SWS
 
           for (int j=0; j<ny_; j++){
             for (int k=0; k<nz_; k++){
-              of << j << " " << k << " " << std::scientific << data_(i,j)(k) << std::endl;
+              of << j << " " << k << " " << std::scientific << operator()(i,j,k) << std::endl;
             }
           }
 
@@ -526,7 +526,7 @@ namespace SWS
 
           for (int j=0; j<ny_; j++){
             for (int k=0; k<nz_; k++){
-              of << j << " " << k << " " << std::scientific << data_(i,j)(k) << std::endl;
+              of << j << " " << k << " " << std::scientific << operator()(i,j,k) << std::endl;
             }
           }
 
