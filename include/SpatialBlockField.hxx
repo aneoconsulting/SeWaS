@@ -227,6 +227,11 @@ namespace SWS
       return *this;
     }
 
+    inline auto get(const int i, const int j, const int shift = 0)
+    {
+      return data_.segment(index(i, j, shift), kEnd() - kStart());
+    }
+
     inline const auto get(const int i, const int j, const int shift = 0) const
     {
       return data_.segment(index(i, j, shift), kEnd() - kStart());
@@ -234,12 +239,12 @@ namespace SWS
 
     inline auto operator()(const int i, const int j)
     {
-      return data_.segment(index(i, j, kStart()), kEnd() - kStart());
+      return get(i, j, kStart());
     }
 
     inline const auto operator()(const int i, const int j) const
     {
-      return data_.segment(index(i, j, kStart()), kEnd() - kStart());
+      return get(i, j, kStart());
     }
 
     inline auto & operator()(const int i, const int j, const int k)
