@@ -197,6 +197,12 @@ int main (int argc, char* argv[])
   // Syz(0,0,0).plot1D(j0, k0, std::string("Syz-0.0.0") + "-" + std::to_string(rank));
 #endif
 
+  if (0 == rank){
+    LOG(SWS::LOG_INFO, "||Vx(0,0,0)||^2 = {}", pSEWAS->v(SWS::X)(0,0,0).norm2());
+    LOG(SWS::LOG_INFO, "||Vy(0,0,0)||^2 = {}", pSEWAS->v(SWS::Y)(0,0,0).norm2());
+    LOG(SWS::LOG_INFO, "||Vz(0,0,0)||^2 = {}", pSEWAS->v(SWS::Z)(0,0,0).norm2());
+  }
+  adios->finalize();
   // Release memory
   CartesianMesh3D::releaseInstance();
   DataSet::releaseInstance();
