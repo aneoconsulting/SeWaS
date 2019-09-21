@@ -145,9 +145,9 @@ kk = 0 .. nzz-1
 // Data flow
 CTL I    <- (ts == 2)                      ? I    InitializeFields(ii, jj, kk)
 
-CTL SxxH <- ( d == X	        && ts > 2) ? SxxH UpdateStress(XX, ts-1, ii, jj, kk)
-CTL SyyH <- ( d == Y	        && ts > 2) ? SyyH UpdateStress(YY, ts-1, ii, jj, kk)
-CTL SzzH <- ( d == Z	        && ts > 2) ? SzzH UpdateStress(ZZ, ts-1, ii, jj, kk)
+CTL SxxH <- ( 	                   ts > 2) ? SxxH UpdateStress(XX, ts-1, ii, jj, kk)
+CTL SyyH <- ( 	                   ts > 2) ? SyyH UpdateStress(YY, ts-1, ii, jj, kk)
+CTL SzzH <- ( 	                   ts > 2) ? SzzH UpdateStress(ZZ, ts-1, ii, jj, kk)
 CTL SxyH <- ((d == X || d == Y) && ts > 2) ? SxyH UpdateStress(XY, ts-1, ii, jj, kk)
 CTL SxzH <- ((d == X || d == Z) && ts > 2) ? SxzH UpdateStress(XZ, ts-1, ii, jj, kk)
 CTL SyzH <- ((d == Y || d == Z) && ts > 2) ? SyzH UpdateStress(YZ, ts-1, ii, jj, kk)
@@ -443,9 +443,9 @@ READ STop       <-  (kk < nzz-1 && ts < nt-1) ? SBottom   ExtractStressHalo(sc, 
 CTL S           <- (ts < nt-1) ? S ExtractStressHalo(sc, ts, ii, jj, kk)
 
 
-CTL SxxH        -> (sc == XX && ts < nt-1) ? SxxH ComputeVelocity(X, ts+1, ii, jj, kk)
-CTL SyyH        -> (sc == YY && ts < nt-1) ? SyyH ComputeVelocity(Y, ts+1, ii, jj, kk)
-CTL SzzH        -> (sc == ZZ && ts < nt-1) ? SzzH ComputeVelocity(Z, ts+1, ii, jj, kk)
+CTL SxxH        -> (sc == XX && ts < nt-1) ? SxxH ComputeVelocity(X..Z, ts+1, ii, jj, kk)
+CTL SyyH        -> (sc == YY && ts < nt-1) ? SyyH ComputeVelocity(X..Z, ts+1, ii, jj, kk)
+CTL SzzH        -> (sc == ZZ && ts < nt-1) ? SzzH ComputeVelocity(X..Z, ts+1, ii, jj, kk)
 CTL SxyH        -> (sc == XY && ts < nt-1) ? SxyH ComputeVelocity(X, ts+1, ii, jj, kk)
                 -> (sc == XY && ts < nt-1) ? SxyH ComputeVelocity(Y, ts+1, ii, jj, kk)
 CTL SxzH        -> (sc == XZ && ts < nt-1) ? SxzH ComputeVelocity(X, ts+1, ii, jj, kk)
