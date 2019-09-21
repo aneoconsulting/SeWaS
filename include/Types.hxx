@@ -27,6 +27,8 @@
 
 #include <Eigen/Core>
 
+#include "Indexer.hxx"
+
 namespace SWS
 {
   using RealType=double;
@@ -34,6 +36,8 @@ namespace SWS
 #ifdef SEWAS_WITH_PARSEC
   constexpr auto PARSECRealType=parsec_datatype_double_t;
 #endif
+
+  constexpr auto Ordering = Orderings::X_MAJOR;
 
   // Data alignment
   constexpr int Alignment=64;

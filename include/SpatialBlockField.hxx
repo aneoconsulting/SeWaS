@@ -37,6 +37,7 @@
 #endif
 
 #include "Constants.hxx"
+#include "Indexer.hxx"
 #include "LogManager.hxx"
 
 /*
@@ -56,7 +57,8 @@ namespace SWS
 
     SpatialBlockField(const int nx, const int ny, const int nz) : nx_(nx),
                                                                   ny_(ny),
-                                                                  nz_(nz)
+                                                                  nz_(nz),
+                                                                  indexer_(nx_, ny_, nz_)
     {
       n_ = nx_ * ny_ * nz_;
 
@@ -182,7 +184,7 @@ namespace SWS
     inline const auto kStart() const { return hnz_; }
     inline const auto kEnd() const { return nz_-hnz_-pz_; }
 
-    inline auto index(const int i, const int j, const int k) const { return (j * nx_ + i) * nz_ + k; }
+    inline auto index(const int i, const int j, const int k) const { return indexer_(i, j, k); }
 
     inline const auto & hasSource() const { return hasSource_; }
 
@@ -493,7 +495,7 @@ namespace SWS
         for (int j = _jStart; j < _jEnd; j++)
         {
           for (int k = _kStart; k < _kEnd; k++)
-    {
+          {
             of << i << " " << j << " " << k << " " << std::scientific << operator()(i, j, k) << std::endl;
           }
         }
@@ -577,6 +579,9 @@ namespace SWS
     std::vector<int> is_;
     std::vector<int> js_;
     std::vector<int> ks_;
+
+    /* Functor for converting a 3D coordinates into a linear index*/
+    Indexer<SWS::Ordering> indexer_;
 
     // (u)
     Eigen::Array<RealType, 1, Eigen::Dynamic, Eigen::RowMajor|Eigen::AutoAlign> data_;
