@@ -150,7 +150,8 @@ set(SOURCES
   src/VisualizationManager.cxx
   src/MetricsManager.cxx
   src/ExecutionContext.cxx
-  src/LogManager.cxx)
+  src/LogManager.cxx
+  src/IOManager.cxx)
 
 include_directories(include)
 
