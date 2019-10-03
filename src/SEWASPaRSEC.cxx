@@ -136,6 +136,13 @@ void SEWASPaRSEC::buildDAG()
                                                        nullptr,
                                                        nullptr,
 #endif
+#ifdef ENABLE_IO
+                                                       (void *) &IOManager::dumpVelocityWrapper,
+                                                       (void *) &IOManager::dumpStressWrapper,
+#else
+                                                       nullptr,
+                                                       nullptr,
+#endif
                                                        (int *) &Mesh3DPartitioning::TaskPriorityManager::getPriorityWrapper,
                                                        pDDesc_);
   assert(nullptr != pDAG_);
