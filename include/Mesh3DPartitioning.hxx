@@ -60,6 +60,8 @@ public:
   inline const auto & lnyy() const{ return lnyy_; }
   inline const auto & lnzz() const{ return lnzz_; }
 
+  inline const auto & lncells() const{ return lncells_; }
+
   inline const auto lii(const int ii) const { return ii%lnxx_; }
   inline const auto ljj(const int jj) const { return jj%lnyy_; }
   inline const auto lkk(const int kk) const { return kk%lnzz_; }
@@ -193,6 +195,9 @@ private:
   int nxx_;
   int nyy_;
   int nzz_;
+
+  /* Local number of cells belonging to the current process */
+  int lncells_;
 
   /* Local number of sub-blocks on each of the three axes */
   int lnxx_;

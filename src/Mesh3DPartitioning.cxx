@@ -175,6 +175,8 @@ Mesh3DPartitioning::Mesh3DPartitioning(const int cx, const int cy, const int cz,
   for (int kk=0; kk<lnzz_; kk++)
     ccz_[kk]=hnz+cz+hnz;
 
+  lncells_ = (lnxx_ * lnyy_ * lnzz_) * (ccx_[0] * ccy_[0] * ccz_[0]);
+
   /* Create an instance of the task priority manager */
   pTaskPriorityManager_ = new TaskPriorityManager();
 }
