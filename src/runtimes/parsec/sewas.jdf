@@ -28,6 +28,9 @@ extern "C" %{
   typedef void (*extractStressHalo_t  )(const int l, const int sc, const int ts, const int ii, const int jj, const int kk, void * sigmaH);
   typedef void (*updateStress_t       )(const int l, const int sc, const int ts, const int ii, const int jj, const int kk, void * sigmaH);
 
+  typedef void (*dumpVelocity_t    )(const int d,  const int ts, const int ii, const int jj, const int kk);
+  typedef void (*dumpStress_t      )(const int sc, const int ts, const int ii, const int jj, const int kk);
+
   typedef void (*displayVelocity_t    )(const int d,  const int ts, const int ii, const int jj, const int kk, const int tid);
   typedef void (*displayStress_t      )(const int sc, const int ts, const int ii, const int jj, const int kk, const int tid);
 
@@ -89,6 +92,9 @@ updateStress		        [type = "void *"]
 
 displayVelocity                 [type = "void *"]
 displayStress                   [type = "void *"]
+
+dumpVelocity                 [type = "void *"]
+dumpStress                   [type = "void *"]
 
 getPriority                     [type = "int *"]
 
@@ -152,7 +158,9 @@ CTL SxyH <- ((d == X || d == Y) && ts > 2) ? SxyH UpdateStress(XY, ts-1, ii, jj,
 CTL SxzH <- ((d == X || d == Z) && ts > 2) ? SxzH UpdateStress(XZ, ts-1, ii, jj, kk)
 CTL SyzH <- ((d == Y || d == Z) && ts > 2) ? SyzH UpdateStress(YZ, ts-1, ii, jj, kk)
 
-CTL V    -> V ExtractVelocityHalo(d, ts, ii, jj, kk)
+CTL V    <- (ts > 2) ? V DumpVelocity(d, ts-2, ii, jj, kk)
+         -> V ExtractVelocityHalo(d, ts, ii, jj, kk)
+         -> V DumpVelocity(d, ts, ii, jj, kk)
          -> V DisplayVelocity(d, ts, ii, jj, kk)
 
 ; %{ return ((getPriority_t) getPriority)(COMPUTE_VELOCITY, ts, ii, jj, kk); %}
@@ -336,6 +344,7 @@ CTL VyH <- (sc == XX || sc == YY || sc == ZZ || sc == XY || sc == YZ) ? VyH Upda
 CTL VzH <- (sc == XX || sc == YY || sc == ZZ || sc == XZ || sc == YZ) ? VzH UpdateVelocity(Z, ts-1, ii, jj, kk)
 
 CTL S   -> (ts < nt-1) ? S ExtractStressHalo(sc, ts, ii, jj, kk)
+        -> S DumpStress(sc, ts, ii, jj, kk)
         -> S DisplayStress(sc, ts, ii, jj, kk)
 
 ; %{ return ((getPriority_t) getPriority)(COMPUTE_STRESS, ts, ii, jj, kk); %}
@@ -486,6 +495,39 @@ BODY
 END
 
 
+DumpVelocity(d, ts, ii, jj, kk)
+
+// Execution space
+d  = 0 .. dim-1
+ts = 2 .. nt-2 .. 2
+ii = 0 .. nxx-1
+jj = 0 .. nyy-1
+kk = 0 .. nzz-1
+
+
+// Parallel partitioning
+: ddesc(ii, jj, kk)
+
+
+CTL V    <- V ComputeVelocity(d, ts, ii, jj, kk)
+         -> (ts < nt-2) ? V ComputeVelocity(d, ts+2, ii, jj, kk)
+
+
+// // Priority
+// ; %{ return ((getPriority_t) getPriority)(DUMP_VELOCITY, ts, ii, jj, kk); %}
+
+
+BODY
+{
+#ifdef ENABLE_IO
+
+  ((dumpVelocity_t) dumpVelocity) (d, ts, ii, jj, kk);
+
+#endif
+}
+END
+
+
 
 DisplayVelocity(d, ts, ii, jj, kk)
 
@@ -513,6 +555,38 @@ BODY
 #ifdef VISUALIZE_EXECUTION
 
   ((displayVelocity_t) displayVelocity) (d, ts, ii, jj, kk, 0);
+
+#endif
+}
+END
+
+
+DumpStress(sc, ts, ii, jj, kk)
+
+// Execution space
+sc = 0 .. nsc-1
+ts = 3 .. nt-1 .. 2
+ii = 0 .. nxx-1
+jj = 0 .. nyy-1
+kk = 0 .. nzz-1
+
+
+// Parallel partitioning (visualization is performed on the master process)
+: ddesc(ii, jj, kk)
+
+
+CTL S    <- S ComputeStress(sc, ts, ii, jj, kk)
+
+
+// // Priority
+// ; %{ return ((getPriority_t) getPriority)(DUMP_STRESS, ts, ii, jj, kk); %}
+
+
+BODY
+{
+#ifdef ENABLE_IO
+
+  ((dumpStress_t) dumpStress) (sc, ts, ii, jj, kk);
 
 #endif
 }
