@@ -25,7 +25,7 @@ enum Orderings
     Z_MAJOR
 };
 
-template<short Ordering>
+template<Orderings Ordering>
 class Indexer
 {
 public:
