@@ -37,6 +37,7 @@
 #include "ExternalSource.hxx"
 #include "LinearSeismicWaveModel.hxx"
 #include "HaloManager.hxx"
+#include "IOManager.hxx"
 #include "Mesh3DPartitioning.hxx"
 #include "SEWASSequential.hxx"
 #include "SEWASPaRSEC.hxx"
@@ -707,23 +708,30 @@ LinearSeismicWaveModel::LinearSeismicWaveModel(const CentralFDOperator & fdo,
   LOG(SWS::LOG_INFO, "Adjusted time-step: Dt={}", dt_);
   LOG(SWS::LOG_INFO, "Adjusted time-step count: Nt={}", nt_);
 
+  auto pMesh = Mesh3DPartitioning::getInstance();
+
   // Velocity
   for (auto d : {SWS::X, SWS::Y, SWS::Z}){
-    Mesh3DPartitioning::getInstance()->buildSpatialField(v_(d));
+    pMesh->buildSpatialField(v_(d));
   }
   setVelocitySourceLocations();
 
   // Stress field
   for (auto sc : {SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ}){
-    Mesh3DPartitioning::getInstance()->buildSpatialField(sigma_(sc));
+    pMesh->buildSpatialField(sigma_(sc));
   }
 
   if (nullptr == HaloManager::getInstance(sigma_, v_, fdo_.hnx(), fdo_.hny(), fdo_.hnz())){
     LOG(SWS::LOG_CRITICAL, "Unable to create an instance of HaloManager. Exiting...");
     exit(SWS::OBJECT_CREATION_FAILURE);
   }
+
+    // Build the IO manager
+  IOManager::getInstance().init();
 }
 
 LinearSeismicWaveModel::~LinearSeismicWaveModel(){
+  IOManager::getInstance().finalize();
+
   HaloManager::releaseInstance();
 }
