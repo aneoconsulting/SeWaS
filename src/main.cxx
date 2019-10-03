@@ -34,8 +34,6 @@
 #include "VisualizationManager.hxx"
 #endif
 #include "MetricsManager.hxx"
-//#include "SingletonFactory.hxx"
-
 
 
 #ifdef VISUALIZE_EXECUTION
@@ -65,9 +63,6 @@ int main (int argc, char* argv[])
     return SWS::OBJECT_CREATION_FAILURE;
   }
   auto pLogger=LogManager::getInstance();
-
-  //auto aa = SingletonFactory<LogManager>::getInstance();
-  //auto bb = SingletonFactory<LogManager>::getInstance();
 
   /* Create a generic metrics manager */
   if (nullptr == MetricsManager::getInstance("SEWAS",
@@ -168,41 +163,12 @@ int main (int argc, char* argv[])
 
   ExecutionContext::barrier();
 
-#if 0
-  const auto & Sxx=pSEWAS->sigma(SWS::XX);
-  const auto & Syy=pSEWAS->sigma(SWS::YY);
-  const auto & Szz=pSEWAS->sigma(SWS::ZZ);
-  const auto & Sxy=pSEWAS->sigma(SWS::XY);
-  const auto & Sxz=pSEWAS->sigma(SWS::XZ);
-  const auto & Syz=pSEWAS->sigma(SWS::YZ);
-
-  const auto & Vx=pSEWAS->v(SWS::X);
-  const auto & Vy=pSEWAS->v(SWS::Y);
-  const auto & Vz=pSEWAS->v(SWS::Z);
-
-  // int j0=Vx(0,0,0).js()[0]; // output plane
-  // int k0=Vx(0,0,0).ks()[0]; // output plane
-
-  // Vx(0,0,0).plot2D(k0, std::string("Vx-0.0.0") + "-" + std::to_string(rank));
-
-  // Vx(0,0,0).plot1D(j0, k0, std::string("Vx-0.0.0") + "-" + std::to_string(rank));
-  // Vy(0,0,0).plot1D(j0, k0, std::string("Vy-0.0.0") + "-" + std::to_string(rank));
-  // Vz(0,0,0).plot1D(j0, k0, std::string("Vz-0.0.0") + "-" + std::to_string(rank));
-
-  // Sxx(0,0,0).plot1D(j0, k0, std::string("Sxx-0.0.0") + "-" + std::to_string(rank));
-  // Syy(0,0,0).plot1D(j0, k0, std::string("Syy-0.0.0") + "-" + std::to_string(rank));
-  // Szz(0,0,0).plot1D(j0, k0, std::string("Szz-0.0.0") + "-" + std::to_string(rank));
-  // Sxy(0,0,0).plot1D(j0, k0, std::string("Sxy-0.0.0") + "-" + std::to_string(rank));
-  // Sxz(0,0,0).plot1D(j0, k0, std::string("Sxz-0.0.0") + "-" + std::to_string(rank));
-  // Syz(0,0,0).plot1D(j0, k0, std::string("Syz-0.0.0") + "-" + std::to_string(rank));
-#endif
-
   if (0 == rank){
     LOG(SWS::LOG_INFO, "||Vx(0,0,0)||^2 = {}", pSEWAS->v(SWS::X)(0,0,0).norm2());
     LOG(SWS::LOG_INFO, "||Vy(0,0,0)||^2 = {}", pSEWAS->v(SWS::Y)(0,0,0).norm2());
     LOG(SWS::LOG_INFO, "||Vz(0,0,0)||^2 = {}", pSEWAS->v(SWS::Z)(0,0,0).norm2());
   }
-  adios->finalize();
+
   // Release memory
   CartesianMesh3D::releaseInstance();
   DataSet::releaseInstance();
