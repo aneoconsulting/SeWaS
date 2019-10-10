@@ -22,7 +22,9 @@
 #include "ExecutionContext.hxx"
 #include "SpatialBlockField.hxx"
 
+#ifdef ENABLE_IO
 #include <adios2.h>
+#endif
 
 class IOManager
 {
@@ -55,6 +57,7 @@ private:
     
     ~IOManager();
 
+#ifdef ENABLE_IO
     int dumpTile(adios2::IO &io, adios2::Engine &writer, const SWS::SpatialBlockField<SWS::RealType> &tile3D, const std::string tileID);
 
     template<typename T>
@@ -80,4 +83,5 @@ private:
 
     adios2::IO vIO_;
     adios2::IO sigmaIO_;
+#endif
 };
