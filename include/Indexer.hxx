@@ -18,14 +18,17 @@
 
 #pragma once
 
-enum Orderings
+namespace SWS
 {
-    X_MAJOR,
-    Y_MAJOR,
-    Z_MAJOR
-};
+    enum Orderings
+    {
+        X_MAJOR,
+        Y_MAJOR,
+        Z_MAJOR
+    };
+}
 
-template<Orderings Ordering>
+template<SWS::Orderings Ordering>
 class Indexer
 {
 public:
@@ -41,18 +44,18 @@ public:
     
     inline auto operator()(const int i, const int j, const int k) const
     {
-        static_assert(Orderings::X_MAJOR == Ordering || Orderings::Y_MAJOR == Ordering || Orderings::Z_MAJOR == Ordering,
+        static_assert(SWS::Orderings::X_MAJOR == Ordering || SWS::Orderings::Y_MAJOR == Ordering || SWS::Orderings::Z_MAJOR == Ordering,
                       "Unrecognized storage ordering");
 
-        if constexpr (Orderings::X_MAJOR == Ordering)
+        if constexpr (SWS::Orderings::X_MAJOR == Ordering)
         {
             return (j * nx_ + i) * nz_ + k; // x-major
         }
-        else if constexpr (Orderings::Y_MAJOR == Ordering)
+        else if constexpr (SWS::Orderings::Y_MAJOR == Ordering)
         {
             return (i * ny_ + j) * nz_ + k; // y-major
         }
-        else if constexpr (Orderings::Z_MAJOR == Ordering)
+        else if constexpr (SWS::Orderings::Z_MAJOR == Ordering)
         {
             return (k * ny_ + j) * nx_ + i; // z-major
         }
