@@ -60,6 +60,8 @@ public:
   inline const auto & lnyy() const{ return lnyy_; }
   inline const auto & lnzz() const{ return lnzz_; }
 
+  inline const auto & tileSize() const{ return tileSize_; }
+
   inline const auto & lncells() const{ return lncells_; }
 
   inline const auto lii(const int ii) const { return ii%lnxx_; }
@@ -198,6 +200,9 @@ private:
 
   /* Local number of cells belonging to the current process */
   int lncells_;
+
+  /* Number of cells within a single tile */
+  int tileSize_;
 
   /* Local number of sub-blocks on each of the three axes */
   int lnxx_;

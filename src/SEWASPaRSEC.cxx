@@ -28,6 +28,7 @@
 #ifdef USE_VTK
 #include "VisualizationManager.hxx"
 #endif
+#include "IOManager.hxx"
 
 SEWASPaRSEC * SEWASPaRSEC::pInstance_ = nullptr;
 

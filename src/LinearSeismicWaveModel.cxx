@@ -140,6 +140,8 @@ int LinearSeismicWaveModel::computeVelocity(const SWS::Directions & d,
 
   MetricsManager::getInstance()->start("ComputeVelocity");
 
+  IOManager::getInstance().start<COMPUTE_VELOCITY>(ts, ii, jj, kk);
+
   const auto & bx=DataSet::getInstance()->b(SWS::X)(ii,jj,kk);
   const auto & by=DataSet::getInstance()->b(SWS::Y)(ii,jj,kk);
   const auto & bz=DataSet::getInstance()->b(SWS::Z)(ii,jj,kk);
@@ -291,6 +293,8 @@ int LinearSeismicWaveModel::computeVelocity(const SWS::Directions & d,
     break;
   }
 
+  IOManager::getInstance().stop<COMPUTE_VELOCITY>(ts, ii, jj, kk);
+
   MetricsManager::getInstance()->stop("ComputeVelocity");
 
   return 0;
@@ -315,6 +319,8 @@ int LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents & sc,
 					  const int & ii, const int & jj, const int & kk){
 
   MetricsManager::getInstance()->start("ComputeStress");
+
+  IOManager::getInstance().start<COMPUTE_STRESS>(ts, ii, jj, kk);
 
   const auto & lambda=DataSet::getInstance()->lambda(sc)(ii,jj,kk);
   const auto & mu=DataSet::getInstance()->mu(sc)(ii,jj,kk);
@@ -558,6 +564,8 @@ int LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents & sc,
     break;
   }
 
+  IOManager::getInstance().stop<COMPUTE_STRESS>(ts, ii, jj, kk);
+
   MetricsManager::getInstance()->stop("ComputeStress");
 
   return 0;
@@ -727,7 +735,7 @@ LinearSeismicWaveModel::LinearSeismicWaveModel(const CentralFDOperator & fdo,
   }
 
     // Build the IO manager
-  IOManager::getInstance().init();
+  IOManager::getInstance(nt_, pMesh->lnxx(), pMesh->lnyy(), pMesh->lnzz()).init();
 }
 
 LinearSeismicWaveModel::~LinearSeismicWaveModel(){
