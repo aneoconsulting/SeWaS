@@ -129,7 +129,7 @@ private:
     {
         return getUID(arg) + "-" + getUID(args...);
     }
-
+#endif
 
     int nt_;
     int lnxx_;
@@ -138,6 +138,7 @@ private:
 
     std::vector<std::atomic<int>> processedTasks_;
 
+#ifdef ENABLE_IO
     std::mutex velocityGuard_;
     std::mutex stressGuard_;
 
