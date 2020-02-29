@@ -463,6 +463,9 @@ private:
     }
   }
 
+  /*
+    The code that converts hsv to rgb is taken from https://stackoverflow.com/a/6930407
+  */
   typedef struct
   {
     double r;       // percent

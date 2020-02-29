@@ -28,6 +28,7 @@
 #ifdef USE_VTK
 #include "VisualizationManager.hxx"
 #endif
+#include "IOManager.hxx"
 
 SEWASPaRSEC * SEWASPaRSEC::pInstance_ = nullptr;
 
@@ -132,6 +133,13 @@ void SEWASPaRSEC::buildDAG()
 #ifdef USE_VTK
                                                        (void *) &VisualizationManager::displayVelocityWrapper,
                                                        (void *) &VisualizationManager::displayStressWrapper,
+#else
+                                                       nullptr,
+                                                       nullptr,
+#endif
+#ifdef ENABLE_IO
+                                                       (void *) &IOManager::dumpVelocityWrapper,
+                                                       (void *) &IOManager::dumpStressWrapper,
 #else
                                                        nullptr,
                                                        nullptr,

@@ -90,7 +90,7 @@ public:
     const auto kStart=fijk.kStart(), kEnd=fijk.kEnd();
 
 #ifndef EIGEN_VECTORIZATION
-    SWS::SpatialBlockField1D rij(1,cz);
+    SWS::SpatialBlockField1D rij(1,kEnd-kStart);
     rij=0.0;
 #endif
 
@@ -129,7 +129,7 @@ public:
       }
 #else
       for (int k=kStart; k<kEnd; k++){
-        rij(k) = c1*fijk(i+d1,j,k)+c2*fijk(i-d2,j,k)+c3*fijk(i+d3,j,k)+c4*fijk(i-d4,j,k); // 4 (*) + 3 (+) = 7 flops
+        rij(k-kStart) = c1*fijk(i+d1,j,k)+c2*fijk(i-d2,j,k)+c3*fijk(i+d3,j,k)+c4*fijk(i-d4,j,k); // 4 (*) + 3 (+) = 7 flops
       }
 #endif
 
@@ -159,7 +159,7 @@ public:
       }
 #else
       for (int k=kStart; k<kEnd; k++){
-        rij(k) = c1*fijk(i,j+d1,k)+c2*fijk(i,j-d2,k)+c3*fijk(i,j+d3,k)+c4*fijk(i,j-d4,k);
+        rij(k-kStart) = c1*fijk(i,j+d1,k)+c2*fijk(i,j-d2,k)+c3*fijk(i,j+d3,k)+c4*fijk(i,j-d4,k);
       }
 #endif
 
@@ -175,10 +175,10 @@ public:
       auto _cz=kEnd-kStart;
 
 #ifdef EIGEN_VECTORIZATION
-      return c1*fijk.get(i,j).segment(kStart+d1,_cz)+c2*fijk.get(i,j).segment(kStart-d2,_cz)+c3*fijk.get(i,j).segment(kStart+d3,_cz)+c4*fijk.get(i,j).segment(kStart-d4,_cz);
+      return c1 * fijk.get(i, j, kStart + d1) + c2 * fijk.get(i, j, kStart - d2) + c3 * fijk.get(i, j, kStart + d3) + c4 * fijk.get(i, j, kStart - d4);
 #else
       for (int k=kStart; k<kEnd; k++){
-        rij(k) = c1*fijk(i,j,k+d1)+c2*fijk(i,j,k-d2)+c3*fijk(i,j,k+d3)+c4*fijk(i,j,k-d4);
+        rij(k-kStart) = c1*fijk(i,j,k+d1)+c2*fijk(i,j,k-d2)+c3*fijk(i,j,k+d3)+c4*fijk(i,j,k-d4);
       }
 #endif
       break;

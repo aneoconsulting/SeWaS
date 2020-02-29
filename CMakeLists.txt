@@ -17,11 +17,10 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are None, Debug, Release, RelWithDebInfo and MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	    add_compile_options(-mcx16)
-		add_compile_options(-march=native -mtune=native)
+    add_compile_options(-march=native -mtune=native)
 		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-funroll-loops>)
 		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-march=native>)
 		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-mtune=native>)
@@ -30,6 +29,11 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 	endif()
 
 	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
+endif()
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  add_compile_options(-mcx16)
+  add_compile_options(-m64)
 endif()
 
 option(VERBOSE "Enable collecting and displaying of traced events at runtime (default OFF)" OFF)
@@ -57,6 +61,12 @@ if (PLOT_DATA)
   # Adjust compile options accordingly
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DUSE_MATPLOTLIB>)
 endif(PLOT_DATA)
+
+option(ENABLE_IO "Enable performing IO at runtime (default OFF)" OFF)
+if (ENABLE_IO)
+  # Adjust compile options accordingly
+  add_compile_options(-DENABLE_IO)
+endif(ENABLE_IO)
 
 option(VISUALIZE_EXECUTION "Visualize the tasks execution (default OFF)" OFF)
 if(VISUALIZE_EXECUTION)
@@ -105,9 +115,9 @@ endif(VECTORIZE_COMPUTATIONS)
 
 option(SEWAS_WITH_PARSEC "Use PaRSEC for task-scheduling (default ON)" ON)
 
-if (SEWAS_DISTRIBUTED AND NOT SEWAS_WITH_PARSEC)
+if (SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
   message(FATAL_ERROR "The distributed version of SeWaS relies on PaRSEC.")
-endif(SEWAS_DISTRIBUTED AND NOT SEWAS_WITH_PARSEC)
+endif(SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
 
 if (SEWAS_DISTRIBUTED)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DSEWAS_DISTRIBUTED>)
@@ -130,26 +140,6 @@ if(SEWAS_WITH_PARSEC)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif(SEWAS_WITH_PARSEC)
 
-set(SOURCES
-  src/main.cxx
-  src/CartesianMesh3D.cxx
-  src/DataSet.cxx
-  src/ExternalSource.cxx
-  src/HaloManager.cxx
-  src/LinearSeismicWaveModel.cxx
-  src/SEWASParameterManager.cxx
-  src/SEWASSequential.cxx
-  src/SEWASPaRSEC.cxx
-  src/Mesh3DPartitioning.cxx
-  src/VisualizationManager.cxx
-  src/MetricsManager.cxx
-  src/ExecutionContext.cxx
-  src/LogManager.cxx)
-
-include_directories(include)
-
-add_executable(sewas ${SOURCES} ${JDF2C_SOURCES})
-set_property(TARGET sewas PROPERTY CXX_STANDARD 17)
 
 # -------------------------------------------------------------------
 # GTest
@@ -186,44 +176,6 @@ if (BUILD_TESTING)
   if (CMAKE_VERSION VERSION_LESS 2.8.11)
     include_directories("${gtest_SOURCE_DIR}/include")
   endif()
-
-  # unit tests
-  add_executable(FDOTest
-    tests/FDOUnitTest.cxx
-    src/CartesianMesh3D.cxx
-    src/LogManager.cxx)
-  add_executable(HaloExtractTest
-    tests/HaloExtractUnitTest.cxx
-    src/CartesianMesh3D.cxx
-    src/Mesh3DPartitioning.cxx
-    src/DataSet.cxx
-    src/HaloManager.cxx
-    src/LogManager.cxx)
-  add_executable(HaloUpdateTest
-    tests/HaloUpdateUnitTest.cxx
-    src/CartesianMesh3D.cxx
-    src/Mesh3DPartitioning.cxx
-    src/DataSet.cxx
-    src/HaloManager.cxx
-    src/LogManager.cxx)
-  add_executable(ComputeVelocityTest
-    tests/ComputeVelocityUnitTest.cxx
-    src/CartesianMesh3D.cxx
-    src/Mesh3DPartitioning.cxx
-    src/SEWASParameterManager.cxx
-    src/SEWASPaRSEC.cxx
-    src/ExecutionContext.cxx
-    src/MetricsManager.cxx
-    src/LinearSeismicWaveModel.cxx
-    src/DataSet.cxx
-    src/HaloManager.cxx
-    src/LogManager.cxx
-    ${JDF2C_SOURCES})
-
-  set_property(TARGET FDOTest PROPERTY CXX_STANDARD 17)
-  set_property(TARGET HaloExtractTest PROPERTY CXX_STANDARD 17)
-  set_property(TARGET HaloUpdateTest PROPERTY CXX_STANDARD 17)
-  set_property(TARGET ComputeVelocityTest PROPERTY CXX_STANDARD 17)
 endif(BUILD_TESTING)
 
 # -------------------------------------------------------------------
@@ -231,6 +183,14 @@ endif(BUILD_TESTING)
 # -------------------------------------------------------------------
 find_package(spdlog 1.3 CONFIG REQUIRED)
 set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} spdlog::spdlog)
+
+# -------------------------------------------------------------------
+# ADIOS2 is used for IO
+# -------------------------------------------------------------------
+if (ENABLE_IO)
+  find_package(ADIOS2 REQUIRED)
+  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${ADIOS2_LIBRARIES})
+endif(ENABLE_IO)
 
 # -------------------------------------------------------------------
 # MPI
@@ -249,6 +209,7 @@ if(SEWAS_WITH_PARSEC)
   # PaRSEC
   find_package(PARSEC 2.0 REQUIRED)
   include_directories("${PARSEC_INCLUDE_DIRS}")
+  link_directories("${PARSEC_LIBRARY_DIRS}")
   set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${PARSEC_LIBRARIES})
 endif(SEWAS_WITH_PARSEC)
 
@@ -304,10 +265,71 @@ if (VISUALIZE_EXECUTION)
   set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${VTK_LIBRARIES})
 endif(VISUALIZE_EXECUTION)
 
-# -------------------------------------------------------------------
-# -------------------------------------------------------------------
+set(SOURCES
+  src/main.cxx
+  src/CartesianMesh3D.cxx
+  src/DataSet.cxx
+  src/ExternalSource.cxx
+  src/HaloManager.cxx
+  src/LinearSeismicWaveModel.cxx
+  src/SEWASParameterManager.cxx
+  src/SEWASSequential.cxx
+  src/SEWASPaRSEC.cxx
+  src/Mesh3DPartitioning.cxx
+  src/VisualizationManager.cxx
+  src/MetricsManager.cxx
+  src/ExecutionContext.cxx
+  src/LogManager.cxx
+  src/IOManager.cxx)
+
+include_directories(include)
+
+add_executable(sewas ${SOURCES} ${JDF2C_SOURCES})
+set_property(TARGET sewas PROPERTY CXX_STANDARD 17)
 target_link_libraries(sewas ${SEWAS_LIBRARIES})
+
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
 if (BUILD_TESTING)
+  # unit tests
+  add_executable(FDOTest
+    tests/FDOUnitTest.cxx
+    src/CartesianMesh3D.cxx
+    src/LogManager.cxx)
+  add_executable(HaloExtractTest
+    tests/HaloExtractUnitTest.cxx
+    src/CartesianMesh3D.cxx
+    src/Mesh3DPartitioning.cxx
+    src/DataSet.cxx
+    src/HaloManager.cxx
+    src/LogManager.cxx)
+  add_executable(HaloUpdateTest
+    tests/HaloUpdateUnitTest.cxx
+    src/CartesianMesh3D.cxx
+    src/Mesh3DPartitioning.cxx
+    src/DataSet.cxx
+    src/HaloManager.cxx
+    src/LogManager.cxx)
+  add_executable(ComputeVelocityTest
+    tests/ComputeVelocityUnitTest.cxx
+    src/CartesianMesh3D.cxx
+    src/Mesh3DPartitioning.cxx
+    src/SEWASParameterManager.cxx
+    src/SEWASPaRSEC.cxx
+    src/ExecutionContext.cxx
+    src/MetricsManager.cxx
+    src/LinearSeismicWaveModel.cxx
+    src/DataSet.cxx
+    src/HaloManager.cxx
+    src/LogManager.cxx
+    src/IOManager.cxx
+    ${JDF2C_SOURCES})
+
+  set_property(TARGET FDOTest PROPERTY CXX_STANDARD 17)
+  set_property(TARGET HaloExtractTest PROPERTY CXX_STANDARD 17)
+  set_property(TARGET HaloUpdateTest PROPERTY CXX_STANDARD 17)
+  set_property(TARGET ComputeVelocityTest PROPERTY CXX_STANDARD 17)
+
   target_link_libraries(FDOTest gtest_main ${SEWAS_LIBRARIES})
   target_link_libraries(HaloExtractTest gtest_main ${SEWAS_LIBRARIES})
   target_link_libraries(HaloUpdateTest gtest_main ${SEWAS_LIBRARIES})

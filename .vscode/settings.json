@@ -51,7 +51,8 @@
         "tuple": "cpp",
         "typeinfo": "cpp",
         "utility": "cpp",
-        "tensor": "cpp"
+        "tensor": "cpp",
+        "core": "cpp"
     },
     "cmake.configureSettings": 
     {

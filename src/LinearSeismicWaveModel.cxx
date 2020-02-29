@@ -37,6 +37,7 @@
 #include "ExternalSource.hxx"
 #include "LinearSeismicWaveModel.hxx"
 #include "HaloManager.hxx"
+#include "IOManager.hxx"
 #include "Mesh3DPartitioning.hxx"
 #include "SEWASSequential.hxx"
 #include "SEWASPaRSEC.hxx"
@@ -139,6 +140,8 @@ int LinearSeismicWaveModel::computeVelocity(const SWS::Directions & d,
 
   MetricsManager::getInstance()->start("ComputeVelocity");
 
+  IOManager::getInstance().start<COMPUTE_VELOCITY>(ts, ii, jj, kk);
+
   const auto & bx=DataSet::getInstance()->b(SWS::X)(ii,jj,kk);
   const auto & by=DataSet::getInstance()->b(SWS::Y)(ii,jj,kk);
   const auto & bz=DataSet::getInstance()->b(SWS::Z)(ii,jj,kk);
@@ -205,6 +208,8 @@ int LinearSeismicWaveModel::computeVelocity(const SWS::Directions & d,
 
     addVelocitySource(SWS::X, ts, ii, jj, kk);
 
+    LOG(SWS::LOG_TRACE, "||Vx({},{},{},{})||^2 = {}", ts, ii, jj, kk, vX.norm2());
+
     break;
   }
   case SWS::Y:{
@@ -242,6 +247,8 @@ int LinearSeismicWaveModel::computeVelocity(const SWS::Directions & d,
 
     addVelocitySource(SWS::Y, ts, ii, jj, kk);
 
+    LOG(SWS::LOG_TRACE, "||Vy({},{},{},{})||^2 = {}", ts, ii, jj, kk, vY.norm2());
+
     break;
   }
   case SWS::Z:{
@@ -277,12 +284,16 @@ int LinearSeismicWaveModel::computeVelocity(const SWS::Directions & d,
 
     LOG(SWS::LOG_TRACE, "[stop] Computing Vz at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
 
+    LOG(SWS::LOG_TRACE, "||Vz({},{},{},{})||^2 = {}", ts, ii, jj, kk, vZ.norm2());
+
     break;
   }
   default:
     LOG(SWS::LOG_ERROR, "Unknown spatial direction {} requested within LinearSeismicWaveModel::computeVelocity()", d);
     break;
   }
+
+  IOManager::getInstance().stop<COMPUTE_VELOCITY>(ts, ii, jj, kk);
 
   MetricsManager::getInstance()->stop("ComputeVelocity");
 
@@ -308,6 +319,8 @@ int LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents & sc,
 					  const int & ii, const int & jj, const int & kk){
 
   MetricsManager::getInstance()->start("ComputeStress");
+
+  IOManager::getInstance().start<COMPUTE_STRESS>(ts, ii, jj, kk);
 
   const auto & lambda=DataSet::getInstance()->lambda(sc)(ii,jj,kk);
   const auto & mu=DataSet::getInstance()->mu(sc)(ii,jj,kk);
@@ -372,6 +385,8 @@ int LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents & sc,
 
     LOG(SWS::LOG_TRACE, "[stop] Computing Sxx at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
 
+    LOG(SWS::LOG_TRACE, "||sigmaXX({},{},{},{})||^2 = {}", ts, ii, jj, kk, sigmaXX.norm2());
+
     break;
   case SWS::YY:
 
@@ -405,6 +420,8 @@ int LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents & sc,
 #endif
 
     LOG(SWS::LOG_TRACE, "[stop] Computing Syy at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+
+    LOG(SWS::LOG_TRACE, "||sigmaYY({},{},{},{})||^2 = {}", ts, ii, jj, kk, sigmaYY.norm2());
 
     break;
   case SWS::ZZ:
@@ -440,6 +457,8 @@ int LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents & sc,
 
     LOG(SWS::LOG_TRACE, "[stop] Computing Szz at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
 
+    LOG(SWS::LOG_TRACE, "||sigmaZZ({},{},{},{})||^2 = {}", ts, ii, jj, kk, sigmaZZ.norm2());
+
     break;
   case SWS::XY:
 
@@ -470,6 +489,8 @@ int LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents & sc,
 #endif
 
     LOG(SWS::LOG_TRACE, "[stop] Computing Sxy at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+    
+    LOG(SWS::LOG_TRACE, "||sigmaXY({},{},{},{})||^2 = {}", ts, ii, jj, kk, sigmaXY.norm2());
 
     break;
   case SWS::XZ:
@@ -501,6 +522,8 @@ int LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents & sc,
 #endif
 
     LOG(SWS::LOG_TRACE, "[stop] Computing Sxz at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+    
+    LOG(SWS::LOG_TRACE, "||sigmaXZ({},{},{},{})||^2 = {}", ts, ii, jj, kk, sigmaXZ.norm2());
 
     break;
   case SWS::YZ:
@@ -533,11 +556,15 @@ int LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents & sc,
 
     LOG(SWS::LOG_TRACE, "[stop] Computing Syz at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
 
+    LOG(SWS::LOG_TRACE, "||sigmaYZ({},{},{},{})||^2 = {}", ts, ii, jj, kk, sigmaYZ.norm2());
+
     break;
   default:
     LOG(SWS::LOG_ERROR, "Unknown stress component {} requested within LinearSeismicWaveModel::computeStress()", sc);
     break;
   }
+
+  IOManager::getInstance().stop<COMPUTE_STRESS>(ts, ii, jj, kk);
 
   MetricsManager::getInstance()->stop("ComputeStress");
 
@@ -689,23 +716,30 @@ LinearSeismicWaveModel::LinearSeismicWaveModel(const CentralFDOperator & fdo,
   LOG(SWS::LOG_INFO, "Adjusted time-step: Dt={}", dt_);
   LOG(SWS::LOG_INFO, "Adjusted time-step count: Nt={}", nt_);
 
+  auto pMesh = Mesh3DPartitioning::getInstance();
+
   // Velocity
   for (auto d : {SWS::X, SWS::Y, SWS::Z}){
-    Mesh3DPartitioning::getInstance()->buildSpatialField(v_(d));
+    pMesh->buildSpatialField(v_(d));
   }
   setVelocitySourceLocations();
 
   // Stress field
   for (auto sc : {SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ}){
-    Mesh3DPartitioning::getInstance()->buildSpatialField(sigma_(sc));
+    pMesh->buildSpatialField(sigma_(sc));
   }
 
   if (nullptr == HaloManager::getInstance(sigma_, v_, fdo_.hnx(), fdo_.hny(), fdo_.hnz())){
     LOG(SWS::LOG_CRITICAL, "Unable to create an instance of HaloManager. Exiting...");
     exit(SWS::OBJECT_CREATION_FAILURE);
   }
+
+    // Build the IO manager
+  IOManager::getInstance(nt_, pMesh->lnxx(), pMesh->lnyy(), pMesh->lnzz()).init();
 }
 
 LinearSeismicWaveModel::~LinearSeismicWaveModel(){
+  IOManager::getInstance().finalize();
+
   HaloManager::releaseInstance();
 }
