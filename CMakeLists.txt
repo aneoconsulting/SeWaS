@@ -113,6 +113,68 @@ endif(VECTORIZE_COMPUTATIONS)
 # Build configuration completed
 # ----------------------------------------------
 
+option(DOWNLOAD_MISSING_DEPS "Enable automatic download of missing dependencies (default ON)" ON)
+if (DOWNLOAD_MISSING_DEPS)
+    # Download and install vcpkg (if not found) that will be used for installing dependencies
+    set(VCPKG_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/vcpkg/src)
+    find_program(VCPKG_EXE vcpkg HINTS ${VCPKG_ROOT})
+    if (NOT VCPKG_EXE)
+        message(STATUS "vcpkg has not been found")
+        message(STATUS "[START] vcpkg install")
+        configure_file(${CMAKE_SOURCE_DIR}/cmake/resources/CMakeLists.txt.vcpkg ${VCPKG_ROOT}/../build/CMakeLists.txt)
+        execute_process(COMMAND           ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                        RESULT_VARIABLE   result
+                        WORKING_DIRECTORY ${VCPKG_ROOT}/../build)
+        if(result)
+            message(FATAL_ERROR "CMake step for vcpkg failed: ${result}")
+        endif()
+        execute_process(COMMAND           ${CMAKE_COMMAND} --build .
+                        RESULT_VARIABLE   result
+                        WORKING_DIRECTORY ${VCPKG_ROOT}/../build)
+        if(result)
+            message(FATAL_ERROR "Build step for vcpkg failed: ${result}")
+        endif()
+
+        message(STATUS "[STOP] vcpkg install")
+    else()
+        get_filename_component(VCPKG_ROOT ${VCPKG_EXE} DIRECTORY)
+        message(STATUS "Found vcpkg : ${VCPKG_EXE}")
+    endif()
+        
+    set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+    message(STATUS "Using toolchain : ${CMAKE_TOOLCHAIN_FILE}")
+
+
+    # set target platform
+    if ("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "(x86_64)|(AMD64)")
+        set(HOST_ARCH "x64")
+    elseif ("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "(x86)|(i386)|(i686)")
+        set(HOST_ARCH "x86")
+    elseif ("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "(aarch64)")
+        set(HOST_ARCH "arm64")
+    elseif ("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "(arm)")
+        set(HOST_ARCH "arm")
+    else()
+        message(FATAL_ERROR "Unsupported system : ${CMAKE_HOST_SYSTEM_PROCESSOR}")
+    endif()
+
+    string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME)
+    set(VCPKG_TARGET_TRIPLET "${HOST_ARCH}-${SYSTEM_NAME}")
+
+    # define helper macro for downloading packages through vpkg
+    macro(_vcpkg_install package)
+        message("[VCPKG] Installing package : ${package}:${TARGET_PLATFORM}")
+        execute_process(COMMAND           vcpkg install ${package}:${TARGET_PLATFORM}
+                        RESULT_VARIABLE   STATUS
+                        WORKING_DIRECTORY ${VCPKG_ROOT})
+        if (STATUS)
+            message(FATAL_ERROR "Failed to install ${package}")
+        else()
+            message("[VCPKG] Successfully installed package : ${package}:${TARGET_PLATFORM}")
+        endif()
+    endmacro()
+endif()
+
 option(SEWAS_WITH_PARSEC "Use PaRSEC for task-scheduling (default ON)" ON)
 
 if (SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
@@ -146,16 +208,16 @@ endif(SEWAS_WITH_PARSEC)
 # -------------------------------------------------------------------
 # Download and unpack googletest at configure time
 if (BUILD_TESTING)
-    configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
+    configure_file(cmake/resources/CMakeLists.txt.gtest googletest-download/CMakeLists.txt)
     execute_process(COMMAND           ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
                     RESULT_VARIABLE   result
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download)
     if(result)
         message(FATAL_ERROR "CMake step for googletest failed: ${result}")
     endif()
     execute_process(COMMAND           ${CMAKE_COMMAND} --build .
                     RESULT_VARIABLE   result
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download)
     if(result)
         message(FATAL_ERROR "Build step for googletest failed: ${result}")
     endif()
@@ -181,7 +243,16 @@ endif(BUILD_TESTING)
 # -------------------------------------------------------------------
 # spdlog
 # -------------------------------------------------------------------
-find_package(spdlog 1.3 CONFIG REQUIRED)
+find_package(spdlog 1.3 CONFIG)
+if (NOT spdlog_FOUND)
+    # spdlog not found; trying to download it
+    if (DOWNLOAD_MISSING_DEPS)
+        _vcpkg_install(spdlog)
+        find_package(spdlog 1.3 CONFIG REQUIRED)
+    else()
+        message(FATAL_ERROR "spdlog not found. Please set DOWNLOAD_MISSING_DEPS for enabling automatic download of missing dependencies")        
+    endif()
+endif()
 set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} spdlog::spdlog)
 
 # -------------------------------------------------------------------
@@ -216,14 +287,33 @@ endif(SEWAS_WITH_PARSEC)
 # -------------------------------------------------------------------
 # Boost
 # -------------------------------------------------------------------
-find_package(Boost 1.62 COMPONENTS program_options REQUIRED)
+find_package(Boost 1.62 COMPONENTS program_options)
+if (NOT Boost_FOUND)
+    # boost-program-options not found; trying to download it
+    if (DOWNLOAD_MISSING_DEPS)
+        _vcpkg_install(boost-program-options)
+        _vcpkg_install(boost-property-tree)
+        find_package(Boost 1.62 COMPONENTS program_options REQUIRED)
+    else()
+        message(FATAL_ERROR "Boost not found. Please set DOWNLOAD_MISSING_DEPS for enabling automatic download of missing dependencies")        
+    endif()
+endif()
 include_directories(${Boost_INCLUDE_DIR})
 set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${Boost_LIBRARIES})
 
 # -------------------------------------------------------------------
 # Eigen
 # -------------------------------------------------------------------
-find_package(Eigen3 3.3.3 REQUIRED)
+find_package(Eigen3 3.3.3)
+if (NOT Eigen3_FOUND)
+    # eigen3 not found; trying to download it
+    if (DOWNLOAD_MISSING_DEPS)
+        _vcpkg_install(eigen3)
+        find_package(Eigen3 3.3.3 REQUIRED)
+    else()
+        message(FATAL_ERROR "eigen3 not found. Please set DOWNLOAD_MISSING_DEPS for enabling automatic download of missing dependencies")        
+    endif()
+endif()
 include_directories("${EIGEN3_INCLUDE_DIR}")
 
 # -------------------------------------------------------------------
@@ -238,10 +328,18 @@ endif(BOOST_SIMD_VECTORIZATION)
 # Intel TBB concurrent containers are used for collecting metrics
 # -------------------------------------------------------------------
 if (COLLECT_STATS)
-  find_package(TBB 4.3 REQUIRED)
-  include_directories("${TBB_INCLUDE_DIRS}")
-  
-  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${TBB_LIBRARIES_RELEASE} ${TBB_LIBRARIES_DEBUG})
+    find_package(TBB 4.3)
+    if (NOT TBB_FOUND)
+        # TBB not found; trying to download it
+        if (DOWNLOAD_MISSING_DEPS)
+            _vcpkg_install(tbb)
+            find_package(TBB 3.3.3 REQUIRED)
+        else()
+            message(FATAL_ERROR "TBB not found. Please set DOWNLOAD_MISSING_DEPS for enabling automatic download of missing dependencies")        
+        endif()
+    endif()
+    include_directories("${TBB_INCLUDE_DIRS}")
+    set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${TBB_LIBRARIES_RELEASE} ${TBB_LIBRARIES_DEBUG})
 endif(COLLECT_STATS)
 
 # -------------------------------------------------------------------
