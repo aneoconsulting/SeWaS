@@ -34,7 +34,7 @@
       "cmakeCommandArgs": "-DSEWAS_WITH_PARSEC=OFF -DCOLLECT_STATS=ON -DVERBOSE=ON",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": "",
-
+      "variables": []
     },
     {
       "name": "x64-Release",
@@ -44,9 +44,57 @@
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
       "cmakeCommandArgs": "-DSEWAS_WITH_PARSEC=OFF -DCOLLECT_STATS=ON -DVERBOSE=ON",
-      "buildCommandArgs": "",
+      "buildCommandArgs": "-v",
       "ctestCommandArgs": "",
       "variables": []
+    },
+    {
+      "name": "Linux-GCC-Debug",
+      "generator": "Unix Makefiles",
+      "configurationType": "Debug",
+      "cmakeExecutable": "/usr/bin/cmake",
+      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg" ],
+      "cmakeCommandArgs": "-DSEWAS_WITH_PARSEC=OFF -DCOLLECT_STATS=ON -DVERBOSE=ON",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "linux_x64" ],
+      "remoteMachineName": "1793408265;ec2-52-213-103-123.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
+      "remoteCMakeListsRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/src",
+      "remoteBuildRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/build/${name}",
+      "remoteInstallRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/install/${name}",
+      "remoteCopySources": true,
+      "rsyncCommandArgs": "-t --delete --delete-excluded",
+      "remoteCopyBuildOutput": false,
+      "remoteCopySourcesMethod": "rsync",
+      "addressSanitizerRuntimeFlags": "detect_leaks=0",
+      "variables": []
+    },
+    {
+      "name": "Linux-GCC-Release",
+      "generator": "Unix Makefiles",
+      "configurationType": "RelWithDebInfo",
+      "cmakeExecutable": "/usr/bin/cmake",
+      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg" ],
+      "cmakeCommandArgs": "-DSEWAS_WITH_PARSEC=OFF -DCOLLECT_STATS=ON -DVERBOSE=ON",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "linux_x64" ],
+      "remoteMachineName": "1793408265;ec2-52-213-103-123.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
+      "remoteCMakeListsRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/src",
+      "remoteBuildRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/build/${name}",
+      "remoteInstallRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/install/${name}",
+      "remoteCopySources": true,
+      "rsyncCommandArgs": "-t --delete --delete-excluded",
+      "remoteCopyBuildOutput": false,
+      "remoteCopySourcesMethod": "rsync",
+      "addressSanitizerRuntimeFlags": "detect_leaks=0",
+      "variables": [
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "",
+          "type": "UNINITIALIZED"
+        }
+      ]
     }
   ]
 }

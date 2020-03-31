@@ -12,6 +12,10 @@ set(SEWAS_VERSION_PATCH 0)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules" CACHE STRING "")
 
 option(SEWAS_DISTRIBUTED "Build SeWaS for distributed memory platforms (default OFF)" OFF)
+if (SEWAS_DISTRIBUTED)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DSEWAS_DISTRIBUTED>)
+endif(SEWAS_DISTRIBUTED)
+
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are None, Debug, Release, RelWithDebInfo and MinSizeRel." FORCE)
@@ -109,6 +113,12 @@ if(VECTORIZE_COMPUTATIONS)
   endif(BOOST_SIMD_VECTORIZATION)
 endif(VECTORIZE_COMPUTATIONS)
 
+option(SEWAS_WITH_PARSEC "Use PaRSEC for task-scheduling (default OFF)" OFF)
+if (SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
+  message(FATAL_ERROR "The distributed version of SeWaS relies on PaRSEC.")
+endif(SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
+
+
 # ----------------------------------------------
 # Build configuration completed
 # ----------------------------------------------
@@ -116,32 +126,42 @@ endif(VECTORIZE_COMPUTATIONS)
 option(DOWNLOAD_MISSING_DEPS "Enable automatic download of missing dependencies (default ON)" ON)
 if (DOWNLOAD_MISSING_DEPS)
     # Download and install vcpkg (if not found) that will be used for installing dependencies
-    set(VCPKG_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/vcpkg/src)
-    find_program(VCPKG_EXE vcpkg HINTS ${VCPKG_ROOT})
+    set(VCPKG_ROOT  ${CMAKE_SOURCE_DIR}/thirdparty/vcpkg)
+    set(VCPKG_SRC   ${VCPKG_ROOT}/src)
+    set(VCPKG_BUILD ${VCPKG_ROOT}/build)
+
+    find_program(VCPKG_EXE vcpkg HINTS ${VCPKG_SRC})
     if (NOT VCPKG_EXE)
         message(STATUS "vcpkg has not been found")
-        message(STATUS "[START] vcpkg install")
-        configure_file(${CMAKE_SOURCE_DIR}/cmake/resources/CMakeLists.txt.vcpkg ${VCPKG_ROOT}/../build/CMakeLists.txt)
+        message(STATUS "[START] install vcpkg")
+        configure_file(${CMAKE_SOURCE_DIR}/cmake/resources/vcpkg/CMakeLists.txt ${VCPKG_BUILD}/CMakeLists.txt)
         execute_process(COMMAND           ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
                         RESULT_VARIABLE   result
-                        WORKING_DIRECTORY ${VCPKG_ROOT}/../build)
+                        WORKING_DIRECTORY ${VCPKG_BUILD})
         if(result)
             message(FATAL_ERROR "CMake step for vcpkg failed: ${result}")
         endif()
         execute_process(COMMAND           ${CMAKE_COMMAND} --build .
                         RESULT_VARIABLE   result
-                        WORKING_DIRECTORY ${VCPKG_ROOT}/../build)
+                        WORKING_DIRECTORY ${VCPKG_BUILD})
         if(result)
             message(FATAL_ERROR "Build step for vcpkg failed: ${result}")
         endif()
 
-        message(STATUS "[STOP] vcpkg install")
+        message(STATUS "[STOP] install vcpkg")
+
+        # At this step, we have completed the installation of vcpkg. In order to used it,
+        # we need to set the cmake toolchain file which could be done only on the first project configuration.
+        # Thus, to do this, we must restart the configuration process.
+        execute_process(COMMAND           ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DCMAKE_TOOLCHAIN_FILE=${VCPKG_SRC}/scripts/buildsystems/vcpkg.cmake ..
+                        RESULT_VARIABLE   result
+                        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
+        return()
     else()
-        get_filename_component(VCPKG_ROOT ${VCPKG_EXE} DIRECTORY)
+        get_filename_component(VCPKG_SRC ${VCPKG_EXE} DIRECTORY)
         message(STATUS "Found vcpkg : ${VCPKG_EXE}")
     endif()
         
-    set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
     message(STATUS "Using toolchain : ${CMAKE_TOOLCHAIN_FILE}")
 
 
@@ -159,31 +179,23 @@ if (DOWNLOAD_MISSING_DEPS)
     endif()
 
     string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME)
-    set(VCPKG_TARGET_TRIPLET "${HOST_ARCH}-${SYSTEM_NAME}")
+    set(TARGET_PLATFORM "${HOST_ARCH}-${SYSTEM_NAME}")
+
 
     # define helper macro for downloading packages through vpkg
     macro(_vcpkg_install package)
         message("[VCPKG] Installing package : ${package}:${TARGET_PLATFORM}")
-        execute_process(COMMAND           vcpkg install ${package}:${TARGET_PLATFORM}
+        execute_process(COMMAND           ${VCPKG_EXE} install ${package}:${TARGET_PLATFORM}
                         RESULT_VARIABLE   STATUS
-                        WORKING_DIRECTORY ${VCPKG_ROOT})
+                        WORKING_DIRECTORY ${VCPKG_SRC})
         if (STATUS)
-            message(FATAL_ERROR "Failed to install ${package}")
+            message(FATAL_ERROR "Failed to install ${package} : ${STATUS}")
         else()
             message("[VCPKG] Successfully installed package : ${package}:${TARGET_PLATFORM}")
         endif()
     endmacro()
 endif()
 
-option(SEWAS_WITH_PARSEC "Use PaRSEC for task-scheduling (default ON)" ON)
-
-if (SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
-  message(FATAL_ERROR "The distributed version of SeWaS relies on PaRSEC.")
-endif(SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
-
-if (SEWAS_DISTRIBUTED)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DSEWAS_DISTRIBUTED>)
-endif(SEWAS_DISTRIBUTED)
 
 if(SEWAS_WITH_PARSEC)
   add_compile_options(-DSEWAS_WITH_PARSEC)
@@ -208,7 +220,7 @@ endif(SEWAS_WITH_PARSEC)
 # -------------------------------------------------------------------
 # Download and unpack googletest at configure time
 if (BUILD_TESTING)
-    configure_file(cmake/resources/CMakeLists.txt.gtest googletest-download/CMakeLists.txt)
+    configure_file(cmake/resources/gtest/CMakeLists.txt googletest-download/CMakeLists.txt)
     execute_process(COMMAND           ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
                     RESULT_VARIABLE   result
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download)
@@ -253,7 +265,7 @@ if (NOT spdlog_FOUND)
         message(FATAL_ERROR "spdlog not found. Please set DOWNLOAD_MISSING_DEPS for enabling automatic download of missing dependencies")        
     endif()
 endif()
-set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} spdlog::spdlog)
+set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} spdlog::spdlog spdlog::spdlog_header_only)
 
 # -------------------------------------------------------------------
 # ADIOS2 is used for IO
