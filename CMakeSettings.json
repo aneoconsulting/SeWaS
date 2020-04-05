@@ -3,14 +3,30 @@
     {
       "buildCommandArgs": "",
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
-      "cmakeCommandArgs": "-DSEWAS_WITH_PARSEC=OFF",
+      "cmakeCommandArgs": "",
       "configurationType": "Debug",
       "ctestCommandArgs": "",
       "generator": "Ninja",
       "inheritEnvironments": [ "msvc_x86" ],
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
       "name": "x86-Debug",
-      "variables": []
+      "variables": [
+        {
+          "name": "COLLECT_STATS",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "SEWAS_WITH_PARSEC",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "VERBOSE",
+          "value": "true",
+          "type": "BOOL"
+        }
+      ]
     },
     {
       "name": "x86-Release",
@@ -19,10 +35,26 @@
       "inheritEnvironments": [ "msvc_x86" ],
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": "-DSEWAS_WITH_PARSEC=OFF",
+      "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "variables": []
+      "variables": [
+        {
+          "name": "COLLECT_STATS",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "SEWAS_WITH_PARSEC",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "VERBOSE",
+          "value": "true",
+          "type": "BOOL"
+        }
+      ]
     },
     {
       "name": "x64-Debug",
@@ -31,10 +63,36 @@
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": "-DSEWAS_WITH_PARSEC=OFF -DCOLLECT_STATS=ON -DVERBOSE=ON",
+      "cmakeCommandArgs": "",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": "",
-      "variables": []
+      "variables": [
+        {
+          "name": "COLLECT_STATS",
+          "value": "true",
+          "type": "BOOL"
+        },
+        {
+          "name": "SEWAS_WITH_PARSEC",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "VERBOSE",
+          "value": "true",
+          "type": "BOOL"
+        },
+        {
+          "name": "PLOT_DATA",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "BUILD_TESTING",
+          "value": "True",
+          "type": "BOOL"
+        }
+      ]
     },
     {
       "name": "x64-Release",
@@ -43,44 +101,50 @@
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": "-DSEWAS_WITH_PARSEC=OFF -DCOLLECT_STATS=ON -DVERBOSE=ON",
+      "cmakeCommandArgs": "",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": "",
-      "variables": []
+      "variables": [
+        {
+          "name": "COLLECT_STATS",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "SEWAS_WITH_PARSEC",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "VERBOSE",
+          "value": "true",
+          "type": "BOOL"
+        },
+        {
+          "name": "PLOT_DATA",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "BUILD_TESTING",
+          "value": "true",
+          "type": "BOOL"
+        }
+      ]
     },
     {
       "name": "Linux-GCC-Debug",
       "generator": "Unix Makefiles",
       "configurationType": "Debug",
       "cmakeExecutable": "/usr/bin/cmake",
-      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg" ],
-      "cmakeCommandArgs": "-DSEWAS_WITH_PARSEC=OFF -DCOLLECT_STATS=ON -DVERBOSE=ON",
+      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg", "thirdparty/install", "thirdparty/parsec/src", "thirdparty/parsec/build", "thirdparty/adios" ],
+      "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "linux_x64" ],
-      "remoteMachineName": "1793408265;ec2-52-213-103-123.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
+      "remoteMachineName": "-288793425;ec2-34-241-104-129.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
       "remoteCMakeListsRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/src",
-      "remoteBuildRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/build/${name}",
-      "remoteInstallRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/install/${name}",
-      "remoteCopySources": true,
-      "rsyncCommandArgs": "-t --delete --delete-excluded",
-      "remoteCopyBuildOutput": false,
-      "remoteCopySourcesMethod": "rsync",
-      "addressSanitizerRuntimeFlags": "detect_leaks=0",
-      "variables": []
-    },
-    {
-      "name": "Linux-GCC-Release",
-      "generator": "Unix Makefiles",
-      "configurationType": "RelWithDebInfo",
-      "cmakeExecutable": "/usr/bin/cmake",
-      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg" ],
-      "cmakeCommandArgs": "-DSEWAS_WITH_PARSEC=OFF -DCOLLECT_STATS=ON -DVERBOSE=ON",
-      "buildCommandArgs": "",
-      "ctestCommandArgs": "",
-      "inheritEnvironments": [ "linux_x64" ],
-      "remoteMachineName": "1793408265;ec2-52-213-103-123.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
-      "remoteCMakeListsRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/src",
+      "remotePreGenerateCommand": "cd $HOME/.vs/${projectDirName}/${workspaceHash}/src && . bootstrap.sh",
       "remoteBuildRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/build/${name}",
       "remoteInstallRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/install/${name}",
       "remoteCopySources": true,
@@ -90,9 +154,77 @@
       "addressSanitizerRuntimeFlags": "detect_leaks=0",
       "variables": [
         {
-          "name": "CMAKE_TOOLCHAIN_FILE",
-          "value": "",
-          "type": "UNINITIALIZED"
+          "name": "COLLECT_STATS",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "SEWAS_WITH_PARSEC",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "VERBOSE",
+          "value": "true",
+          "type": "BOOL"
+        },
+        {
+          "name": "SEWAS_DISTRIBUTED",
+          "value": "true",
+          "type": "BOOL"
+        },
+        {
+          "name": "ENABLE_IO",
+          "value": "true",
+          "type": "BOOL"
+        }
+      ]
+    },
+    {
+      "name": "Linux-GCC-Release",
+      "generator": "Unix Makefiles",
+      "configurationType": "RelWithDebInfo",
+      "cmakeExecutable": "/usr/bin/cmake",
+      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg", "thirdparty/install", "thirdparty/parsec/src", "thirdparty/parsec/build", "thirdparty/adios" ],
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "linux_x64" ],
+      "remoteMachineName": "-288793425;ec2-34-241-104-129.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
+      "remoteCMakeListsRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/src",
+      "remotePreGenerateCommand": "cd $HOME/.vs/${projectDirName}/${workspaceHash}/src && . bootstrap.sh",
+      "remoteBuildRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/build/${name}",
+      "remoteInstallRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/install/${name}",
+      "remoteCopySources": true,
+      "rsyncCommandArgs": "-t --delete --delete-excluded",
+      "remoteCopyBuildOutput": false,
+      "remoteCopySourcesMethod": "rsync",
+      "addressSanitizerRuntimeFlags": "detect_leaks=0",
+      "variables": [
+        {
+          "name": "COLLECT_STATS",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "SEWAS_WITH_PARSEC",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "VERBOSE",
+          "value": "true",
+          "type": "BOOL"
+        },
+        {
+          "name": "SEWAS_DISTRIBUTED",
+          "value": "false",
+          "type": "BOOL"
+        },
+        {
+          "name": "ENABLE_IO",
+          "value": "false",
+          "type": "BOOL"
         }
       ]
     }
