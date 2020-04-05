@@ -19,6 +19,6 @@ doc/*
 /out
 /.vs/SeWaS/v16/.suo
 /.vs/CMake Overview
-/.vs/1793408265.scan.fgp
-/.vs/-1197490424.scan.fgp
 /.vs/SeWaS/v16/TestStore/0
+/.vs/*.fgp
+*.sqlite-journal
