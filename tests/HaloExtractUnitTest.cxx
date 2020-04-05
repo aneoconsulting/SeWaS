@@ -21,7 +21,7 @@
 #include <gtest/gtest.h>
 
 #include "HaloExtractUnitTest.hxx"
-
+#include "Indexer.hxx"
 
 TEST_F(HaloExtractTest, ExtractLeftHalo)
 {
@@ -44,6 +44,8 @@ TEST_F(HaloExtractTest, ExtractLeftHalo)
   int jShift=0;
   int kShift=0;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+  
   auto & vH=vH_(d)(0,0,0)(l);
 
   HaloManager::extractVelocityHaloWrapper(l, d, ts_, 0, 0, 0, vH);
@@ -52,7 +54,7 @@ TEST_F(HaloExtractTest, ExtractLeftHalo)
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
 
@@ -96,6 +98,8 @@ TEST_F(HaloExtractTest, ExtractRightHalo)
   int jShift=0;
   int kShift=0;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   auto & vH=vH_(d)(0,0,0)(l);
 
   HaloManager::extractVelocityHaloWrapper(l, d, ts_, 0, 0, 0, vH);
@@ -104,7 +108,7 @@ TEST_F(HaloExtractTest, ExtractRightHalo)
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
 
@@ -146,6 +150,8 @@ TEST_F(HaloExtractTest, ExtractBackwardHalo)
   int jShift=hny;
   int kShift=0;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   auto & vH=vH_(d)(0,0,0)(l);
 
   HaloManager::extractVelocityHaloWrapper(l, d, ts_, 0, 0, 0, vH);
@@ -154,7 +160,7 @@ TEST_F(HaloExtractTest, ExtractBackwardHalo)
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
 
@@ -198,6 +204,8 @@ TEST_F(HaloExtractTest, ExtractForwardHalo)
   int jShift=jEnd-hny;
   int kShift=0;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   auto & vH=vH_(d)(0,0,0)(l);
 
   HaloManager::extractVelocityHaloWrapper(l, d, ts_, 0, 0, 0, vH);
@@ -206,7 +214,7 @@ TEST_F(HaloExtractTest, ExtractForwardHalo)
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
 
@@ -248,6 +256,8 @@ TEST_F(HaloExtractTest, ExtractBottomHalo)
   int jShift=0;
   int kShift=hnz;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   auto & vH=vH_(d)(0,0,0)(l);
 
   HaloManager::extractVelocityHaloWrapper(l, d, ts_, 0, 0, 0, vH);
@@ -256,7 +266,7 @@ TEST_F(HaloExtractTest, ExtractBottomHalo)
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
 
@@ -300,6 +310,8 @@ TEST_F(HaloExtractTest, ExtractTopHalo)
   int jShift=0;
   int kShift=kEnd-hnz;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   auto & vH=vH_(d)(0,0,0)(l);
 
   HaloManager::extractVelocityHaloWrapper(l, d, ts_, 0, 0, 0, vH);
@@ -308,7 +320,7 @@ TEST_F(HaloExtractTest, ExtractTopHalo)
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
 

@@ -15,3 +15,10 @@ doc/*
 .vs/VSWorkspaceState.json
 .vs/ProjectSettings.json
 .vs/tasks.vs.json
+/thirdparty/vcpkg
+/out
+/.vs/SeWaS/v16/.suo
+/.vs/CMake Overview
+/.vs/SeWaS/v16/TestStore/0
+/.vs/*.fgp
+*.sqlite-journal

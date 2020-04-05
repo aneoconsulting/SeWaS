@@ -1,0 +1,15 @@
+diff --git a/parsec/include/parsec/parsec_config_bottom.h b/parsec/include/parsec/parsec_config_bottom.h
+index 748c3106b..1b6e0c875 100644
+--- a/parsec/include/parsec/parsec_config_bottom.h
++++ b/parsec/include/parsec/parsec_config_bottom.h
+@@ -105,8 +105,8 @@ typedef int32_t parsec_dependency_t;
+ #define MAX_LOCAL_COUNT  20
+ #define MAX_PARAM_COUNT  20
+
+-#define MAX_DEP_IN_COUNT  10
+-#define MAX_DEP_OUT_COUNT 10
++#define MAX_DEP_IN_COUNT  16
++#define MAX_DEP_OUT_COUNT 16
+
+ #define MAX_TASK_STRLEN 128
+
