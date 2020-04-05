@@ -22,7 +22,7 @@
         "1",
         "--nthreads",
         "2",
-        "--dfile=${workspaceRoot}\\data\\input\\TestA.json"
+        "--dfile=${workspaceRoot}/data/input/TestA.json"
       ]
     }
   ]

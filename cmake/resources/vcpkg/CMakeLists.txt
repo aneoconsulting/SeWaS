@@ -8,22 +8,22 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     ExternalProject_Add(vcpkg
         GIT_REPOSITORY    https://github.com/microsoft/vcpkg.git
         GIT_TAG           master
-        SOURCE_DIR        "${CMAKE_SOURCE_DIR}/thirdparty/vcpkg/src"
+        SOURCE_DIR        "../src"
         BUILD_IN_SOURCE   true
         CONFIGURE_COMMAND ""
         BUILD_COMMAND     .\\bootstrap-vcpkg.bat
-        INSTALL_COMMAND   .\\vcpkg.exe integrate install
+        INSTALL_COMMAND   ""
         TEST_COMMAND      ""
     )
 elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     ExternalProject_Add(vcpkg
         GIT_REPOSITORY    https://github.com/microsoft/vcpkg.git
         GIT_TAG           master
-        SOURCE_DIR        "${CMAKE_SOURCE_DIR}/thirdparty/vcpkg/src"
+        SOURCE_DIR        "../src"
         BUILD_IN_SOURCE   true
         CONFIGURE_COMMAND ""
         BUILD_COMMAND     ./bootstrap-vcpkg.sh
-        INSTALL_COMMAND   ./vcpkg integrate install
+        INSTALL_COMMAND   ""
         TEST_COMMAND      ""
     )
 else()
