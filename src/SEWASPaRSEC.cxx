@@ -28,6 +28,7 @@
 #ifdef USE_VTK
 #include "VisualizationManager.hxx"
 #endif
+#include "IOManager.hxx"
 
 SEWASPaRSEC * SEWASPaRSEC::pInstance_ = nullptr;
 
@@ -93,7 +94,7 @@ void SEWASPaRSEC::init(SEWASParameterManager & pm)
 
   pPContext_ = parsec_init(pm.nthreads(), &parsec_argc, &parsec_argv);
 
-  LOG(SWS::INFO, "Thread number: {}", pm.nthreads());
+  LOG(SWS::LOG_INFO, "Thread number: {}", pm.nthreads());
 
   free(parsec_argv);
 }
@@ -132,6 +133,13 @@ void SEWASPaRSEC::buildDAG()
 #ifdef USE_VTK
                                                        (void *) &VisualizationManager::displayVelocityWrapper,
                                                        (void *) &VisualizationManager::displayStressWrapper,
+#else
+                                                       nullptr,
+                                                       nullptr,
+#endif
+#ifdef ENABLE_IO
+                                                       (void *) &IOManager::dumpVelocityWrapper,
+                                                       (void *) &IOManager::dumpStressWrapper,
 #else
                                                        nullptr,
                                                        nullptr,

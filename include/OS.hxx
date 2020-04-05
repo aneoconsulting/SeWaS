@@ -18,7 +18,13 @@
 
 #pragma once
 
+
+#ifdef _WIN32
+#define HOST_NAME_MAX 256
+#else
 #include <unistd.h>
+#endif
+
 #include <limits.h>
 #include <string>
 #include <iomanip>
@@ -51,7 +57,7 @@ namespace SWS
     static char hostname[HOST_NAME_MAX];
 
 #ifdef _WIN32
-    GetComputerName(hostname, HOST_NAME_MAX);
+    //GetComputerName(hostname, HOST_NAME_MAX);
 #else
     gethostname(hostname, HOST_NAME_MAX);
 #endif
@@ -62,7 +68,8 @@ namespace SWS
   inline auto getPID()
   {
 #ifdef _WIN32
-    return static_cast<int>(::GetCurrentProcessId());
+	  return 0;
+    //return static_cast<int>(::GetCurrentProcessId());
 #else
     return static_cast<int>(::getpid());
 #endif

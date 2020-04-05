@@ -24,6 +24,7 @@
 #include "Mesh3DPartitioning.hxx"
 #include "MetricsManager.hxx"
 #include "LogManager.hxx"
+#include "Indexer.hxx"
 
 HaloManager * HaloManager::pInstance_ = nullptr;
 
@@ -148,7 +149,7 @@ size_t HaloManager::getHaloSize(const SWS::Locations l,
     hs=cx*cy*hnz_;
     break;
   default:
-    LOG(SWS::ERROR, "Unknown location {} requested within HaloManager::getHaloSize()", l);
+    LOG(SWS::LOG_ERROR, "Unknown location {} requested within HaloManager::getHaloSize()", l);
     break;
   }
 
@@ -177,11 +178,13 @@ int HaloManager::updateStress(const SWS::Locations l,
                    kStartH, kEndH,
                    iShift, jShift, kShift);
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   size_t index=0;
   for (int i=iStartH; i<iEndH; i++){
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
-	index=k*iEndH*jEndH+j*iEndH+i;
+	index=indexer(i, j, k);
         assert(index < getHaloSize(l, ii, jj, kk));
 	sigma_(sc)(ii,jj,kk)(i+iShift,j+jShift,k+kShift)=sigmaH_(sc)(ii,jj,kk)(l)[index];
       }
@@ -215,11 +218,13 @@ int HaloManager::updateVelocity(const SWS::Locations l,
                    kStartH, kEndH,
                    iShift, jShift, kShift);
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   size_t index=0;
   for (int i=iStartH; i<iEndH; i++){
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
-	index=k*iEndH*jEndH+j*iEndH+i;
+	index=indexer(i, j, k);
         assert(index < getHaloSize(l, ii, jj, kk));
 
         v_(d)(ii,jj,kk)(i+iShift,j+jShift,k+kShift)=vH_(d)(ii,jj,kk)(l)[index];
@@ -238,6 +243,7 @@ int HaloManager::extractStressHalo(const SWS::Locations l,
 				   const int ii, const int jj, const int kk) noexcept
 {
   // MetricsManager::getInstance()->start("ExtractStressHalo");
+    LOG(SWS::LOG_TRACE, "[start] Extracting ({},{})-stress halo at time-step {} on tile ({}, {}, {})", l, sc, ts, ii, jj, kk);
 
   int iStartH, iEndH;
   int jStartH, jEndH;
@@ -254,12 +260,14 @@ int HaloManager::extractStressHalo(const SWS::Locations l,
                     kStartH, kEndH,
                     iShift, jShift, kShift);
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   // TODO the following copy can be optimized by viewing the Halo data pointer as an Eigen's Array
   size_t index=0;
   for (int i=iStartH; i<iEndH; i++){
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
-	index=k*iEndH*jEndH+j*iEndH+i;
+	index=indexer(i, j, k);
         assert(index < getHaloSize(l, ii, jj, kk));
 	sigmaH_(sc)(ii,jj,kk)(l)[index]=sigma_(sc)(ii,jj,kk)(i+iShift,j+jShift,k+kShift);
       }
@@ -267,6 +275,7 @@ int HaloManager::extractStressHalo(const SWS::Locations l,
   }
 
   // MetricsManager::getInstance()->stop("ExtractStressHalo");
+    LOG(SWS::LOG_TRACE, "[stop] Extracting ({},{})-stress halo at time-step {} on tile ({}, {}, {})", l, sc, ts, ii, jj, kk);
 
   return 0;
 }
@@ -277,6 +286,7 @@ int HaloManager::extractVelocityHalo(const SWS::Locations l,
 				     const int ii, const int jj, const int kk) noexcept
 {
   // MetricsManager::getInstance()->start("ExtractVelocityHalo");
+    LOG(SWS::LOG_TRACE, "[start] Extracting ({},{})-velocity halo at time-step {} on tile ({}, {}, {})", l, d, ts, ii, jj, kk);
 
   int iStartH, iEndH;
   int jStartH, jEndH;
@@ -293,11 +303,13 @@ int HaloManager::extractVelocityHalo(const SWS::Locations l,
                     kStartH, kEndH,
                     iShift, jShift, kShift);
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   size_t index=0;
   for (int i=iStartH; i<iEndH; i++){
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
-	index=k*iEndH*jEndH+j*iEndH+i;
+	index=indexer(i, j, k);
 
         assert(index < getHaloSize(l, ii, jj, kk));
 
@@ -307,6 +319,7 @@ int HaloManager::extractVelocityHalo(const SWS::Locations l,
   }
 
   // MetricsManager::getInstance()->stop("ExtractVelocityHalo");
+    LOG(SWS::LOG_TRACE, "[stop] Extracting ({},{})-velocity halo at time-step {} on tile ({}, {}, {})", l, d, ts, ii, jj, kk);
 
   return 0;
 }
@@ -366,7 +379,7 @@ void HaloManager::setExtractOffsets(const SWS::Locations l,
     kShift=kEnd-hnz_;
     break;
   default:
-    LOG(SWS::ERROR, "Unknown halo location {} requested within HaloManager::setExtractOffsets()", l);
+    LOG(SWS::LOG_ERROR, "Unknown halo location {} requested within HaloManager::setExtractOffsets()", l);
     break;
   }
 }
@@ -426,7 +439,7 @@ void HaloManager::setUpdateOffsets(const SWS::Locations l,
     kShift=kEnd;
     break;
   default:
-    LOG(SWS::ERROR, "Unknown halo location {} requested within HaloManager::setUpdateOffsets()", l);
+    LOG(SWS::LOG_ERROR, "Unknown halo location {} requested within HaloManager::setUpdateOffsets()", l);
     break;
   }
 }

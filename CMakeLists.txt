@@ -17,13 +17,23 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are None, Debug, Release, RelWithDebInfo and MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-add_compile_options(-mcx16)
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-  add_compile_options(-march=native -mtune=native)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-funroll-loops>)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-march=native>)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-mtune=native>)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_compile_options(-march=native -mtune=native)
+		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-funroll-loops>)
+		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-march=native>)
+		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-mtune=native>)
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	endif()
+
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
+endif()
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  add_compile_options(-mcx16)
+  add_compile_options(-m64)
 endif()
 
 option(VERBOSE "Enable collecting and displaying of traced events at runtime (default OFF)" OFF)
@@ -51,6 +61,12 @@ if (PLOT_DATA)
   # Adjust compile options accordingly
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DUSE_MATPLOTLIB>)
 endif(PLOT_DATA)
+
+option(ENABLE_IO "Enable performing IO at runtime (default OFF)" OFF)
+if (ENABLE_IO)
+  # Adjust compile options accordingly
+  add_compile_options(-DENABLE_IO)
+endif(ENABLE_IO)
 
 option(VISUALIZE_EXECUTION "Visualize the tasks execution (default OFF)" OFF)
 if(VISUALIZE_EXECUTION)
@@ -99,9 +115,9 @@ endif(VECTORIZE_COMPUTATIONS)
 
 option(SEWAS_WITH_PARSEC "Use PaRSEC for task-scheduling (default ON)" ON)
 
-if (SEWAS_DISTRIBUTED AND NOT SEWAS_WITH_PARSEC)
+if (SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
   message(FATAL_ERROR "The distributed version of SeWaS relies on PaRSEC.")
-endif(SEWAS_DISTRIBUTED AND NOT SEWAS_WITH_PARSEC)
+endif(SEWAS_WITH_PARSEC AND NOT SEWAS_DISTRIBUTED)
 
 if (SEWAS_DISTRIBUTED)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DSEWAS_DISTRIBUTED>)
@@ -124,26 +140,6 @@ if(SEWAS_WITH_PARSEC)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif(SEWAS_WITH_PARSEC)
 
-set(SOURCES
-  src/main.cxx
-  src/CartesianMesh3D.cxx
-  src/DataSet.cxx
-  src/ExternalSource.cxx
-  src/HaloManager.cxx
-  src/LinearSeismicWaveModel.cxx
-  src/SEWASParameterManager.cxx
-  src/SEWASSequential.cxx
-  src/SEWASPaRSEC.cxx
-  src/Mesh3DPartitioning.cxx
-  src/VisualizationManager.cxx
-  src/MetricsManager.cxx
-  src/ExecutionContext.cxx
-  src/LogManager.cxx)
-
-include_directories(include)
-
-add_executable(sewas ${SOURCES} ${JDF2C_SOURCES})
-set_property(TARGET sewas PROPERTY CXX_STANDARD 17)
 
 # -------------------------------------------------------------------
 # GTest
@@ -180,7 +176,123 @@ if (BUILD_TESTING)
   if (CMAKE_VERSION VERSION_LESS 2.8.11)
     include_directories("${gtest_SOURCE_DIR}/include")
   endif()
+endif(BUILD_TESTING)
 
+# -------------------------------------------------------------------
+# spdlog
+# -------------------------------------------------------------------
+if (ENABLE_LOGGER)
+  find_package(spdlog 1.3 CONFIG REQUIRED)
+  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} spdlog::spdlog)
+endif(ENABLE_LOGGER)
+
+# -------------------------------------------------------------------
+# ADIOS2 is used for IO
+# -------------------------------------------------------------------
+if (ENABLE_IO)
+  find_package(ADIOS2 REQUIRED)
+  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${ADIOS2_LIBRARIES})
+endif(ENABLE_IO)
+
+# -------------------------------------------------------------------
+# MPI
+# -------------------------------------------------------------------
+if (SEWAS_DISTRIBUTED)
+  # MPI
+  find_package(MPI 2.0 REQUIRED)
+  include_directories("${MPI_CXX_INCLUDE_PATH}")
+  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${MPI_CXX_LIBRARIES})
+endif(SEWAS_DISTRIBUTED)
+
+# -------------------------------------------------------------------
+# PaRSEC
+# -------------------------------------------------------------------
+if(SEWAS_WITH_PARSEC)
+  # PaRSEC
+  find_package(PARSEC 2.0 REQUIRED)
+  include_directories("${PARSEC_INCLUDE_DIRS}")
+  link_directories("${PARSEC_LIBRARY_DIRS}")
+  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${PARSEC_LIBRARIES})
+endif(SEWAS_WITH_PARSEC)
+
+# -------------------------------------------------------------------
+# Boost
+# -------------------------------------------------------------------
+find_package(Boost 1.62 COMPONENTS program_options REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
+set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${Boost_LIBRARIES})
+
+# -------------------------------------------------------------------
+# Eigen
+# -------------------------------------------------------------------
+find_package(Eigen3 3.3.3 REQUIRED)
+include_directories("${EIGEN3_INCLUDE_DIR}")
+
+# -------------------------------------------------------------------
+# Boost.SIMD
+# -------------------------------------------------------------------
+if (BOOST_SIMD_VECTORIZATION)
+  find_package(Boost.SIMD 4.17 REQUIRED)
+  include_directories("${Boost.SIMD_INCLUDE_DIRS}")
+endif(BOOST_SIMD_VECTORIZATION)
+
+# -------------------------------------------------------------------
+# Intel TBB concurrent containers are used for collecting metrics
+# -------------------------------------------------------------------
+if (COLLECT_STATS)
+  find_package(TBB 4.3 REQUIRED)
+  include_directories("${TBB_INCLUDE_DIRS}")
+  
+  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${TBB_LIBRARIES_RELEASE} ${TBB_LIBRARIES_DEBUG})
+endif(COLLECT_STATS)
+
+# -------------------------------------------------------------------
+# matplotlibcpp
+# -------------------------------------------------------------------
+# The package matplotlib-cpp is used to plot data -> https://github.com/lava/matplotlib-cpp
+# TODO Add an alternative for using xplot -> https://github.com/QuantStack/xplot
+if (PLOT_DATA)
+  include_directories("${CMAKE_SOURCE_DIR}/thirdparty/matplotlibcpp")
+  find_package(PythonLibs 2.7)
+  target_include_directories(sewas PRIVATE ${PYTHON_INCLUDE_DIRS})
+  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${PYTHON_LIBRARIES})
+endif(PLOT_DATA)
+
+# -------------------------------------------------------------------
+# VTK is used to visualize the tasks execution
+# -------------------------------------------------------------------
+if (VISUALIZE_EXECUTION)
+  find_package(VTK 8.1 REQUIRED)
+  include_directories("${VTK_INCLUDE_DIRS}")
+  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${VTK_LIBRARIES})
+endif(VISUALIZE_EXECUTION)
+
+set(SOURCES
+  src/main.cxx
+  src/CartesianMesh3D.cxx
+  src/DataSet.cxx
+  src/ExternalSource.cxx
+  src/HaloManager.cxx
+  src/LinearSeismicWaveModel.cxx
+  src/SEWASParameterManager.cxx
+  src/SEWASSequential.cxx
+  src/SEWASPaRSEC.cxx
+  src/Mesh3DPartitioning.cxx
+  src/VisualizationManager.cxx
+  src/MetricsManager.cxx
+  src/ExecutionContext.cxx
+  src/LogManager.cxx
+  src/IOManager.cxx)
+
+include_directories(include)
+
+add_executable(sewas ${SOURCES} ${JDF2C_SOURCES})
+set_property(TARGET sewas PROPERTY CXX_STANDARD 17)
+target_link_libraries(sewas ${SEWAS_LIBRARIES})
+
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+if (BUILD_TESTING)
   # unit tests
   add_executable(FDOTest
     tests/FDOUnitTest.cxx
@@ -212,97 +324,14 @@ if (BUILD_TESTING)
     src/DataSet.cxx
     src/HaloManager.cxx
     src/LogManager.cxx
+    src/IOManager.cxx
     ${JDF2C_SOURCES})
 
   set_property(TARGET FDOTest PROPERTY CXX_STANDARD 17)
   set_property(TARGET HaloExtractTest PROPERTY CXX_STANDARD 17)
   set_property(TARGET HaloUpdateTest PROPERTY CXX_STANDARD 17)
   set_property(TARGET ComputeVelocityTest PROPERTY CXX_STANDARD 17)
-endif(BUILD_TESTING)
 
-# -------------------------------------------------------------------
-# spdlog
-# -------------------------------------------------------------------
-if (ENABLE_LOGGER)
-  find_package(spdlog 1.3 CONFIG REQUIRED)
-  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} spdlog::spdlog)
-endif(ENABLE_LOGGER)
-
-# -------------------------------------------------------------------
-# MPI
-# -------------------------------------------------------------------
-if (SEWAS_DISTRIBUTED)
-  # MPI
-  find_package(MPI 2.0 REQUIRED)
-  include_directories("${MPI_CXX_INCLUDE_PATH}")
-  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${MPI_CXX_LIBRARIES})
-endif(SEWAS_DISTRIBUTED)
-
-# -------------------------------------------------------------------
-# PaRSEC
-# -------------------------------------------------------------------
-if(SEWAS_WITH_PARSEC)
-  # PaRSEC
-  find_package(PARSEC 2.0 REQUIRED)
-  include_directories("${PARSEC_INCLUDE_DIRS}")
-  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${PARSEC_LIBRARIES})
-endif(SEWAS_WITH_PARSEC)
-
-# -------------------------------------------------------------------
-# Boost
-# -------------------------------------------------------------------
-find_package(Boost 1.62 COMPONENTS program_options REQUIRED)
-include_directories(${Boost_INCLUDE_DIR})
-set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${Boost_LIBRARIES})
-
-# -------------------------------------------------------------------
-# Eigen
-# -------------------------------------------------------------------
-find_package(Eigen3 3.3.3 REQUIRED)
-include_directories("${EIGEN3_INCLUDE_DIR}")
-
-# -------------------------------------------------------------------
-# Boost.SIMD
-# -------------------------------------------------------------------
-if (BOOST_SIMD_VECTORIZATION)
-  find_package(Boost.SIMD 4.17 REQUIRED)
-  include_directories("${Boost.SIMD_INCLUDE_DIRS}")
-endif(BOOST_SIMD_VECTORIZATION)
-
-# -------------------------------------------------------------------
-# Intel TBB concurrent containers are used for collecting metrics
-# -------------------------------------------------------------------
-if (COLLECT_STATS)
-  find_package(TBB 4.3 REQUIRED)
-  include_directories("${TBB_INCLUDE_DIRS}")
-  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${TBB_LIBRARIES})
-endif(COLLECT_STATS)
-
-# -------------------------------------------------------------------
-# matplotlibcpp
-# -------------------------------------------------------------------
-# The package matplotlib-cpp is used to plot data -> https://github.com/lava/matplotlib-cpp
-# TODO Add an alternative for using xplot -> https://github.com/QuantStack/xplot
-if (PLOT_DATA)
-  include_directories("${CMAKE_SOURCE_DIR}/thirdparty/matplotlibcpp")
-  find_package(PythonLibs 2.7)
-  target_include_directories(sewas PRIVATE ${PYTHON_INCLUDE_DIRS})
-  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${PYTHON_LIBRARIES})
-endif(PLOT_DATA)
-
-# -------------------------------------------------------------------
-# VTK is used to visualize the tasks execution
-# -------------------------------------------------------------------
-if (VISUALIZE_EXECUTION)
-  find_package(VTK 8.1 REQUIRED)
-  include_directories("${VTK_INCLUDE_DIRS}")
-  set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${VTK_LIBRARIES})
-endif(VISUALIZE_EXECUTION)
-
-# -------------------------------------------------------------------
-# -------------------------------------------------------------------
-target_link_libraries(sewas ${SEWAS_LIBRARIES})
-if (BUILD_TESTING)
   target_link_libraries(FDOTest gtest_main ${SEWAS_LIBRARIES})
   target_link_libraries(HaloExtractTest gtest_main ${SEWAS_LIBRARIES})
   target_link_libraries(HaloUpdateTest gtest_main ${SEWAS_LIBRARIES})

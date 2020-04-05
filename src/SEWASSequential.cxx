@@ -65,7 +65,7 @@ int SEWASSequential::run()
 
   for (int ts=2; ts<=nt_-2; ts+=2){
 
-    LOG(SWS::TRACE, "[start] Processing time-step {}", ts);
+    LOG(SWS::LOG_TRACE, "[start] Processing time-step {}", ts);
 
     for (int ii=0; ii<nxx_; ii++){
       for (int jj=0; jj<nyy_; jj++){
@@ -116,7 +116,7 @@ int SEWASSequential::run()
       } // jj
     } // ii
 
-    LOG(SWS::TRACE, "[stop] Processing time-step {}", ts);
+    LOG(SWS::LOG_TRACE, "[stop] Processing time-step {}", ts);
 
   } // ts
 

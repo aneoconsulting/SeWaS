@@ -20,38 +20,33 @@
 #include "SEWASPaRSEC.hxx"
 #include "LogManager.hxx"
 
-#ifdef SEWAS_DISTRIBUTED
-int ExecutionContext::world_=1;
-int ExecutionContext::rank_=0;
-#endif
-
 int ExecutionContext::init(SEWASParameterManager & pm)
 {
 #ifdef SEWAS_DISTRIBUTED
   /* Start the MPI runtime */
-  LOG(SWS::INFO, "Starting the MPI runtime");
+  LOG(SWS::LOG_INFO, "Starting the MPI runtime");
 
   int provided;
   MPI_Init_thread(&pm.argc(), &pm.argv(), MPI_THREAD_SERIALIZED, &provided);
   if (MPI_THREAD_SERIALIZED != provided)
-    LOG(SWS::WARN, "The thread level supported by the used MPI implementation is {}", provided);
+    LOG(SWS::LOG_WARN, "The thread level supported by the used MPI implementation is {}", provided);
 
-  LOG(SWS::INFO, "MPI runtime is started");
+  LOG(SWS::LOG_INFO, "MPI runtime is started");
 
   MPI_Comm_size(MPI_COMM_WORLD, &world_);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
 
-  LOG(SWS::INFO, "MPI size: {}", world_);
-  LOG(SWS::INFO, "MPI rank: {}", rank_);
+  LOG(SWS::LOG_INFO, "MPI size: {}", world_);
+  LOG(SWS::LOG_INFO, "MPI rank: {}", rank_);
 #endif
 
 #ifdef SEWAS_WITH_PARSEC
   /* PaRSEC initialization */
-  LOG(SWS::INFO, "Starting the PaRSEC runtime");
+  LOG(SWS::LOG_INFO, "Starting the PaRSEC runtime");
 
   SEWASPaRSEC::init(pm);
 
-  LOG(SWS::INFO, "PaRSEC runtime is started");
+  LOG(SWS::LOG_INFO, "PaRSEC runtime is started");
 #endif
 
   return 0;

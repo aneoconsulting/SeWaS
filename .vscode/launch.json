@@ -16,18 +16,37 @@
                 "--P", "1",
                 "--Q", "1",
                 "--R", "1",
-                "--nthreads", "2",
+                "--nthreads", "1",
                 "--dfile=${workspaceFolder}/data/input/TestA.json"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",
             "environment": [],
             "externalConsole": true,
-            "MIMode": "gdb",
+            "windows": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "/usr/bin/gdb",
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    },
+                    {
+                        "description": "Additional libs for gdb",
+                        "text": "set env LD_LIBRARY_PATH=/home/smoustafa/Public/Install/lib:${LD_LIBRARY_PATH}"
+                    }    
+                ]
+            },
+            "pipeTransport": {
+                "pipeCwd": "",
+                "pipeProgram": "bash.exe",
+                "pipeArgs": ["-c"],
+                "debuggerPath": "/usr/bin/gdb"
+            },
             "setupCommands": [
                 {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
+                    "description": "Additional libs for gdb",
+                    "text": "set env LD_LIBRARY_PATH=/home/smoustafa/Public/Install/lib:${LD_LIBRARY_PATH}"
                 }
             ]
         },
@@ -43,7 +62,7 @@
                 "--P", "1",
                 "--Q", "1",
                 "--R", "1",
-                "--nthreads", "2",
+                "--nthreads", "1",
                 "--dfile=${workspaceFolder}/data/input/TestA.json"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",

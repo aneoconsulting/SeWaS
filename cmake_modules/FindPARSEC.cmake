@@ -12,8 +12,10 @@
 # This module sets the following variables:
 #  PARSEC_FOUND - set to true if a library implementing the PLASMA interface
 #    is found
+#  PARSEC_DIR - the root directory of the PaRSEC installation
 #  PARSEC_BACKEND - the actual backend used in the selected PaRSEC library
 #  PARSEC_INCLUDE_DIRS - include directories
+#  PARSEC_LIBRARY_DIRS - list of libraries directories needed to link with PaRSEC
 #  PARSEC_LIBRARIES - uncached list of libraries (using full path name) to
 #    link against to use PaRSEC
 #  PARSEC_EXTRA_LIBRARIES - uncached list of libraries (using full path name) to
@@ -28,7 +30,9 @@
 if( PARSEC_DIR )
   if( PARSEC_PKG_DIR )
     message(STATUS "PARSEC_DIR and PARSEC_PKG_DIR are set at the same time; ${PARSEC_DIR} overrides ${PARSEC_PKG_DIR}.")
-  endif()
+  else( PARSEC_PKG_DIR )
+    set(PARSEC_PKG_DIR "${PARSEC_DIR}/lib/pkgconfig")
+  endif( PARSEC_PKG_DIR )
 endif( PARSEC_DIR )
 include(FindPkgConfig)
 set(ENV{PKG_CONFIG_PATH} "${PARSEC_PKG_DIR}:$ENV{PKG_CONFIG_PATH}")
@@ -65,7 +69,7 @@ if( NOT PARSEC_FOUND )
     find_library( PARSEC_LIB parsec${backend}
       PATHS ${PARSEC_DIR}/lib
       DOC "Which PaRSEC library is used" )
-    find_library( PARSEC_EXTRA_LIB parsec_distribution_matrix${backend}
+    find_library( PARSEC_EXTRA_LIB parsec_data${backend}
       PATHS ${PARSEC_DIR}/lib
       DOC "Extra libs for PaRSEC" )
     if( PARSEC_FOUND )
@@ -117,6 +121,9 @@ if( NOT PARSEC_FOUND )
   if( PARSEC_FIND_REQUIRED AND NOT PARSEC_FOUND )
     message(FATAL_ERROR "PaRSEC: NOT FOUND in ${PARSEC_DIR}.")
   endif()
+else( NOT PARSEC_FOUND )
+  # Get the prefix and save it
+  set(PARSEC_DIR "${PARSEC_PREFIX}")
 endif( NOT PARSEC_FOUND )
 
 mark_as_advanced(PARSEC_DIR PARSEC_PKG_DIR PARSEC_BACKEND PARSEC_LIBRARY PARSEC_LIBRARIES PARSEC_EXTRA_LIBRARIES PARSEC_INCLUDE_DIRS)
@@ -126,11 +133,13 @@ set(PARSEC_BACKEND "${PARSEC_BACKEND}" CACHE STRING "Type of distributed memory 
 set(PARSEC_INCLUDE_DIRS "${PARSEC_INCLUDE_DIRS}" CACHE PATH "PaRSEC include directories" FORCE)
 set(PARSEC_LIBRARIES "${PARSEC_LIBRARIES}" CACHE STRING "libraries to link with PaRSEC" FORCE)
 set(PARSEC_EXTRA_LIBRARIES "${PARSEC_EXTRA_LIBRARIES}" CACHE STRING "libraries to link with PaRSEC supplements (data distribution, etc.)" FORCE)
+set(PARSEC_LIBRARY_DIRS "${PARSEC_LIBRARY_DIRS}" CACHE STRING "Location of libraries to link with PaRSEC" FORCE)
 
 find_package_message(PARSEC
     "Found PARSEC: ${PARSEC_LIB}
         PARSEC_BACKEND           = [${PARSEC_BACKEND}]
         PARSEC_INCLUDE_DIRS      = [${PARSEC_INCLUDE_DIRS}]
+        PARSEC_LIBRARY_DIRS      = [${PARSEC_LIBRARY_DIRS}]
         PARSEC_LIBRARIES         = [${PARSEC_LIBRARIES}]
         PARSEC_EXTRA_LIBRARIES   = [${PARSEC_EXTRA_LIBRARIES}]"
       "[${PARSEC_BACKEND}][${PARSEC_INCLUDE_DIRS}][${PARSEC_LIBRARIES}][${PARSEC_EXTRA_LIBRARIES}]")

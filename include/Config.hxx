@@ -32,6 +32,8 @@
 #include "Constants.hxx"
 #include "SpatialBlockField.hxx"
 
+#include "OS.hxx"
+
 namespace SWS
 {
   constexpr int packetSize=Eigen::internal::packet_traits<RealType>::size;
