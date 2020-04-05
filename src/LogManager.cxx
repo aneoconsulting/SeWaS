@@ -44,11 +44,10 @@ LogManager::LogManager()
 
   threadPool_ = std::make_shared<spdlog::details::thread_pool>(8192, 1);
 
-  auto consoleSink=std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
-  auto fileSink=std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFileName_);
+  auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt >();
+  auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFileName_);
 
   /* Build the unique logger for dumping messages in both console and logfile */
-  // logger_ = std::make_shared<spdlog::logger>("logger", std::initializer_list<spdlog::sink_ptr>{consoleSink, fileSink});
   logger_ = std::make_shared<spdlog::async_logger>("logger",
                                                    std::initializer_list<spdlog::sink_ptr>{consoleSink, fileSink},
                                                    threadPool_,

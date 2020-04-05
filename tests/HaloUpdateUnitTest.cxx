@@ -21,7 +21,7 @@
 #include <gtest/gtest.h>
 
 #include "HaloUpdateUnitTest.hxx"
-
+#include "Indexer.hxx"
 
 TEST_F(HaloUpdateTest, UpdateLeftHalo)
 {
@@ -51,13 +51,15 @@ TEST_F(HaloUpdateTest, UpdateLeftHalo)
   int jShift=0;
   int kShift=0;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   HaloManager::updateVelocityWrapper(SWS::LEFT, d, ts_, 1, 0, 0, vH_(d)(1,0,0)(SWS::LEFT));
 
   for (int i=iStartH; i<iEndH; i++){
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(1,0,0)(i+iShift,j+jShift,k+kShift);
 
@@ -106,13 +108,15 @@ TEST_F(HaloUpdateTest, UpdateRightHalo)
   int jShift=0;
   int kShift=0;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   HaloManager::updateVelocityWrapper(SWS::RIGHT, d, ts_, 0, 0, 0, vH_(d)(0,0,0)(SWS::RIGHT));
 
   for (int i=iStartH; i<iEndH; i++){
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
 
@@ -161,13 +165,15 @@ TEST_F(HaloUpdateTest, UpdateBackwardHalo)
   int jShift=0;
   int kShift=0;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   HaloManager::updateVelocityWrapper(SWS::BACKWARD, d, ts_, 0, 1, 0, vH_(d)(0,1,0)(SWS::BACKWARD));
 
   for (int i=iStartH; i<iEndH; i++){
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,1,0)(i+iShift,j+jShift,k+kShift);
 
@@ -216,13 +222,15 @@ TEST_F(HaloUpdateTest, UpdateForwardHalo)
   int jShift=jEnd;
   int kShift=0;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   HaloManager::updateVelocityWrapper(SWS::FORWARD, d, ts_, 0, 0, 0, vH_(d)(0,0,0)(SWS::FORWARD));
 
   for (int i=iStartH; i<iEndH; i++){
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
 
@@ -271,13 +279,15 @@ TEST_F(HaloUpdateTest, UpdateBottomHalo)
   int jShift=0;
   int kShift=0;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   HaloManager::updateVelocityWrapper(SWS::BOTTOM, d, ts_, 0, 0, 1, vH_(d)(0,0,1)(SWS::BOTTOM));
 
   for (int i=iStartH; i<iEndH; i++){
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,0,1)(i+iShift,j+jShift,k+kShift);
 
@@ -326,13 +336,15 @@ TEST_F(HaloUpdateTest, UpdateTopHalo)
   int jShift=0;
   int kShift=kEnd;
 
+  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+
   HaloManager::updateVelocityWrapper(SWS::TOP, d, ts_, 0, 0, 0, vH_(d)(0,0,0)(SWS::TOP));
 
   for (int i=iStartH; i<iEndH; i++){
     for (int j=jStartH; j<jEndH; j++){
       for (int k=kStartH; k<kEndH; k++){
 
-	auto index=k*iEndH*jEndH+j*iEndH+i;
+          auto index = indexer(i, j, k);
 
         const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
 

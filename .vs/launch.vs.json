@@ -5,8 +5,8 @@
     {
       "type": "default",
       "project": "CMakeLists.txt",
-      "projectTarget": "sewas.exe (RelWithDebInfo\\sewas.exe)",
-      "name": "sewas.exe (RelWithDebInfo\\sewas.exe)",
+      "projectTarget": "sewas.exe",
+      "name": "sewas.exe",
       "args": [
         "--cx",
         "50",
@@ -21,8 +21,8 @@
         "--R",
         "1",
         "--nthreads",
-        "1",
-        "--dfile=C:\\Projects\\HPC\\SeWaS\\data\\input\\TestA.json"
+        "2",
+        "--dfile=${workspaceRoot}/data/input/TestA.json"
       ]
     }
   ]
