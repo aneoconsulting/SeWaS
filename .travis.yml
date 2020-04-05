@@ -16,6 +16,6 @@ before_install:
   - sudo apt-get install libspdlog-dev
 
 script:
-  - mkdir build
-  - cd build
-  - cmake .. -DBUILD_TESTING=OFF -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF
+  - sudo mkdir build
+  - sudo cd build
+  - sudo cmake .. -DBUILD_TESTING=OFF -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DENABLE_LOGGER=ON
