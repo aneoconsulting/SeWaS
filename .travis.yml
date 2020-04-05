@@ -9,7 +9,7 @@ compiler:
   - gcc
 
 before_install:
-  - ls && echo $TRAVIS_BUILD_DIR && cd $TRAVIS_BUILD_DIR/SeWaS && . bootstrap.sh
+  - ls && echo $TRAVIS_BUILD_DIR && . bootstrap.sh
 
 script:
   - mkdir build
