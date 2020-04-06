@@ -4,6 +4,8 @@ dist: bionic
 
 os:
   - linux
+sudo: required
+dist: bionic
 
 compiler:
   - gcc
@@ -17,7 +19,9 @@ before_install:
 
 before_script:
   - . bootstrap.sh
-  
+
 script:
-  - mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON
-  - make
+  - mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON && make && cd -
+
+after_success:
+  - cd build && ctest

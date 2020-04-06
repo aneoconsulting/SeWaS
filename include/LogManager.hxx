@@ -21,62 +21,59 @@
 #include <string>
 #include <vector>
 
-#include <spdlog/spdlog.h>
 #include <spdlog/async.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
-#include "OS.hxx"
 #include "Constants.hxx"
+#include "OS.hxx"
 
-class LogManager{
+class LogManager
+{
 public:
-  static LogManager * getInstance();
+  static LogManager* getInstance();
   static void releaseInstance();
 
-
 #ifdef VERBOSE
-#define LOG(LEVEL, ...)                                 \
-  LogManager::getInstance()->log<LEVEL>(__VA_ARGS__);
+#define LOG(LEVEL, ...) LogManager::getInstance()->log<LEVEL>(__VA_ARGS__);
 #else
-#define LOG(LEVEL, ...)                                 \
-  if constexpr (LEVEL <= SWS::LOG_ERROR){                   \
-    LogManager::getInstance()->log<LEVEL>(__VA_ARGS__); \
+#define LOG(LEVEL, ...)                                                        \
+  if constexpr (LEVEL <= SWS::LOG_ERROR) {                                     \
+    LogManager::getInstance()->log<LEVEL>(__VA_ARGS__);                        \
   }
 #endif
 
-
-  inline auto & getLogger()
-  {
-    return logger_;
-  }
+  inline auto& getLogger() { return logger_; }
 
   template<SWS::LogLevels level, typename... LogMsg>
-  inline void log(LogMsg &&... msg)
+  inline void log(LogMsg&&... msg)
   {
-    switch(level){
-    case SWS::LOG_TRACE:
-      logger_->trace(msg...);
-      break;
-    case SWS::LOG_DEBUG:
-      logger_->debug(msg...);
-      break;
-    case SWS::LOG_INFO:
-      logger_->info(msg...);
-      break;
-    case SWS::LOG_WARN:
-      logger_->warn(msg...);
-      break;
-    case SWS::LOG_ERROR:
-      logger_->error(msg...);
-      break;
-    case SWS::LOG_CRITICAL:
-      logger_->critical(msg...);
-      break;
-    default:
-      logger_->warn("The selected log level ({}) is not supported. Fall back to INFO level.", level);
-      logger_->info(msg...);
-      break;
+    switch (level) {
+      case SWS::LOG_TRACE:
+        logger_->trace(msg...);
+        break;
+      case SWS::LOG_DEBUG:
+        logger_->debug(msg...);
+        break;
+      case SWS::LOG_INFO:
+        logger_->info(msg...);
+        break;
+      case SWS::LOG_WARN:
+        logger_->warn(msg...);
+        break;
+      case SWS::LOG_ERROR:
+        logger_->error(msg...);
+        break;
+      case SWS::LOG_CRITICAL:
+        logger_->critical(msg...);
+        break;
+      default:
+        logger_->warn("The selected log level ({}) is not supported. Fall back "
+                      "to INFO level.",
+                      level);
+        logger_->info(msg...);
+        break;
     }
   }
 
@@ -86,7 +83,7 @@ private:
 
   void setVerbosityLevel();
 
-  static inline LogManager * pInstance_ = nullptr;
+  static inline LogManager* pInstance_ = nullptr;
 
   std::string logFileName_;
 

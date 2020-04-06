@@ -1,4 +1,5 @@
 ﻿{
+  "environments": [ { "REMOTE_SEWAS_ROOT": "$HOME/.vs/${projectDirName}/${workspaceHash}" } ],
   "configurations": [
     {
       "buildCommandArgs": "",
@@ -142,11 +143,11 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "linux_x64" ],
-      "remoteMachineName": "-288793425;ec2-34-241-104-129.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
-      "remoteCMakeListsRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/src",
-      "remotePreGenerateCommand": "cd $HOME/.vs/${projectDirName}/${workspaceHash}/src && . bootstrap.sh",
-      "remoteBuildRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/build/${name}",
-      "remoteInstallRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/install/${name}",
+      "remoteMachineName": "-1244664032;ec2-34-245-187-37.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
+      "remoteCMakeListsRoot": "${env.REMOTE_SEWAS_ROOT}/src",
+      "remotePreGenerateCommand": "cd ${env.REMOTE_SEWAS_ROOT}/src && . bootstrap.sh",
+      "remoteBuildRoot": "${env.REMOTE_SEWAS_ROOT}/out/build/${name}",
+      "remoteInstallRoot": "${env.REMOTE_SEWAS_ROOT}/out/install/${name}",
       "remoteCopySources": true,
       "rsyncCommandArgs": "-t --delete --delete-excluded",
       "remoteCopyBuildOutput": false,
@@ -170,12 +171,12 @@
         },
         {
           "name": "SEWAS_DISTRIBUTED",
-          "value": "true",
+          "value": "False",
           "type": "BOOL"
         },
         {
           "name": "ENABLE_IO",
-          "value": "true",
+          "value": "False",
           "type": "BOOL"
         }
       ]
@@ -191,10 +192,10 @@
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "linux_x64" ],
       "remoteMachineName": "-288793425;ec2-34-241-104-129.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
-      "remoteCMakeListsRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/src",
-      "remotePreGenerateCommand": "cd $HOME/.vs/${projectDirName}/${workspaceHash}/src && . bootstrap.sh",
-      "remoteBuildRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/build/${name}",
-      "remoteInstallRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/install/${name}",
+      "remoteCMakeListsRoot": "${env.REMOTE_SEWAS_ROOT}/src",
+      "remotePreGenerateCommand": "cd ${env.REMOTE_SEWAS_ROOT}/src && . bootstrap.sh",
+      "remoteBuildRoot": "${env.REMOTE_SEWAS_ROOT}/out/build/${name}",
+      "remoteInstallRoot": "${env.REMOTE_SEWAS_ROOT}/out/install/${name}",
       "remoteCopySources": true,
       "rsyncCommandArgs": "-t --delete --delete-excluded",
       "remoteCopyBuildOutput": false,
