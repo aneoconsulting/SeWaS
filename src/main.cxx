@@ -17,123 +17,125 @@
 ==============================================================================*/
 
 #include <iostream>
-#include <string>
 #include <memory>
+#include <string>
 #include <thread>
 
-#include "ExecutionContext.hxx"
-#include "Config.hxx"
-#include "LogManager.hxx"
-#include "SEWASParameterManager.hxx"
 #include "CartesianMesh3D.hxx"
+#include "Config.hxx"
 #include "DataSet.hxx"
+#include "ExecutionContext.hxx"
 #include "ExternalSource.hxx"
 #include "LinearSeismicWaveModel.hxx"
+#include "LogManager.hxx"
 #include "Mesh3DPartitioning.hxx"
+#include "SEWASParameterManager.hxx"
 #ifdef VISUALIZE_EXECUTION
 #include "VisualizationManager.hxx"
 #endif
 #include "MetricsManager.hxx"
 
-
 #ifdef VISUALIZE_EXECUTION
 bool bContinueRendering = true;
 std::thread tRenderer;
 
-void render()
+void
+render()
 {
-  if (nullptr == VisualizationManager::getInstance()){
+  if (nullptr == VisualizationManager::getInstance()) {
     LOG("Visualization Manager is not yet instantiated in render(). Exiting...");
     exit(SWS::INSTANCE_ACCESS_VIOLATION);
   }
 
-  while(bContinueRendering){
+  while (bContinueRendering) {
     VisualizationManager::getInstance()->render();
   }
 }
 #endif
 
-int main (int argc, char* argv[])
+int
+main(int argc, char* argv[])
 {
-  int status=0;
+  int status = 0;
 
   // Create the logger
-  if (nullptr == LogManager::getInstance()){
+  if (nullptr == LogManager::getInstance()) {
     std::cerr << "Failed to create the logger. Exiting...\n";
     return SWS::OBJECT_CREATION_FAILURE;
   }
-  auto pLogger=LogManager::getInstance();
+  auto pLogger = LogManager::getInstance();
 
   /* Create a generic metrics manager */
-  if (nullptr == MetricsManager::getInstance("SEWAS",
-                                             {"Global", "Core simulation", "Initialization", "ComputeVelocity", "ComputeStress"})){
+  if (nullptr ==
+      MetricsManager::getInstance(
+        "SEWAS", { "Global", "Core simulation", "Initialization", "ComputeVelocity", "ComputeStress" })) {
     LOG(SWS::LOG_CRITICAL, "Unable to create the metrics manager. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
-  auto mm=MetricsManager::getInstance();
+  auto mm = MetricsManager::getInstance();
 
   mm->start("Global");
 
   mm->start("Initialization");
 
   /* Intialize application parameters */
-  auto pm=*std::make_unique<SEWASParameterManager>(&argc, &argv);
+  auto pm = *std::make_unique<SEWASParameterManager>(&argc, &argv);
 
-  const auto tmax=pm.tmax();
-  const auto nt=pm.nt();
-  const auto ds=pm.ds();
-  const auto nx=pm.nx(), ny=pm.ny(), nz=pm.nz();
-  const auto cx=pm.cx(), cy=pm.cy(), cz=pm.cz();
-  const auto P=pm.P(), Q=pm.Q(), R=pm.R();
-  const auto nthreads=pm.nthreads();
+  const auto tmax = pm.tmax();
+  const auto nt = pm.nt();
+  const auto ds = pm.ds();
+  const auto nx = pm.nx(), ny = pm.ny(), nz = pm.nz();
+  const auto cx = pm.cx(), cy = pm.cy(), cz = pm.cz();
+  const auto P = pm.P(), Q = pm.Q(), R = pm.R();
+  const auto nthreads = pm.nthreads();
 
   ExecutionContext::init(pm);
 
   // Create the computational domain
-  if (nullptr == CartesianMesh3D::getInstance(nx, ny, nz, ds)){
+  if (nullptr == CartesianMesh3D::getInstance(nx, ny, nz, ds)) {
     LOG(SWS::LOG_CRITICAL, "Unable to create the mesh. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
-  auto pCartesianMesh=CartesianMesh3D::getInstance();
+  auto pCartesianMesh = CartesianMesh3D::getInstance();
 
   // Create a finite difference operator
   CentralFDOperator fdo(pCartesianMesh->dx(), pCartesianMesh->dy(), pCartesianMesh->dz());
 
   // Create the domain partitioning
-  if (nullptr == Mesh3DPartitioning::getInstance(cx, cy, cz,
-                                                 fdo.hnx(), fdo.hny(), fdo.hnz(),
-                                                 P, Q, R)){
+  if (nullptr == Mesh3DPartitioning::getInstance(cx, cy, cz, fdo.hnx(), fdo.hny(), fdo.hnz(), P, Q, R)) {
     LOG(SWS::LOG_CRITICAL, "Unable to partition the mesh. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
-  auto pMeshPartitioning=Mesh3DPartitioning::getInstance();
+  auto pMeshPartitioning = Mesh3DPartitioning::getInstance();
 
   // Create a dataset:
   /* - Lamé parameters (lambda, mu)
      - Material density (rho)
      - velocities of primary and seconday waves
   */
-  if (nullptr == DataSet::getInstance(pm)){
+  if (nullptr == DataSet::getInstance(pm)) {
     LOG(SWS::LOG_CRITICAL, "Unable to create the dataset. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
-  auto pDataSet=DataSet::getInstance();
+  auto pDataSet = DataSet::getInstance();
 
   // Create the seismic wave model
-  if (nullptr == LinearSeismicWaveModel::getInstance(fdo, pm, nt, tmax)){
+  if (nullptr == LinearSeismicWaveModel::getInstance(fdo, pm, nt, tmax)) {
     LOG(SWS::LOG_CRITICAL, "Unable to create the linear seismic wave model. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
-  auto pSEWAS=LinearSeismicWaveModel::getInstance();
+  auto pSEWAS = LinearSeismicWaveModel::getInstance();
 
-  auto rank=ExecutionContext::rank();
+  auto rank = ExecutionContext::rank();
 
 #ifdef VISUALIZE_EXECUTION
-  if (0 == rank){
+  if (0 == rank) {
     // Create and start the visualization engine : only the master process
     if (nullptr == VisualizationManager::getInstance(pSEWAS->nt(),
-                                                     pMeshPartitioning->nxx(), pMeshPartitioning->nyy(), pMeshPartitioning->nzz(),
-                                                     nthreads)){
+                                                     pMeshPartitioning->nxx(),
+                                                     pMeshPartitioning->nyy(),
+                                                     pMeshPartitioning->nzz(),
+                                                     nthreads)) {
       LOG(SWS::CRITICAL, "Unable to create the visualization engine. Exiting...");
       return SWS::OBJECT_CREATION_FAILURE;
     }
@@ -155,7 +157,7 @@ int main (int argc, char* argv[])
   LOG(SWS::LOG_INFO, "MPI process {} completed the simulation", rank);
 
 #ifdef VISUALIZE_EXECUTION
-  if (0 == rank){
+  if (0 == rank) {
     bContinueRendering = false;
     tRenderer.join();
   }
@@ -163,10 +165,10 @@ int main (int argc, char* argv[])
 
   ExecutionContext::barrier();
 
-  if (0 == rank){
-    LOG(SWS::LOG_INFO, "||Vx(0,0,0)||^2 = {}", pSEWAS->v(SWS::X)(0,0,0).norm2());
-    LOG(SWS::LOG_INFO, "||Vy(0,0,0)||^2 = {}", pSEWAS->v(SWS::Y)(0,0,0).norm2());
-    LOG(SWS::LOG_INFO, "||Vz(0,0,0)||^2 = {}", pSEWAS->v(SWS::Z)(0,0,0).norm2());
+  if (0 == rank) {
+    LOG(SWS::LOG_INFO, "||Vx(0,0,0)||^2 = {}", pSEWAS->v(SWS::X)(0, 0, 0).norm2());
+    LOG(SWS::LOG_INFO, "||Vy(0,0,0)||^2 = {}", pSEWAS->v(SWS::Y)(0, 0, 0).norm2());
+    LOG(SWS::LOG_INFO, "||Vz(0,0,0)||^2 = {}", pSEWAS->v(SWS::Z)(0, 0, 0).norm2());
   }
 
   // Release memory
@@ -175,14 +177,14 @@ int main (int argc, char* argv[])
   ExternalSource::releaseInstance();
   LinearSeismicWaveModel::releaseInstance();
 #ifdef VISUALIZE_EXECUTION
-  if (0 == rank){
+  if (0 == rank) {
     VisualizationManager::releaseInstance();
   }
 #endif
 
   mm->stop("Global");
 
-  if (0 == rank){
+  if (0 == rank) {
     mm->show();
   }
 

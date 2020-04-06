@@ -22,12 +22,13 @@
 
 #include "Config.hxx"
 
-class ExternalSource{
+class ExternalSource
+{
 public:
-  static ExternalSource * getInstance(const std::string eSourceForceFile="");
+  static ExternalSource* getInstance(const std::string eSourceForceFile = "");
   static void releaseInstance();
 
-  const SWS::SpatialField & operator()(const SWS::Directions & d) const;
+  const SWS::SpatialField& operator()(const SWS::Directions& d) const;
 
   int intializeSourceForce();
 
@@ -37,7 +38,7 @@ private:
   ExternalSource(const std::string eSourceForceFile);
   ~ExternalSource();
 
-  static ExternalSource * pInstance_;
+  static ExternalSource* pInstance_;
 
   std::string eSourceForceFile_;
 

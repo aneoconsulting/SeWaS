@@ -35,8 +35,7 @@ class ComputeVelocityTest : public ::testing::Test
 protected:
   void SetUp() override
   {
-    ASSERT_TRUE((std::is_same<SWS::RealType, float>::value ||
-                 std::is_same<SWS::RealType, double>::value));
+    ASSERT_TRUE((std::is_same<SWS::RealType, float>::value || std::is_same<SWS::RealType, double>::value));
 
     char** argv = (char**)calloc(argc_, sizeof(char*));
     for (int i = 0; i < argc_; i++) {
@@ -65,9 +64,7 @@ protected:
     int hnz = CentralFDOperator::hnz();
 
     ASSERT_NE(nullptr, CartesianMesh3D::getInstance(nx_, ny_, nz_, ds_));
-    ASSERT_NE(nullptr,
-              Mesh3DPartitioning::getInstance(
-                cx_, cy_, cz_, hnx, hny, hnz, P_, Q_, R_));
+    ASSERT_NE(nullptr, Mesh3DPartitioning::getInstance(cx_, cy_, cz_, hnx, hny, hnz, P_, Q_, R_));
 
     auto init = [&](SWS::SpatialBlockField<SWS::RealType>& fijk) {
       for (int k = fijk.kStart(); k < fijk.kEnd(); k++) {
@@ -126,8 +123,7 @@ protected:
                           CartesianMesh3D::getInstance()->dz());
 
     ASSERT_NE(nullptr, DataSet::getInstance(pm));
-    ASSERT_NE(nullptr,
-              LinearSeismicWaveModel::getInstance(fdo, pm, pm.nt(), pm.tmax()));
+    ASSERT_NE(nullptr, LinearSeismicWaveModel::getInstance(fdo, pm, pm.nt(), pm.tmax()));
 
     /* k == 2
        ------
@@ -220,8 +216,7 @@ protected:
               halo = nullptr;
             }
 
-            for (auto sc :
-                 { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
+            for (auto sc : { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
               auto& halo = sigmaH_(sc)(lii, lkk, lkk)(l);
               delete[] halo;
               halo = nullptr;
@@ -271,8 +266,7 @@ private:
           break;
       }
 
-      ASSERT_EQ(hsize,
-                HaloManager::getInstance()->getHaloSize(l, lii, ljj, lkk));
+      ASSERT_EQ(hsize, HaloManager::getInstance()->getHaloSize(l, lii, ljj, lkk));
 
       halo(l) = new SWS::RealType[hsize];
     }
@@ -280,11 +274,9 @@ private:
 
 protected:
   static inline int argc_ = 17;
-  static inline char* argv_[] = { "sewas",     "--cx",       "4", "--cy",
-                                  "4",         "--cz",       "4", "--P",
-                                  "1",         "--Q",        "1", "--R",
-                                  "1",         "--nthreads", "1", "--dfile",
-                                  "TestX.json" };
+  static inline char* argv_[] = { "sewas", "--cx",       "4", "--cy",    "4",         "--cz",
+                                  "4",     "--P",        "1", "--Q",     "1",         "--R",
+                                  "1",     "--nthreads", "1", "--dfile", "TestX.json" };
 
   int nx_;
   int ny_;

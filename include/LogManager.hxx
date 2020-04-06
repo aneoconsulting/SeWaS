@@ -38,9 +38,9 @@ public:
 #ifdef VERBOSE
 #define LOG(LEVEL, ...) LogManager::getInstance()->log<LEVEL>(__VA_ARGS__);
 #else
-#define LOG(LEVEL, ...)                                                        \
-  if constexpr (LEVEL <= SWS::LOG_ERROR) {                                     \
-    LogManager::getInstance()->log<LEVEL>(__VA_ARGS__);                        \
+#define LOG(LEVEL, ...)                                                                                      \
+  if constexpr (LEVEL <= SWS::LOG_ERROR) {                                                                   \
+    LogManager::getInstance()->log<LEVEL>(__VA_ARGS__);                                                      \
   }
 #endif
 

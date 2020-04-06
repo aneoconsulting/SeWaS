@@ -18,55 +18,47 @@
 
 #pragma once
 
-namespace SWS
+namespace SWS {
+enum Orderings
 {
-    enum Orderings
-    {
-        X_MAJOR,
-        Y_MAJOR,
-        Z_MAJOR
-    };
+  X_MAJOR,
+  Y_MAJOR,
+  Z_MAJOR
+};
 }
 
 template<SWS::Orderings Ordering>
 class Indexer
 {
 public:
-    Indexer(const int &nx, const int &ny, const int &nz) : nx_(nx),
-                                                           ny_(ny),
-                                                           nz_(nz)
-    {
-    }
+  Indexer(const int& nx, const int& ny, const int& nz)
+    : nx_(nx)
+    , ny_(ny)
+    , nz_(nz)
+  {}
 
-    ~Indexer()
-    {
-    }
-    
-    inline auto operator()(const int i, const int j, const int k) const
-    {
-        static_assert(SWS::Orderings::X_MAJOR == Ordering || SWS::Orderings::Y_MAJOR == Ordering || SWS::Orderings::Z_MAJOR == Ordering,
-                      "Unrecognized storage ordering");
+  ~Indexer() {}
 
-        if constexpr (SWS::Orderings::X_MAJOR == Ordering)
-        {
-            return (j * nx_ + i) * nz_ + k; // x-major
-        }
-        else if constexpr (SWS::Orderings::Y_MAJOR == Ordering)
-        {
-            return (i * ny_ + j) * nz_ + k; // y-major
-        }
-        else if constexpr (SWS::Orderings::Z_MAJOR == Ordering)
-        {
-            return (k * ny_ + j) * nx_ + i; // z-major
-        }
-        else
-        {
-            return -1;
-        }
+  inline auto operator()(const int i, const int j, const int k) const
+  {
+    static_assert(SWS::Orderings::X_MAJOR == Ordering ||
+                  SWS::Orderings::Y_MAJOR == Ordering ||
+                  SWS::Orderings::Z_MAJOR == Ordering,
+                  "Unrecognized storage ordering");
+
+    if constexpr (SWS::Orderings::X_MAJOR == Ordering) {
+      return (j * nx_ + i) * nz_ + k; // x-major
+    } else if constexpr (SWS::Orderings::Y_MAJOR == Ordering) {
+      return (i * ny_ + j) * nz_ + k; // y-major
+    } else if constexpr (SWS::Orderings::Z_MAJOR == Ordering) {
+      return (k * ny_ + j) * nx_ + i; // z-major
+    } else {
+      return -1;
     }
+  }
 
 private:
-    const int &nx_;
-    const int &ny_;
-    const int &nz_;
+  const int& nx_;
+  const int& ny_;
+  const int& nz_;
 };

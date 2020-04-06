@@ -20,57 +20,98 @@
 
 #include "constants.h"
 
-namespace SWS
+namespace SWS {
+enum Directions
 {
-  enum Directions{
-    X=_X,
-    Y=_Y,
-    Z=_Z,
-    DIM=_DIM
-  };
+  X = _X,
+  Y = _Y,
+  Z = _Z,
+  DIM = _DIM
+};
 
-  enum StressFieldComponents{
-    XX=_XX,
-    YY=_YY,
-    ZZ=_ZZ,
-    XY=_XY,
-    XZ=_XZ,
-    YZ=_YZ,
-    NB_STRESS_FIELD_COMPONENTS=_NB_STRESS_FIELD_COMPONENTS
-  };
+enum StressFieldComponents
+{
+  XX = _XX,
+  YY = _YY,
+  ZZ = _ZZ,
+  XY = _XY,
+  XZ = _XZ,
+  YZ = _YZ,
+  NB_STRESS_FIELD_COMPONENTS = _NB_STRESS_FIELD_COMPONENTS
+};
 
-  enum Locations{
-    LEFT=_LEFT,
-    RIGHT=_RIGHT,
-    BACKWARD=_BACKWARD,
-    FORWARD=_FORWARD,
-    BOTTOM=_BOTTOM,
-    TOP=_TOP,
-    NB_LOCATIONS=_NB_LOCATIONS
-  };
+enum Locations
+{
+  LEFT = _LEFT,
+  RIGHT = _RIGHT,
+  BACKWARD = _BACKWARD,
+  FORWARD = _FORWARD,
+  BOTTOM = _BOTTOM,
+  TOP = _TOP,
+  NB_LOCATIONS = _NB_LOCATIONS
+};
 
-  enum Errors{
-    OBJECT_CREATION_FAILURE=10,
-    BAD_TOPOLOGY_FILE_CONFIGURATION,
-    UNKNOWN_SPATIAL_DIRECTION,
-    INSTANCE_ACCESS_VIOLATION,
-    INVALID_REAL_TYPE
-  };
+enum Errors
+{
+  OBJECT_CREATION_FAILURE = 10,
+  BAD_TOPOLOGY_FILE_CONFIGURATION,
+  UNKNOWN_SPATIAL_DIRECTION,
+  INSTANCE_ACCESS_VIOLATION,
+  INVALID_REAL_TYPE
+};
 
-  enum LogLevels{
-    LOG_OFF,
-    LOG_CRITICAL,
-    LOG_ERROR,
-    LOG_WARN,
-    LOG_INFO,
-    LOG_DEBUG,
-    LOG_TRACE
-  };
+enum LogLevels
+{
+  LOG_OFF,
+  LOG_CRITICAL,
+  LOG_ERROR,
+  LOG_WARN,
+  LOG_INFO,
+  LOG_DEBUG,
+  LOG_TRACE
+};
 
-  enum DIJK {DI=0, DJ=0, DK=0}; // Identifiers to be used when applying the finite-difference operator
+enum DIJK
+{
+  DI = 0,
+  DJ = 0,
+  DK = 0
+}; // Identifiers to be used when applying the finite-difference operator
 
-  enum ClusterNodes{MP_0, MP_1, MP_2, MP_3, MP_4, MP_5, MP_6, MP_7, MP_8, MP_9, MP_10, MP_11, MP_12, MP_13, MP_14, MP_15, MP_16, MP_17, NB_CLUSTER_NODES}; // Cluster nodes
-  enum Cores{C0, C1, C2, C3, NB_CORES}; // CPU cores
+enum ClusterNodes
+{
+  MP_0,
+  MP_1,
+  MP_2,
+  MP_3,
+  MP_4,
+  MP_5,
+  MP_6,
+  MP_7,
+  MP_8,
+  MP_9,
+  MP_10,
+  MP_11,
+  MP_12,
+  MP_13,
+  MP_14,
+  MP_15,
+  MP_16,
+  MP_17,
+  NB_CLUSTER_NODES
+}; // Cluster nodes
+enum Cores
+{
+  C0,
+  C1,
+  C2,
+  C3,
+  NB_CORES
+}; // CPU cores
 
-  enum ColorizationStrategies{CORE, TIME_STEP};
+enum ColorizationStrategies
+{
+  CORE,
+  TIME_STEP
+};
 }

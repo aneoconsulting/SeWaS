@@ -21,27 +21,26 @@
 #include <type_traits>
 
 #ifdef SEWAS_WITH_PARSEC
-#include <parsec/parsec_config.h>
 #include <parsec/datatype.h>
+#include <parsec/parsec_config.h>
 #endif
 
 #include <Eigen/Core>
 
 #include "Indexer.hxx"
 
-namespace SWS
-{
-  using RealType=double;
+namespace SWS {
+using RealType = double;
 
 #ifdef SEWAS_WITH_PARSEC
-  constexpr auto PARSECRealType=parsec_datatype_double_t;
+constexpr auto PARSECRealType = parsec_datatype_double_t;
 #endif
 
-  constexpr auto Ordering = Orderings::Y_MAJOR;
+constexpr auto Ordering = Orderings::Y_MAJOR;
 
-  // Data alignment
-  constexpr int Alignment=64;
+// Data alignment
+constexpr int Alignment = 64;
 
-  // (k)
-  typedef Eigen::Array<RealType, 1, Eigen::Dynamic, Eigen::RowMajor|Eigen::AutoAlign> SpatialBlockField1D;
+// (k)
+typedef Eigen::Array<RealType, 1, Eigen::Dynamic, Eigen::RowMajor | Eigen::AutoAlign> SpatialBlockField1D;
 }

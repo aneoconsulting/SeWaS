@@ -23,10 +23,7 @@
 CartesianMesh3D* CartesianMesh3D::pInstance_ = nullptr;
 
 CartesianMesh3D*
-CartesianMesh3D::getInstance(const int nx,
-                             const int ny,
-                             const int nz,
-                             const SWS::RealType ds)
+CartesianMesh3D::getInstance(const int nx, const int ny, const int nz, const SWS::RealType ds)
 {
   if (nullptr == pInstance_) {
     pInstance_ = new CartesianMesh3D(nx, ny, nz, ds);
@@ -45,10 +42,7 @@ CartesianMesh3D::releaseInstance()
   }
 }
 
-CartesianMesh3D::CartesianMesh3D(const int nx,
-                                 const int ny,
-                                 const int nz,
-                                 const SWS::RealType ds)
+CartesianMesh3D::CartesianMesh3D(const int nx, const int ny, const int nz, const SWS::RealType ds)
 {
   ds_ = ds;
 
@@ -64,14 +58,7 @@ CartesianMesh3D::CartesianMesh3D(const int nx,
   ly_ = ny * dy_;
   lz_ = nz * dz_;
 
-  LOG(SWS::LOG_INFO,
-      "(dx, dy, dz)=({}, {}, {}), (lx, ly, lz)=({}, {}, {})",
-      dx_,
-      dy_,
-      dz_,
-      lx_,
-      ly_,
-      lz_);
+  LOG(SWS::LOG_INFO, "(dx, dy, dz)=({}, {}, {}), (lx, ly, lz)=({}, {}, {})", dx_, dy_, dz_, lx_, ly_, lz_);
 }
 
 CartesianMesh3D::~CartesianMesh3D() {}

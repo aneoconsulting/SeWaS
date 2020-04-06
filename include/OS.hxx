@@ -18,17 +18,16 @@
 
 #pragma once
 
-
 #ifdef _WIN32
 #define HOST_NAME_MAX 256
 #else
 #include <unistd.h>
 #endif
 
-#include <limits.h>
-#include <string>
 #include <iomanip>
+#include <limits.h>
 #include <sstream>
+#include <string>
 
 #ifdef _WIN32
 #ifndef NOMINMAX
@@ -36,42 +35,44 @@
 #endif
 #endif
 
-namespace SWS
+namespace SWS {
+inline std::string
+getDateTime()
 {
-  inline std::string getDateTime()
-  {
-    std::string date;
+  std::string date;
 
-    auto t = std::time(nullptr);
-    auto lt = std::localtime(&t);
+  auto t = std::time(nullptr);
+  auto lt = std::localtime(&t);
 
-    std::ostringstream oss;
-    oss << std::put_time(lt, "%d-%m-%Y_%H-%M-%S");
-    date=oss.str();
+  std::ostringstream oss;
+  oss << std::put_time(lt, "%d-%m-%Y_%H-%M-%S");
+  date = oss.str();
 
-    return date;
-  }
+  return date;
+}
 
-  inline std::string getHostName()
-  {
-    static char hostname[HOST_NAME_MAX];
+inline std::string
+getHostName()
+{
+  static char hostname[HOST_NAME_MAX];
 
 #ifdef _WIN32
-    //GetComputerName(hostname, HOST_NAME_MAX);
+  // GetComputerName(hostname, HOST_NAME_MAX);
 #else
-    gethostname(hostname, HOST_NAME_MAX);
+  gethostname(hostname, HOST_NAME_MAX);
 #endif
 
-    return hostname;
-  }
+  return hostname;
+}
 
-  inline auto getPID()
-  {
+inline auto
+getPID()
+{
 #ifdef _WIN32
-	  return 0;
-    //return static_cast<int>(::GetCurrentProcessId());
+  return 0;
+  // return static_cast<int>(::GetCurrentProcessId());
 #else
-    return static_cast<int>(::getpid());
+  return static_cast<int>(::getpid());
 #endif
-  }
+}
 };

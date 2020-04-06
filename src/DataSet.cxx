@@ -17,37 +17,41 @@
 ==============================================================================*/
 
 #include "DataSet.hxx"
-#include "Mesh3DPartitioning.hxx"
 #include "LogManager.hxx"
+#include "Mesh3DPartitioning.hxx"
 
-DataSet * DataSet::pInstance_ = nullptr;
+DataSet* DataSet::pInstance_ = nullptr;
 
-DataSet * DataSet::getInstance(const SEWASParameterManager & pm)
+DataSet*
+DataSet::getInstance(const SEWASParameterManager& pm)
 {
-  if (nullptr == pInstance_){
+  if (nullptr == pInstance_) {
     pInstance_ = new DataSet(pm);
   }
   return pInstance_;
 }
 
-DataSet * DataSet::getInstance()
+DataSet*
+DataSet::getInstance()
 {
   assert(nullptr != pInstance_);
   return pInstance_;
 }
 
-void DataSet::releaseInstance()
+void
+DataSet::releaseInstance()
 {
-  if (pInstance_){
+  if (pInstance_) {
     delete pInstance_;
     pInstance_ = nullptr;
   }
 }
 
-DataSet::DataSet(const SEWASParameterManager & pm):pm_(pm)
+DataSet::DataSet(const SEWASParameterManager& pm)
+  : pm_(pm)
 {
   // Lamé parameters
-  for (auto sc=0; sc<SWS::NB_STRESS_FIELD_COMPONENTS; sc++){
+  for (auto sc = 0; sc < SWS::NB_STRESS_FIELD_COMPONENTS; sc++) {
     Mesh3DPartitioning::getInstance()->buildSpatialField(lambda_(sc));
     Mesh3DPartitioning::getInstance()->buildSpatialField(mu_(sc));
   }
@@ -56,84 +60,86 @@ DataSet::DataSet(const SEWASParameterManager & pm):pm_(pm)
   Mesh3DPartitioning::getInstance()->buildSpatialField(rho_);
 
   // Buoyancy
-  for (auto d : {SWS::X, SWS::Y, SWS::Z}){
+  for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
     Mesh3DPartitioning::getInstance()->buildSpatialField(b_(d));
   }
 }
 
-DataSet::~DataSet()
-{
-}
+DataSet::~DataSet() {}
 
-const auto DataSet::getLayer(const int k, const int ii, const int jj, const int kk) const
+const auto
+DataSet::getLayer(const int k, const int ii, const int jj, const int kk) const
 {
   /* Get the layer to which belongs the plane of order k within the tile (ii,jj,kk) */
 
   // FIXME we assume a uniform tile size
-  const auto cz=pm_.cz(); /* Actual z-size of the tile without halo and padding */
+  const auto cz = pm_.cz(); /* Actual z-size of the tile without halo and padding */
 
-  const auto lz=(kk*cz + k)*pm_.ds();
+  const auto lz = (kk * cz + k) * pm_.ds();
 
-  for (auto & layer : pm_.layers()){
-    const auto start=pm_.start().at(layer)[SWS::Z];
-    const auto end=pm_.end().at(layer)[SWS::Z];
+  for (auto& layer : pm_.layers()) {
+    const auto start = pm_.start().at(layer)[SWS::Z];
+    const auto end = pm_.end().at(layer)[SWS::Z];
 
     if (start <= lz && lz < end)
       return layer;
   }
 
-  LOG(SWS::LOG_CRITICAL, "The plane {} from the tile {} does not belong to any layer. Check the topology file configuration. Exiting...");
+  LOG(SWS::LOG_CRITICAL,
+      "The plane {} from the tile {} does not belong to any layer. Check the topology file configuration. "
+      "Exiting...");
 
   exit(SWS::BAD_TOPOLOGY_FILE_CONFIGURATION);
 }
 
-void DataSet::initialize(const int ii, const int jj, const int kk)
+void
+DataSet::initialize(const int ii, const int jj, const int kk)
 {
   LOG(SWS::LOG_INFO, "[start] Initializing Lamé parameters on tile ({}, {}, {})", ii, jj, kk);
 
-  auto pMesh=Mesh3DPartitioning::getInstance();
+  auto pMesh = Mesh3DPartitioning::getInstance();
 
-  const int lii=pMesh->lii(ii);
-  const int ljj=pMesh->ljj(jj);
-  const int lkk=pMesh->lkk(kk);
+  const int lii = pMesh->lii(ii);
+  const int ljj = pMesh->ljj(jj);
+  const int lkk = pMesh->lkk(kk);
 
-  auto & _rho=rho_(lii,ljj,lkk);
+  auto& _rho = rho_(lii, ljj, lkk);
 
-  for (int k=_rho.kStart(); k<_rho.kEnd(); k++){
+  for (int k = _rho.kStart(); k < _rho.kEnd(); k++) {
 
-    const auto layer=getLayer(k-_rho.kStart(), ii, jj, kk);
+    const auto layer = getLayer(k - _rho.kStart(), ii, jj, kk);
 
-    const auto & vp=pm_.Vp().at(layer);
-    const auto & vs=pm_.Vs().at(layer);
-    const auto & rho=pm_.rho().at(layer);
+    const auto& vp = pm_.Vp().at(layer);
+    const auto& vs = pm_.Vs().at(layer);
+    const auto& rho = pm_.rho().at(layer);
 
     /*
       vs=sqrt(mu/rho)
       vp=sqrt((lambda+2*mu)/rho)
     */
-    auto vp2=vp*vp;
-    auto vs2=vs*vs;
+    auto vp2 = vp * vp;
+    auto vs2 = vs * vs;
 
-    for (int i=_rho.iStart(); i<_rho.iEnd(); i++){
-      for (int j=_rho.jStart(); j<_rho.jEnd(); j++){
+    for (int i = _rho.iStart(); i < _rho.iEnd(); i++) {
+      for (int j = _rho.jStart(); j < _rho.jEnd(); j++) {
 
-        _rho(i,j,k)=rho;
+        _rho(i, j, k) = rho;
 
         // Initialize Lamé parameters for the current layer
-        for (auto sc=0; sc<SWS::NB_STRESS_FIELD_COMPONENTS; sc++){
-          auto & _mu=mu_(sc)(lii,ljj,lkk);
-          auto & _lambda=lambda_(sc)(lii,ljj,lkk);
+        for (auto sc = 0; sc < SWS::NB_STRESS_FIELD_COMPONENTS; sc++) {
+          auto& _mu = mu_(sc)(lii, ljj, lkk);
+          auto& _lambda = lambda_(sc)(lii, ljj, lkk);
 
-          _mu(i,j,k)=_rho(i,j,k)*vs2;
-          _lambda(i,j,k)=_rho(i,j,k)*vp2 - 2*_mu(i,j,k);
+          _mu(i, j, k) = _rho(i, j, k) * vs2;
+          _lambda(i, j, k) = _rho(i, j, k) * vp2 - 2 * _mu(i, j, k);
         }
 
-        for (auto d=0; d<SWS::DIM; d++){
-          b_(d)(lii,ljj,lkk)(i,j,k)=1./rho_(lii,ljj,lkk)(i,j,k);
+        for (auto d = 0; d < SWS::DIM; d++) {
+          b_(d)(lii, ljj, lkk)(i, j, k) = 1. / rho_(lii, ljj, lkk)(i, j, k);
         }
 
       } // j
-    } // i
+    }   // i
 
   } // k
 

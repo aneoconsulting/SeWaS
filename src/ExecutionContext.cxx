@@ -17,10 +17,11 @@
   ==============================================================================*/
 
 #include "ExecutionContext.hxx"
-#include "SEWASPaRSEC.hxx"
 #include "LogManager.hxx"
+#include "SEWASPaRSEC.hxx"
 
-int ExecutionContext::init(SEWASParameterManager & pm)
+int
+ExecutionContext::init(SEWASParameterManager& pm)
 {
 #ifdef SEWAS_DISTRIBUTED
   /* Start the MPI runtime */

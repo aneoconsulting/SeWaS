@@ -20,28 +20,33 @@
 
 #include "Config.hxx"
 
-class CartesianMesh3D{
+class CartesianMesh3D
+{
 public:
-  static CartesianMesh3D * getInstance(const int nx=1, const int ny=1, const int nz=1,
-				       const SWS::RealType ds=1.);
+  static CartesianMesh3D* getInstance(const int nx = 1,
+                                      const int ny = 1,
+                                      const int nz = 1,
+                                      const SWS::RealType ds = 1.);
   static void releaseInstance();
 
-  inline const int & nx() const {return nx_;}
-  inline const int & ny() const {return ny_;}
-  inline const int & nz() const {return nz_;}
+  inline const int& nx() const { return nx_; }
+  inline const int& ny() const { return ny_; }
+  inline const int& nz() const { return nz_; }
 
-  inline const SWS::RealType & dx() const {return dx_;}
-  inline const SWS::RealType & dy() const {return dy_;}
-  inline const SWS::RealType & dz() const {return dz_;}
+  inline const SWS::RealType& dx() const { return dx_; }
+  inline const SWS::RealType& dy() const { return dy_; }
+  inline const SWS::RealType& dz() const { return dz_; }
 
-  inline const SWS::RealType & ds() const {return ds_;}
+  inline const SWS::RealType& ds() const { return ds_; }
 
 private:
-  CartesianMesh3D(const int nx, const int ny, const int nz,
-		  const SWS::RealType ds);
+  CartesianMesh3D(const int nx,
+                  const int ny,
+                  const int nz,
+                  const SWS::RealType ds);
   ~CartesianMesh3D();
 
-  static CartesianMesh3D * pInstance_;
+  static CartesianMesh3D* pInstance_;
 
   int nx_;
   int ny_;
