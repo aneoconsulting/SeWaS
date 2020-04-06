@@ -1,3 +1,5 @@
+include(GoogleTest)
+
 add_executable(FDOTest
     FDOUnitTest.cxx
     ../src/CartesianMesh3D.cxx
@@ -42,4 +44,17 @@ add_executable(ComputeVelocityTest
 foreach(target FDOTest HaloExtractTest HaloUpdateTest HaloExchangeTest ComputeVelocityTest)
     set_property(TARGET ${target} PROPERTY CXX_STANDARD 17)
     target_link_libraries(${target} gtest_main ${SEWAS_LIBRARIES})
+
+    # discovering tests
+    if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+        gtest_discover_tests(${target} EXTRA_ARGS "--gtest_output=xml:${CMAKE_CURRENT_BINARY_DIR}\\")
+    elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+        gtest_discover_tests(${target} EXTRA_ARGS "--gtest_output=xml:${CMAKE_CURRENT_BINARY_DIR}/")
+    else()
+        message(WARNING "GTest output directory is not set for this system : ${CMAKE_SYSTEM_NAME}")
+        gtest_discover_tests(${target})
+    endif()
 endforeach()
+
+# add hard link to input data file used by some tests
+file(CREATE_LINK ${CMAKE_SOURCE_DIR}/data/input/TestX.json ${CMAKE_CURRENT_BINARY_DIR}/TestX.json COPY_ON_ERROR)
