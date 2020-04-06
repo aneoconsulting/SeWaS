@@ -7,7 +7,8 @@ sudo: required
 
 addons:
  snaps:
-   - cmake
+   - name: cmake
+     confinement: classic
    
 compiler:
   - gcc
