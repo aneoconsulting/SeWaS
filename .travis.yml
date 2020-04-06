@@ -4,11 +4,6 @@ os:
   - linux
 dist: bionic
 sudo: required
-
-addons:
- snaps:
-   - name: cmake
-     confinement: classic
    
 compiler:
   - gcc
