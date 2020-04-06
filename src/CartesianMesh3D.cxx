@@ -17,47 +17,61 @@
 ==============================================================================*/
 
 #include "CartesianMesh3D.hxx"
+
 #include "LogManager.hxx"
 
-CartesianMesh3D * CartesianMesh3D::pInstance_ = nullptr;
+CartesianMesh3D* CartesianMesh3D::pInstance_ = nullptr;
 
-CartesianMesh3D * CartesianMesh3D::getInstance(const int nx, const int ny, const int nz,
-					       const SWS::RealType ds){
-  if (nullptr == pInstance_){
+CartesianMesh3D*
+CartesianMesh3D::getInstance(const int nx,
+                             const int ny,
+                             const int nz,
+                             const SWS::RealType ds)
+{
+  if (nullptr == pInstance_) {
     pInstance_ = new CartesianMesh3D(nx, ny, nz, ds);
     return pInstance_;
-  }
-  else{
+  } else {
     return pInstance_;
   }
 }
 
-void CartesianMesh3D::releaseInstance(){
-  if (pInstance_){
+void
+CartesianMesh3D::releaseInstance()
+{
+  if (pInstance_) {
     delete pInstance_;
     pInstance_ = nullptr;
   }
 }
 
-CartesianMesh3D::CartesianMesh3D(const int nx, const int ny, const int nz,
-				 const SWS::RealType ds)
+CartesianMesh3D::CartesianMesh3D(const int nx,
+                                 const int ny,
+                                 const int nz,
+                                 const SWS::RealType ds)
 {
-  ds_=ds;
+  ds_ = ds;
 
-  dx_=ds_;
-  dy_=ds_;
-  dz_=ds_;
+  dx_ = ds_;
+  dy_ = ds_;
+  dz_ = ds_;
 
-  nx_=nx;
-  ny_=ny;
-  nz_=nz;
+  nx_ = nx;
+  ny_ = ny;
+  nz_ = nz;
 
-  lx_=nx*dx_;
-  ly_=ny*dy_;
-  lz_=nz*dz_;
+  lx_ = nx * dx_;
+  ly_ = ny * dy_;
+  lz_ = nz * dz_;
 
-  LOG(SWS::LOG_INFO, "(dx, dy, dz)=({}, {}, {}), (lx, ly, lz)=({}, {}, {})", dx_, dy_, dz_, lx_, ly_, lz_);
+  LOG(SWS::LOG_INFO,
+      "(dx, dy, dz)=({}, {}, {}), (lx, ly, lz)=({}, {}, {})",
+      dx_,
+      dy_,
+      dz_,
+      lx_,
+      ly_,
+      lz_);
 }
 
-CartesianMesh3D::~CartesianMesh3D(){
-}
+CartesianMesh3D::~CartesianMesh3D() {}

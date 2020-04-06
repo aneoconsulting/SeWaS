@@ -1,9 +1,9 @@
-dist: xenial
-
 language: cpp
 
 os:
   - linux
+sudo: required
+dist: bionic
 
 compiler:
   - gcc
@@ -15,7 +15,12 @@ before_install:
   - sudo apt-get install libtbb-dev
   - sudo apt-get install libspdlog-dev
 
+before_script:
+  - . bootstrap.sh
+
 script:
-  - sudo mkdir build
-  - sudo cd build
-  - sudo cmake .. -DBUILD_TESTING=OFF -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DENABLE_LOGGER=ON
+  - mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON && cd -
+  - make
+
+after_success:
+  - cd build && ctest
