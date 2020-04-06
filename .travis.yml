@@ -2,9 +2,9 @@ language: cpp
 
 os:
   - linux
-sudo: required
 dist: bionic
-
+sudo: required
+   
 compiler:
   - gcc
 

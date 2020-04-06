@@ -46,7 +46,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR "${CMAKE_BUILD_TYPE}" STREQUAL "R
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	endif()
 
-	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
+	# add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
