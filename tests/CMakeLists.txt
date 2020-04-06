@@ -56,5 +56,5 @@ foreach(target FDOTest HaloExtractTest HaloUpdateTest HaloExchangeTest ComputeVe
     endif()
 endforeach()
 
-# add hard link to input data file used by some tests
-file(CREATE_LINK ${CMAKE_SOURCE_DIR}/data/input/TestX.json ${CMAKE_CURRENT_BINARY_DIR}/TestX.json COPY_ON_ERROR)
+# copy input data file used by some tests
+configure_file(${CMAKE_SOURCE_DIR}/data/input/TestX.json ${CMAKE_CURRENT_BINARY_DIR}/TestX.json)
