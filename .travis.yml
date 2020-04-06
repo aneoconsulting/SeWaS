@@ -9,9 +9,15 @@ compiler:
   - gcc
 
 before_install:
-  - ls && echo $TRAVIS_BUILD_DIR && . bootstrap.sh
+  - sudo apt-get install libboost-program-options-dev
+  - sudo apt-get install libopenmpi-dev openmpi-common
+  - sudo apt-get install libeigen3-dev
+  - sudo apt-get install libtbb-dev
+  - sudo apt-get install libspdlog-dev
 
+before_script:
+  - . bootstrap.sh
+  
 script:
-  - mkdir build
-  - cd build
-  - cmake .. -DBUILD_TESTING=OFF -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DENABLE_LOGGER=ON
+  - mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON
+  - make -j
