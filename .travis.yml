@@ -20,4 +20,4 @@ before_script:
   
 script:
   - mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON
-  - make -j
+  - make
