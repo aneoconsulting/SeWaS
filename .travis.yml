@@ -1,12 +1,14 @@
 language: cpp
-sudo: required
-dist: bionic
 
 os:
   - linux
-sudo: required
 dist: bionic
+sudo: required
 
+addons:
+ snaps:
+   - cmake
+   
 compiler:
   - gcc
 
