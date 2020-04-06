@@ -22,27 +22,22 @@
 
 #include "FDOUnitTest.hxx"
 
-
 TEST_F(FDOTest, PartialDerivativeOverX)
 {
-  rijk_(i0_,j0_)+=fdo_->apply<SWS::X>(fijk_, i0_, j0_, SWS::DK);
+  rijk_(i0_, j0_) += fdo_->apply<SWS::X>(fijk_, i0_, j0_, SWS::DK);
 
-  const auto & rij=rijk_.get(i0_,j0_);
+  for (int k = fijk_.kStart(); k < fijk_.kEnd(); k++) {
 
-  for (int k=fijk_.kStart(); k<fijk_.kEnd(); k++){
+    const auto r =
+      (c1_ * fijk_(i0_ + 1, j0_, k) + c2_ * fijk_(i0_ - 2, j0_, k) +
+       c3_ * fijk_(i0_, j0_, k) + c4_ * fijk_(i0_ - 1, j0_, k)) /
+      ds_;
 
-    const auto r=(c1_*fijk_(i0_+1,j0_,k) +
-                  c2_*fijk_(i0_-2,j0_,k) +
-                  c3_*fijk_(i0_,  j0_,k) +
-                  c4_*fijk_(i0_-1,j0_,k))/ds_;
-
-    if constexpr (std::is_same<SWS::RealType, float>::value){
-        EXPECT_FLOAT_EQ(rij(k), r) << " k = " << k;
-    }
-    else if constexpr (std::is_same<SWS::RealType, double>::value){
-        EXPECT_DOUBLE_EQ(rij(k), r) << " k = " << k;
-    }
-    else{
+    if constexpr (std::is_same<SWS::RealType, float>::value) {
+      EXPECT_FLOAT_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
+    } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+      EXPECT_DOUBLE_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
+    } else {
       std::cerr << "Unsupported element type for SWS::RealType : "
                 << typeid(SWS::RealType).name() << "\n";
       exit(SWS::INVALID_REAL_TYPE);
@@ -52,24 +47,20 @@ TEST_F(FDOTest, PartialDerivativeOverX)
 
 TEST_F(FDOTest, PartialDerivativeOverY)
 {
-  rijk_(i0_,j0_)+=fdo_->apply<SWS::Y>(fijk_, i0_, j0_, SWS::DK);
+  rijk_(i0_, j0_) += fdo_->apply<SWS::Y>(fijk_, i0_, j0_, SWS::DK);
 
-  const auto & rij=rijk_.get(i0_,j0_);
+  for (int k = fijk_.kStart(); k < fijk_.kEnd(); k++) {
 
-  for (int k=fijk_.kStart(); k<fijk_.kEnd(); k++){
+    const auto r =
+      (c1_ * fijk_(i0_, j0_ + 1, k) + c2_ * fijk_(i0_, j0_ - 2, k) +
+       c3_ * fijk_(i0_, j0_, k) + c4_ * fijk_(i0_, j0_ - 1, k)) /
+      ds_;
 
-    const auto r=(c1_*fijk_(i0_,j0_+1,k) +
-                  c2_*fijk_(i0_,j0_-2,k) +
-                  c3_*fijk_(i0_,j0_,  k) +
-                  c4_*fijk_(i0_,j0_-1,k))/ds_;
-
-    if constexpr (std::is_same<SWS::RealType, float>::value){
-        EXPECT_FLOAT_EQ(rij(k),r) << " k = " << k;
-    }
-    else if constexpr (std::is_same<SWS::RealType, double>::value){
-        EXPECT_DOUBLE_EQ(rij(k),r) << " k = " << k;
-    }
-    else{
+    if constexpr (std::is_same<SWS::RealType, float>::value) {
+      EXPECT_FLOAT_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
+    } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+      EXPECT_DOUBLE_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
+    } else {
       std::cerr << "Unsupported element type for SWS::RealType : "
                 << typeid(SWS::RealType).name() << "\n";
       exit(SWS::INVALID_REAL_TYPE);
@@ -79,26 +70,20 @@ TEST_F(FDOTest, PartialDerivativeOverY)
 
 TEST_F(FDOTest, PartialDerivativeOverZ)
 {
-  const auto & fij=fijk_.get(i0_,j0_);
+  rijk_(i0_, j0_) += fdo_->apply<SWS::Z>(fijk_, i0_, j0_, SWS::DK);
 
-  rijk_(i0_,j0_)+=fdo_->apply<SWS::Z>(fijk_, i0_, j0_, SWS::DK);
+  for (int k = fijk_.kStart(); k < fijk_.kEnd(); k++) {
 
-  const auto & rij=rijk_.get(i0_,j0_);
+    const auto r =
+      (c1_ * fijk_(i0_, j0_, k + 1) + c2_ * fijk_(i0_, j0_, k - 2) +
+       c3_ * fijk_(i0_, j0_, k) + c4_ * fijk_(i0_, j0_, k - 1)) /
+      ds_;
 
-  for (int k=fijk_.kStart(); k<fijk_.kEnd(); k++){
-
-    const auto r=(c1_*fij(k+1) +
-                  c2_*fij(k-2) +
-                  c3_*fij(k)   +
-                  c4_*fij(k-1))/ds_;
-
-    if constexpr (std::is_same<SWS::RealType, float>::value){
-        EXPECT_FLOAT_EQ(rij(k), r) << " k = " << k;
-    }
-    else if constexpr (std::is_same<SWS::RealType, double>::value){
-        EXPECT_DOUBLE_EQ(rij(k), r) << " k = " << k;
-    }
-    else{
+    if constexpr (std::is_same<SWS::RealType, float>::value) {
+      EXPECT_FLOAT_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
+    } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+      EXPECT_DOUBLE_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
+    } else {
       std::cerr << "Unsupported element type for SWS::RealType : "
                 << typeid(SWS::RealType).name() << "\n";
       exit(SWS::INVALID_REAL_TYPE);
