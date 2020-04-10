@@ -13,6 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      
     - name: install boost
       run: sudo apt-get install libboost-program-options-dev
     - name: install openmpi
@@ -23,20 +24,14 @@ jobs:
       run: sudo apt-get install libtbb-dev
     - name: install spdlog
       run: sudo apt-get install libspdlog-dev
-      
-    - name: cache vcpkg
-      id: cache-vcpkg
-      uses: actions/cache@v1.1.2
-      with:
-        # Save vcpkg to speed-up builds
-        path: $GITHUB_WORKSPACE/thirdparty/vcpkg
-        # An explicit key for restoring and saving the cache
-        key: _${{ runner.os }}-vcpkg_
-        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
-        run: . bootstrap.sh
+
+    - name: bootstrap
+      run: . bootstrap.sh
+
     - name: configure
       run: mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON && cd -
     - name: build
       run: cd build && make && cd -
+      
     - name: test
       run: cd build && ctest --output-on-failure
