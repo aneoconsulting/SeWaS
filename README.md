@@ -1,4 +1,4 @@
-![C/C++ CI](https://github.com/aneoconsulting/SeWaS/workflows/C/C++%20CI/badge.svg?branch=master)
+![Linux](https://github.com/aneoconsulting/SeWaS/workflows/C/C++%20CI/badge.svg?branch=master)
 
 # General Description of SeWaS
 This document gives an overview of [SeWaS](https://github.com/aneoconsulting/SeWaS), a modern production-class Seismic Wave Simulator. This simulator is built from scratch using C++14 and makes extensive use of state-of-the-art libraries such as [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) and [Boost](http://www.boost.org/). In addition, it embeds advanced techniques for developing HPC applications on top of emerging architectures, such as cache-blocking and vectorization. In the following, we give a macroscopic description of the underlying algorithm, data structures and the parallelization scheme.
