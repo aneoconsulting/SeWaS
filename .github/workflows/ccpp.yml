@@ -23,8 +23,6 @@ jobs:
       run: sudo apt-get install libtbb-dev
     - name: install spdlog
       run: sudo apt-get install libspdlog-dev
-    - name: bootstrap check
-      run: command -v vcpkg && ls /usr/local/bin/scripts/buildsystems && ls /usr/local/bin/scripts/buildsystems/vcpkg.cmake
     - name: bootstrap
       run: . bootstrap.sh
     - name: configure
