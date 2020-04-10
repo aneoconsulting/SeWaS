@@ -2,60 +2,20 @@
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "2.0.0",
-    "windows": {
-        "options": {
-            "shell": {
-                "executable": "bash.exe",
-                "args": ["-c"]
-            }
-        }
-    },
     "tasks": [
         {
-            "label": "SeWaS configure",
+            "label": "Bootstrap",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/build && cmake -DIO_ENABLED=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSEWAS_WITH_PARSEC=ON -DSEWAS_DISTRIBUTED=ON ..",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
-        },
-        {
-            "label": "SeWaS build",
-            "type": "shell",
-            "command": "cd ${workspaceFolder}/build && make -j4",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
-        },
-        {
-            "label": "SeWaS clean",
-            "type": "shell",
-            "command": "cd ${workspaceFolder}/build && make clean",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
-        },
-        {
-            "label": "SeWaS distclean",
-            "type": "shell",
-            "command": "cd ${workspaceFolder}/build && rm -rf CMakeCache.txt CMakeFiles cmake_install.cmake Makefile sewas.[ch]",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
-        },
-        {
-            "label": "SeWaS run",
-            "type": "shell",
-            "command": "cd ${workspaceFolder}/build && ./sewas -C ../data/input/TestA.cfg",
+            "windows": { 
+                "command": ".\\bootstrap.bat"
+            },
+            "linux": { 
+                "command": ". bootstrap.sh"
+            },
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
         }
-
     ]
 }
