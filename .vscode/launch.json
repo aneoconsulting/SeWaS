@@ -20,7 +20,7 @@
                 "--dfile=${workspaceFolder}/data/input/TestA.json"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/build",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
