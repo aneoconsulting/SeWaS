@@ -14,7 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: install boost
-      run: ls $GITHUB_WORKSPACE && echo ${env.$GITHUB_WORKSPACE} && sudo apt-get install libboost-program-options-dev
+      run: sudo apt-get install libboost-program-options-dev
     - name: install openmpi
       run: sudo apt-get install libopenmpi-dev openmpi-common
     - name: install eigen3
@@ -27,7 +27,7 @@ jobs:
       uses: actions/cache@v1.1.2
       with:
         # Save vcpkg to speed-up builds
-        path: ${env.PWD}/thirdparty/vcpkg
+        path: $GITHUB_WORKSPACE/thirdparty/vcpkg
         # An explicit key for restoring and saving the cache
         key: _vcpkg_    
     - name: bootstrap
