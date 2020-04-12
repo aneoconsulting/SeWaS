@@ -54,10 +54,16 @@
         "tensor": "cpp",
         "core": "cpp"
     },
-    "cmake.configureSettings": 
-    {
-        "IO_ENABLED" : "ON",
-        "SEWAS_DISTRIBUTED" : "ON",
-        "SEWAS_WITH_PARSEC" : "ON"
-    }
+    "cmake.configureSettings": {
+        "VERBOSE": "ON",
+        "SEWAS_DISTRIBUTED": "OFF",
+        "SEWAS_WITH_PARSEC": "OFF",
+        "COLLECT_STATS": "OFF",
+        "PLOT_DATA": "OFF",
+        "BUILD_TESTING": "OFF"
+    },
+    "cmake.configureOnOpen": true,
+    "cmake.configureArgs": [],
+    "cmake.ctestArgs": [],
+    "cmake.platform": "x64"
 }
