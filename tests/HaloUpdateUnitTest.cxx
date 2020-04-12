@@ -25,56 +25,53 @@
 
 TEST_F(HaloUpdateTest, UpdateLeftHalo)
 {
-  const auto d=SWS::X;
+  const auto d = SWS::X;
 
-  const auto cx=Mesh3DPartitioning::getInstance()->ccx()[0];
-  const auto cy=Mesh3DPartitioning::getInstance()->ccy()[0];
-  const auto cz=Mesh3DPartitioning::getInstance()->ccz()[0];
+  const auto cx = Mesh3DPartitioning::getInstance()->ccx()[0];
+  const auto cy = Mesh3DPartitioning::getInstance()->ccy()[0];
+  const auto cz = Mesh3DPartitioning::getInstance()->ccz()[0];
 
-  const auto hnx=CentralFDOperator::hnx();
-  const auto hny=CentralFDOperator::hny();
-  const auto hnz=CentralFDOperator::hnz();
+  const auto hnx = CentralFDOperator::hnx();
+  const auto hny = CentralFDOperator::hny();
+  const auto hnz = CentralFDOperator::hnz();
 
-  const auto iEnd=v_(0)(0,0,0).iEnd();
+  const auto iEnd = v_(0)(0, 0, 0).iEnd();
 
-  HaloManager::extractVelocityHaloWrapper(SWS::RIGHT, d, ts_, 0, 0, 0, vH_(d)(0,0,0)(SWS::RIGHT));
+  HaloManager::extractVelocityHaloWrapper(SWS::RIGHT, d, ts_, 0, 0, 0, vH_(d)(0, 0, 0)(SWS::RIGHT));
 
-  memcpy(vH_(d)(1,0,0)(SWS::LEFT),
-         vH_(d)(0,0,0)(SWS::RIGHT),
-         HaloManager::getInstance()->getHaloSize(SWS::RIGHT, 0, 0, 0)*sizeof(SWS::RealType));
+  memcpy(vH_(d)(1, 0, 0)(SWS::LEFT),
+         vH_(d)(0, 0, 0)(SWS::RIGHT),
+         HaloManager::getInstance()->getHaloSize(SWS::RIGHT, 0, 0, 0) * sizeof(SWS::RealType));
 
-  int iStartH=0, iEndH=hnx;
-  int jStartH=0, jEndH=cy;
-  int kStartH=0, kEndH=cz;
+  int iStartH = 0, iEndH = hnx;
+  int jStartH = 0, jEndH = cy;
+  int kStartH = 0, kEndH = cz;
 
-  int iShift=0;
-  int jShift=0;
-  int kShift=0;
+  int iShift = 0;
+  int jShift = 0;
+  int kShift = 0;
 
   Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
 
-  HaloManager::updateVelocityWrapper(SWS::LEFT, d, ts_, 1, 0, 0, vH_(d)(1,0,0)(SWS::LEFT));
+  HaloManager::updateVelocityWrapper(SWS::LEFT, d, ts_, 1, 0, 0, vH_(d)(1, 0, 0)(SWS::LEFT));
 
-  for (int i=iStartH; i<iEndH; i++){
-    for (int j=jStartH; j<jEndH; j++){
-      for (int k=kStartH; k<kEndH; k++){
+  for (int i = iStartH; i < iEndH; i++) {
+    for (int j = jStartH; j < jEndH; j++) {
+      for (int k = kStartH; k < kEndH; k++) {
 
-          auto index = indexer(i, j, k);
+        auto index = indexer(i, j, k);
 
-        const auto & v=v_(d)(1,0,0)(i+iShift,j+jShift,k+kShift);
+        const auto& v = v_(d)(1, 0, 0)(i + iShift, j + jShift, k + kShift);
 
-        if constexpr (std::is_same<SWS::RealType, float>::value){
-            EXPECT_FLOAT_EQ(v, vH_(d)(1,0,0)(SWS::LEFT)[index]);
+        if constexpr (std::is_same<SWS::RealType, float>::value) {
+          EXPECT_FLOAT_EQ(v, vH_(d)(1, 0, 0)(SWS::LEFT)[index]);
+        } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+          EXPECT_DOUBLE_EQ(v, vH_(d)(1, 0, 0)(SWS::LEFT)[index]);
+        } else {
+          std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name()
+                    << "\n";
+          exit(SWS::INVALID_REAL_TYPE);
         }
-        else if constexpr (std::is_same<SWS::RealType, double>::value){
-            EXPECT_DOUBLE_EQ(v, vH_(d)(1,0,0)(SWS::LEFT)[index]);
-        }
-        else{
-            std::cerr << "Unsupported element type for SWS::RealType : "
-                      << typeid(SWS::RealType).name() << "\n";
-            exit(SWS::INVALID_REAL_TYPE);
-        }
-
       }
     }
   }
@@ -82,56 +79,53 @@ TEST_F(HaloUpdateTest, UpdateLeftHalo)
 
 TEST_F(HaloUpdateTest, UpdateRightHalo)
 {
-  const auto d=SWS::X;
+  const auto d = SWS::X;
 
-  const auto cx=Mesh3DPartitioning::getInstance()->ccx()[0];
-  const auto cy=Mesh3DPartitioning::getInstance()->ccy()[0];
-  const auto cz=Mesh3DPartitioning::getInstance()->ccz()[0];
+  const auto cx = Mesh3DPartitioning::getInstance()->ccx()[0];
+  const auto cy = Mesh3DPartitioning::getInstance()->ccy()[0];
+  const auto cz = Mesh3DPartitioning::getInstance()->ccz()[0];
 
-  const auto hnx=CentralFDOperator::hnx();
-  const auto hny=CentralFDOperator::hny();
-  const auto hnz=CentralFDOperator::hnz();
+  const auto hnx = CentralFDOperator::hnx();
+  const auto hny = CentralFDOperator::hny();
+  const auto hnz = CentralFDOperator::hnz();
 
-  const auto iEnd=v_(0)(0,0,0).iEnd();
+  const auto iEnd = v_(0)(0, 0, 0).iEnd();
 
-  HaloManager::extractVelocityHaloWrapper(SWS::LEFT, d, ts_, 1, 0, 0, vH_(d)(1,0,0)(SWS::LEFT));
+  HaloManager::extractVelocityHaloWrapper(SWS::LEFT, d, ts_, 1, 0, 0, vH_(d)(1, 0, 0)(SWS::LEFT));
 
-  memcpy(vH_(d)(0,0,0)(SWS::RIGHT),
-         vH_(d)(1,0,0)(SWS::LEFT),
-         HaloManager::getInstance()->getHaloSize(SWS::RIGHT, 0, 0, 0)*sizeof(SWS::RealType));
+  memcpy(vH_(d)(0, 0, 0)(SWS::RIGHT),
+         vH_(d)(1, 0, 0)(SWS::LEFT),
+         HaloManager::getInstance()->getHaloSize(SWS::RIGHT, 0, 0, 0) * sizeof(SWS::RealType));
 
-  int iStartH=0, iEndH=hnx;
-  int jStartH=0, jEndH=cy;
-  int kStartH=0, kEndH=cz;
+  int iStartH = 0, iEndH = hnx;
+  int jStartH = 0, jEndH = cy;
+  int kStartH = 0, kEndH = cz;
 
-  int iShift=iEnd;
-  int jShift=0;
-  int kShift=0;
+  int iShift = iEnd;
+  int jShift = 0;
+  int kShift = 0;
 
   Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
 
-  HaloManager::updateVelocityWrapper(SWS::RIGHT, d, ts_, 0, 0, 0, vH_(d)(0,0,0)(SWS::RIGHT));
+  HaloManager::updateVelocityWrapper(SWS::RIGHT, d, ts_, 0, 0, 0, vH_(d)(0, 0, 0)(SWS::RIGHT));
 
-  for (int i=iStartH; i<iEndH; i++){
-    for (int j=jStartH; j<jEndH; j++){
-      for (int k=kStartH; k<kEndH; k++){
+  for (int i = iStartH; i < iEndH; i++) {
+    for (int j = jStartH; j < jEndH; j++) {
+      for (int k = kStartH; k < kEndH; k++) {
 
-          auto index = indexer(i, j, k);
+        auto index = indexer(i, j, k);
 
-        const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
+        const auto& v = v_(d)(0, 0, 0)(i + iShift, j + jShift, k + kShift);
 
-        if constexpr (std::is_same<SWS::RealType, float>::value){
-            EXPECT_FLOAT_EQ(v, vH_(d)(0,0,0)(SWS::RIGHT)[index]);
+        if constexpr (std::is_same<SWS::RealType, float>::value) {
+          EXPECT_FLOAT_EQ(v, vH_(d)(0, 0, 0)(SWS::RIGHT)[index]);
+        } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+          EXPECT_DOUBLE_EQ(v, vH_(d)(0, 0, 0)(SWS::RIGHT)[index]);
+        } else {
+          std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name()
+                    << "\n";
+          exit(SWS::INVALID_REAL_TYPE);
         }
-        else if constexpr (std::is_same<SWS::RealType, double>::value){
-            EXPECT_DOUBLE_EQ(v, vH_(d)(0,0,0)(SWS::RIGHT)[index]);
-        }
-        else{
-            std::cerr << "Unsupported element type for SWS::RealType : "
-                      << typeid(SWS::RealType).name() << "\n";
-            exit(SWS::INVALID_REAL_TYPE);
-        }
-
       }
     }
   }
@@ -139,56 +133,53 @@ TEST_F(HaloUpdateTest, UpdateRightHalo)
 
 TEST_F(HaloUpdateTest, UpdateBackwardHalo)
 {
-  const auto d=SWS::X;
+  const auto d = SWS::X;
 
-  const auto cx=Mesh3DPartitioning::getInstance()->ccx()[0];
-  const auto cy=Mesh3DPartitioning::getInstance()->ccy()[0];
-  const auto cz=Mesh3DPartitioning::getInstance()->ccz()[0];
+  const auto cx = Mesh3DPartitioning::getInstance()->ccx()[0];
+  const auto cy = Mesh3DPartitioning::getInstance()->ccy()[0];
+  const auto cz = Mesh3DPartitioning::getInstance()->ccz()[0];
 
-  const auto hnx=CentralFDOperator::hnx();
-  const auto hny=CentralFDOperator::hny();
-  const auto hnz=CentralFDOperator::hnz();
+  const auto hnx = CentralFDOperator::hnx();
+  const auto hny = CentralFDOperator::hny();
+  const auto hnz = CentralFDOperator::hnz();
 
-  const auto jEnd=v_(0)(0,0,0).jEnd();
+  const auto jEnd = v_(0)(0, 0, 0).jEnd();
 
-  HaloManager::extractVelocityHaloWrapper(SWS::FORWARD, d, ts_, 0, 0, 0, vH_(d)(0,0,0)(SWS::FORWARD));
+  HaloManager::extractVelocityHaloWrapper(SWS::FORWARD, d, ts_, 0, 0, 0, vH_(d)(0, 0, 0)(SWS::FORWARD));
 
-  memcpy(vH_(d)(0,1,0)(SWS::BACKWARD),
-         vH_(d)(0,0,0)(SWS::FORWARD),
-         HaloManager::getInstance()->getHaloSize(SWS::FORWARD, 0, 0, 0)*sizeof(SWS::RealType));
+  memcpy(vH_(d)(0, 1, 0)(SWS::BACKWARD),
+         vH_(d)(0, 0, 0)(SWS::FORWARD),
+         HaloManager::getInstance()->getHaloSize(SWS::FORWARD, 0, 0, 0) * sizeof(SWS::RealType));
 
-  int iStartH=0, iEndH=cx;
-  int jStartH=0, jEndH=hny;
-  int kStartH=0, kEndH=cz;
+  int iStartH = 0, iEndH = cx;
+  int jStartH = 0, jEndH = hny;
+  int kStartH = 0, kEndH = cz;
 
-  int iShift=0;
-  int jShift=0;
-  int kShift=0;
+  int iShift = 0;
+  int jShift = 0;
+  int kShift = 0;
 
   Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
 
-  HaloManager::updateVelocityWrapper(SWS::BACKWARD, d, ts_, 0, 1, 0, vH_(d)(0,1,0)(SWS::BACKWARD));
+  HaloManager::updateVelocityWrapper(SWS::BACKWARD, d, ts_, 0, 1, 0, vH_(d)(0, 1, 0)(SWS::BACKWARD));
 
-  for (int i=iStartH; i<iEndH; i++){
-    for (int j=jStartH; j<jEndH; j++){
-      for (int k=kStartH; k<kEndH; k++){
+  for (int i = iStartH; i < iEndH; i++) {
+    for (int j = jStartH; j < jEndH; j++) {
+      for (int k = kStartH; k < kEndH; k++) {
 
-          auto index = indexer(i, j, k);
+        auto index = indexer(i, j, k);
 
-        const auto & v=v_(d)(0,1,0)(i+iShift,j+jShift,k+kShift);
+        const auto& v = v_(d)(0, 1, 0)(i + iShift, j + jShift, k + kShift);
 
-        if constexpr (std::is_same<SWS::RealType, float>::value){
-            EXPECT_FLOAT_EQ(v, vH_(d)(0,1,0)(SWS::BACKWARD)[index]);
+        if constexpr (std::is_same<SWS::RealType, float>::value) {
+          EXPECT_FLOAT_EQ(v, vH_(d)(0, 1, 0)(SWS::BACKWARD)[index]);
+        } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+          EXPECT_DOUBLE_EQ(v, vH_(d)(0, 1, 0)(SWS::BACKWARD)[index]);
+        } else {
+          std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name()
+                    << "\n";
+          exit(SWS::INVALID_REAL_TYPE);
         }
-        else if constexpr (std::is_same<SWS::RealType, double>::value){
-            EXPECT_DOUBLE_EQ(v, vH_(d)(0,1,0)(SWS::BACKWARD)[index]);
-        }
-        else{
-            std::cerr << "Unsupported element type for SWS::RealType : "
-                      << typeid(SWS::RealType).name() << "\n";
-            exit(SWS::INVALID_REAL_TYPE);
-        }
-
       }
     }
   }
@@ -196,56 +187,53 @@ TEST_F(HaloUpdateTest, UpdateBackwardHalo)
 
 TEST_F(HaloUpdateTest, UpdateForwardHalo)
 {
-  const auto d=SWS::X;
+  const auto d = SWS::X;
 
-  const auto cx=Mesh3DPartitioning::getInstance()->ccx()[0];
-  const auto cy=Mesh3DPartitioning::getInstance()->ccy()[0];
-  const auto cz=Mesh3DPartitioning::getInstance()->ccz()[0];
+  const auto cx = Mesh3DPartitioning::getInstance()->ccx()[0];
+  const auto cy = Mesh3DPartitioning::getInstance()->ccy()[0];
+  const auto cz = Mesh3DPartitioning::getInstance()->ccz()[0];
 
-  const auto hnx=CentralFDOperator::hnx();
-  const auto hny=CentralFDOperator::hny();
-  const auto hnz=CentralFDOperator::hnz();
+  const auto hnx = CentralFDOperator::hnx();
+  const auto hny = CentralFDOperator::hny();
+  const auto hnz = CentralFDOperator::hnz();
 
-  const auto jEnd=v_(0)(0,0,0).jEnd();
+  const auto jEnd = v_(0)(0, 0, 0).jEnd();
 
-  HaloManager::extractVelocityHaloWrapper(SWS::BACKWARD, d, ts_, 0, 1, 0, vH_(d)(0,1,0)(SWS::BACKWARD));
+  HaloManager::extractVelocityHaloWrapper(SWS::BACKWARD, d, ts_, 0, 1, 0, vH_(d)(0, 1, 0)(SWS::BACKWARD));
 
-  memcpy(vH_(d)(0,0,0)(SWS::FORWARD),
-         vH_(d)(1,0,0)(SWS::BACKWARD),
-         HaloManager::getInstance()->getHaloSize(SWS::FORWARD, 0, 0, 0)*sizeof(SWS::RealType));
+  memcpy(vH_(d)(0, 0, 0)(SWS::FORWARD),
+         vH_(d)(1, 0, 0)(SWS::BACKWARD),
+         HaloManager::getInstance()->getHaloSize(SWS::FORWARD, 0, 0, 0) * sizeof(SWS::RealType));
 
-  int iStartH=0, iEndH=cx;
-  int jStartH=0, jEndH=hny;
-  int kStartH=0, kEndH=cz;
+  int iStartH = 0, iEndH = cx;
+  int jStartH = 0, jEndH = hny;
+  int kStartH = 0, kEndH = cz;
 
-  int iShift=0;
-  int jShift=jEnd;
-  int kShift=0;
+  int iShift = 0;
+  int jShift = jEnd;
+  int kShift = 0;
 
   Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
 
-  HaloManager::updateVelocityWrapper(SWS::FORWARD, d, ts_, 0, 0, 0, vH_(d)(0,0,0)(SWS::FORWARD));
+  HaloManager::updateVelocityWrapper(SWS::FORWARD, d, ts_, 0, 0, 0, vH_(d)(0, 0, 0)(SWS::FORWARD));
 
-  for (int i=iStartH; i<iEndH; i++){
-    for (int j=jStartH; j<jEndH; j++){
-      for (int k=kStartH; k<kEndH; k++){
+  for (int i = iStartH; i < iEndH; i++) {
+    for (int j = jStartH; j < jEndH; j++) {
+      for (int k = kStartH; k < kEndH; k++) {
 
-          auto index = indexer(i, j, k);
+        auto index = indexer(i, j, k);
 
-        const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
+        const auto& v = v_(d)(0, 0, 0)(i + iShift, j + jShift, k + kShift);
 
-        if constexpr (std::is_same<SWS::RealType, float>::value){
-            EXPECT_FLOAT_EQ(v, vH_(d)(0,0,0)(SWS::FORWARD)[index]);
+        if constexpr (std::is_same<SWS::RealType, float>::value) {
+          EXPECT_FLOAT_EQ(v, vH_(d)(0, 0, 0)(SWS::FORWARD)[index]);
+        } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+          EXPECT_DOUBLE_EQ(v, vH_(d)(0, 0, 0)(SWS::FORWARD)[index]);
+        } else {
+          std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name()
+                    << "\n";
+          exit(SWS::INVALID_REAL_TYPE);
         }
-        else if constexpr (std::is_same<SWS::RealType, double>::value){
-            EXPECT_DOUBLE_EQ(v, vH_(d)(0,0,0)(SWS::FORWARD)[index]);
-        }
-        else{
-            std::cerr << "Unsupported element type for SWS::RealType : "
-                      << typeid(SWS::RealType).name() << "\n";
-            exit(SWS::INVALID_REAL_TYPE);
-        }
-
       }
     }
   }
@@ -253,56 +241,53 @@ TEST_F(HaloUpdateTest, UpdateForwardHalo)
 
 TEST_F(HaloUpdateTest, UpdateBottomHalo)
 {
-  const auto d=SWS::X;
+  const auto d = SWS::X;
 
-  const auto cx=Mesh3DPartitioning::getInstance()->ccx()[0];
-  const auto cy=Mesh3DPartitioning::getInstance()->ccy()[0];
-  const auto cz=Mesh3DPartitioning::getInstance()->ccz()[0];
+  const auto cx = Mesh3DPartitioning::getInstance()->ccx()[0];
+  const auto cy = Mesh3DPartitioning::getInstance()->ccy()[0];
+  const auto cz = Mesh3DPartitioning::getInstance()->ccz()[0];
 
-  const auto hnx=CentralFDOperator::hnx();
-  const auto hny=CentralFDOperator::hny();
-  const auto hnz=CentralFDOperator::hnz();
+  const auto hnx = CentralFDOperator::hnx();
+  const auto hny = CentralFDOperator::hny();
+  const auto hnz = CentralFDOperator::hnz();
 
-  const auto kEnd=v_(0)(0,0,0).kEnd();
+  const auto kEnd = v_(0)(0, 0, 0).kEnd();
 
-  HaloManager::extractVelocityHaloWrapper(SWS::TOP, d, ts_, 0, 0, 0, vH_(d)(0,0,0)(SWS::TOP));
+  HaloManager::extractVelocityHaloWrapper(SWS::TOP, d, ts_, 0, 0, 0, vH_(d)(0, 0, 0)(SWS::TOP));
 
-  memcpy(vH_(d)(0,0,1)(SWS::BOTTOM),
-         vH_(d)(0,0,0)(SWS::TOP),
-         HaloManager::getInstance()->getHaloSize(SWS::TOP, 0, 0, 0)*sizeof(SWS::RealType));
+  memcpy(vH_(d)(0, 0, 1)(SWS::BOTTOM),
+         vH_(d)(0, 0, 0)(SWS::TOP),
+         HaloManager::getInstance()->getHaloSize(SWS::TOP, 0, 0, 0) * sizeof(SWS::RealType));
 
-  int iStartH=0, iEndH=cx;
-  int jStartH=0, jEndH=cy;
-  int kStartH=0, kEndH=hnx;
+  int iStartH = 0, iEndH = cx;
+  int jStartH = 0, jEndH = cy;
+  int kStartH = 0, kEndH = hnx;
 
-  int iShift=0;
-  int jShift=0;
-  int kShift=0;
+  int iShift = 0;
+  int jShift = 0;
+  int kShift = 0;
 
   Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
 
-  HaloManager::updateVelocityWrapper(SWS::BOTTOM, d, ts_, 0, 0, 1, vH_(d)(0,0,1)(SWS::BOTTOM));
+  HaloManager::updateVelocityWrapper(SWS::BOTTOM, d, ts_, 0, 0, 1, vH_(d)(0, 0, 1)(SWS::BOTTOM));
 
-  for (int i=iStartH; i<iEndH; i++){
-    for (int j=jStartH; j<jEndH; j++){
-      for (int k=kStartH; k<kEndH; k++){
+  for (int i = iStartH; i < iEndH; i++) {
+    for (int j = jStartH; j < jEndH; j++) {
+      for (int k = kStartH; k < kEndH; k++) {
 
-          auto index = indexer(i, j, k);
+        auto index = indexer(i, j, k);
 
-        const auto & v=v_(d)(0,0,1)(i+iShift,j+jShift,k+kShift);
+        const auto& v = v_(d)(0, 0, 1)(i + iShift, j + jShift, k + kShift);
 
-        if constexpr (std::is_same<SWS::RealType, float>::value){
-            EXPECT_FLOAT_EQ(v, vH_(d)(0,0,1)(SWS::BOTTOM)[index]);
+        if constexpr (std::is_same<SWS::RealType, float>::value) {
+          EXPECT_FLOAT_EQ(v, vH_(d)(0, 0, 1)(SWS::BOTTOM)[index]);
+        } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+          EXPECT_DOUBLE_EQ(v, vH_(d)(0, 0, 1)(SWS::BOTTOM)[index]);
+        } else {
+          std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name()
+                    << "\n";
+          exit(SWS::INVALID_REAL_TYPE);
         }
-        else if constexpr (std::is_same<SWS::RealType, double>::value){
-            EXPECT_DOUBLE_EQ(v, vH_(d)(0,0,1)(SWS::BOTTOM)[index]);
-        }
-        else{
-            std::cerr << "Unsupported element type for SWS::RealType : "
-                      << typeid(SWS::RealType).name() << "\n";
-            exit(SWS::INVALID_REAL_TYPE);
-        }
-
       }
     }
   }
@@ -310,56 +295,53 @@ TEST_F(HaloUpdateTest, UpdateBottomHalo)
 
 TEST_F(HaloUpdateTest, UpdateTopHalo)
 {
-  const auto d=SWS::X;
+  const auto d = SWS::X;
 
-  const auto cx=Mesh3DPartitioning::getInstance()->ccx()[0];
-  const auto cy=Mesh3DPartitioning::getInstance()->ccy()[0];
-  const auto cz=Mesh3DPartitioning::getInstance()->ccz()[0];
+  const auto cx = Mesh3DPartitioning::getInstance()->ccx()[0];
+  const auto cy = Mesh3DPartitioning::getInstance()->ccy()[0];
+  const auto cz = Mesh3DPartitioning::getInstance()->ccz()[0];
 
-  const auto hnx=CentralFDOperator::hnx();
-  const auto hny=CentralFDOperator::hny();
-  const auto hnz=CentralFDOperator::hnz();
+  const auto hnx = CentralFDOperator::hnx();
+  const auto hny = CentralFDOperator::hny();
+  const auto hnz = CentralFDOperator::hnz();
 
-  const auto kEnd=v_(0)(0,0,0).kEnd();
+  const auto kEnd = v_(0)(0, 0, 0).kEnd();
 
-  HaloManager::extractVelocityHaloWrapper(SWS::BOTTOM, d, ts_, 0, 0, 1, vH_(d)(0,0,1)(SWS::BOTTOM));
+  HaloManager::extractVelocityHaloWrapper(SWS::BOTTOM, d, ts_, 0, 0, 1, vH_(d)(0, 0, 1)(SWS::BOTTOM));
 
-  memcpy(vH_(d)(0,0,0)(SWS::TOP),
-         vH_(d)(0,0,1)(SWS::BOTTOM),
-         HaloManager::getInstance()->getHaloSize(SWS::TOP, 0, 0, 0)*sizeof(SWS::RealType));
+  memcpy(vH_(d)(0, 0, 0)(SWS::TOP),
+         vH_(d)(0, 0, 1)(SWS::BOTTOM),
+         HaloManager::getInstance()->getHaloSize(SWS::TOP, 0, 0, 0) * sizeof(SWS::RealType));
 
-  int iStartH=0, iEndH=cx;
-  int jStartH=0, jEndH=cy;
-  int kStartH=0, kEndH=hnz;
+  int iStartH = 0, iEndH = cx;
+  int jStartH = 0, jEndH = cy;
+  int kStartH = 0, kEndH = hnz;
 
-  int iShift=0;
-  int jShift=0;
-  int kShift=kEnd;
+  int iShift = 0;
+  int jShift = 0;
+  int kShift = kEnd;
 
   Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
 
-  HaloManager::updateVelocityWrapper(SWS::TOP, d, ts_, 0, 0, 0, vH_(d)(0,0,0)(SWS::TOP));
+  HaloManager::updateVelocityWrapper(SWS::TOP, d, ts_, 0, 0, 0, vH_(d)(0, 0, 0)(SWS::TOP));
 
-  for (int i=iStartH; i<iEndH; i++){
-    for (int j=jStartH; j<jEndH; j++){
-      for (int k=kStartH; k<kEndH; k++){
+  for (int i = iStartH; i < iEndH; i++) {
+    for (int j = jStartH; j < jEndH; j++) {
+      for (int k = kStartH; k < kEndH; k++) {
 
-          auto index = indexer(i, j, k);
+        auto index = indexer(i, j, k);
 
-        const auto & v=v_(d)(0,0,0)(i+iShift,j+jShift,k+kShift);
+        const auto& v = v_(d)(0, 0, 0)(i + iShift, j + jShift, k + kShift);
 
-        if constexpr (std::is_same<SWS::RealType, float>::value){
-            EXPECT_FLOAT_EQ(v, vH_(d)(0,0,0)(SWS::TOP)[index]);
+        if constexpr (std::is_same<SWS::RealType, float>::value) {
+          EXPECT_FLOAT_EQ(v, vH_(d)(0, 0, 0)(SWS::TOP)[index]);
+        } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+          EXPECT_DOUBLE_EQ(v, vH_(d)(0, 0, 0)(SWS::TOP)[index]);
+        } else {
+          std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name()
+                    << "\n";
+          exit(SWS::INVALID_REAL_TYPE);
         }
-        else if constexpr (std::is_same<SWS::RealType, double>::value){
-            EXPECT_DOUBLE_EQ(v, vH_(d)(0,0,0)(SWS::TOP)[index]);
-        }
-        else{
-            std::cerr << "Unsupported element type for SWS::RealType : "
-                      << typeid(SWS::RealType).name() << "\n";
-            exit(SWS::INVALID_REAL_TYPE);
-        }
-
       }
     }
   }

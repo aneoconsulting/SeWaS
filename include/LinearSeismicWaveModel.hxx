@@ -22,69 +22,64 @@
 
 #include <Eigen/Core>
 
-#include "Config.hxx"
 #include "CentralFDOperator.hxx"
+#include "Config.hxx"
 #include "HaloManager.hxx"
 #include "SEWASParameterManager.hxx"
 
-class LinearSeismicWaveModel{
+class LinearSeismicWaveModel
+{
 public:
-  static LinearSeismicWaveModel * getInstance(const CentralFDOperator & fdo,
-                                              const SEWASParameterManager & pm,
-					      const int nt=1, const float tmax=1.0);
-  static LinearSeismicWaveModel * getInstance();
+  static LinearSeismicWaveModel* getInstance(const CentralFDOperator& fdo,
+                                             const SEWASParameterManager& pm,
+                                             const int nt = 1,
+                                             const float tmax = 1.0);
+  static LinearSeismicWaveModel* getInstance();
 
   static void releaseInstance();
 
   int propagate() noexcept;
 
-  inline const auto & v(const SWS::Directions & d) const { return v_(d); }
+  inline const auto& v(const SWS::Directions& d) const { return v_(d); }
 
-  inline const auto & sigma(const SWS::StressFieldComponents & sc) const { return sigma_(sc); }
+  inline const auto& sigma(const SWS::StressFieldComponents& sc) const { return sigma_(sc); }
 
-  inline const auto & nt() const { return nt_; }
+  inline const auto& nt() const { return nt_; }
 
   /* Entry points called by the PaRSEC runtime when executing tasks' BODY */
   static int initializeFieldsWrapper(const int ii, const int jj, const int kk);
 
-  static int computeVelocityWrapper(const int d,
-				    const int ts,
-				    const int ii, const int jj, const int kk);
+  static int computeVelocityWrapper(const int d, const int ts, const int ii, const int jj, const int kk);
 
-  static int computeStressWrapper(const int sc,
-				  const int ts,
-				  const int ii, const int jj, const int kk);
+  static int computeStressWrapper(const int sc, const int ts, const int ii, const int jj, const int kk);
 
 private:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW // To force an object of this class to be allocated as aligned
 
-  LinearSeismicWaveModel(const CentralFDOperator & fdo,
-                         const SEWASParameterManager & pm,
-			 const int nt, const float tmax);
+  LinearSeismicWaveModel(const CentralFDOperator& fdo,
+                         const SEWASParameterManager& pm,
+                         const int nt,
+                         const float tmax);
   ~LinearSeismicWaveModel();
 
   void initialize(const int ii, const int jj, const int kk);
 
   void setVelocitySourceLocations();
 
-  void addVelocitySource(const SWS::Directions & d,
-                         const int ts,
-                         const int ii, const int jj, const int kk);
+  void addVelocitySource(const SWS::Directions& d, const int ts, const int ii, const int jj, const int kk);
 
-  int computeVelocity(const SWS::Directions & d,
-		      const int & ts,
-		      const int & ii, const int & jj, const int & kk);
+  int computeVelocity(const SWS::Directions& d, const int& ts, const int& ii, const int& jj, const int& kk);
 
-  int computeStress(const SWS::StressFieldComponents & sc,
-		    const int & ts,
-		    const int & ii, const int & jj, const int & kk);
+  int computeStress(const SWS::StressFieldComponents& sc,
+                    const int& ts,
+                    const int& ii,
+                    const int& jj,
+                    const int& kk);
 
+  static LinearSeismicWaveModel* pInstance_;
 
-
-  static LinearSeismicWaveModel * pInstance_;
-
-  const CentralFDOperator & fdo_;
-  const SEWASParameterManager & pm_;
+  const CentralFDOperator& fdo_;
+  const SEWASParameterManager& pm_;
 
   int nt_;
   float tmax_;

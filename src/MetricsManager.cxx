@@ -20,41 +20,40 @@
 
 #include <cassert>
 
-MetricsManager * MetricsManager::pInstance_ = nullptr;
+MetricsManager* MetricsManager::pInstance_ = nullptr;
 
-MetricsManager * MetricsManager::getInstance(const std::string applicationName,
-                                             const std::initializer_list<std::string> sampledEvents)
+MetricsManager*
+MetricsManager::getInstance(const std::string applicationName,
+                            const std::initializer_list<std::string> sampledEvents)
 {
-  if (nullptr == pInstance_){
-    pInstance_ = new MetricsManager(applicationName,
-                                    sampledEvents);
+  if (nullptr == pInstance_) {
+    pInstance_ = new MetricsManager(applicationName, sampledEvents);
     return pInstance_;
-  }
-  else{
+  } else {
     return pInstance_;
   }
 }
 
-MetricsManager * MetricsManager::getInstance()
+MetricsManager*
+MetricsManager::getInstance()
 {
   assert(nullptr != pInstance_);
   return pInstance_;
 }
 
-void MetricsManager::releaseInstance()
+void
+MetricsManager::releaseInstance()
 {
-  if (pInstance_){
+  if (pInstance_) {
     delete pInstance_;
     pInstance_ = nullptr;
   }
 }
 
 MetricsManager::MetricsManager(const std::string applicationName,
-                               const std::initializer_list<std::string> sampledEvents) : applicationName_(applicationName),
-                                                                                         sampledEvents_(sampledEvents)
-{
-}
+                               const std::initializer_list<std::string> sampledEvents)
+  : applicationName_(applicationName)
+  , sampledEvents_(sampledEvents)
+{}
 
-MetricsManager::~MetricsManager()
-{
-}
+MetricsManager::~MetricsManager() {}

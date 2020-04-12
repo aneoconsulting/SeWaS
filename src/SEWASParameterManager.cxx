@@ -21,19 +21,18 @@
 
 #include "SEWASParameterManager.hxx"
 
-SEWASParameterManager::SEWASParameterManager(int * pargc, char *** pargv)
+SEWASParameterManager::SEWASParameterManager(int* pargc, char*** pargv)
 {
-  pargc_=pargc;
-  pargv_=pargv;
+  pargc_ = pargc;
+  pargv_ = pargv;
 
   parse();
 }
 
-SEWASParameterManager::~SEWASParameterManager()
-{
-}
+SEWASParameterManager::~SEWASParameterManager() {}
 
-int SEWASParameterManager::parse()
+int
+SEWASParameterManager::parse()
 {
   /* Parse command line arguments */
   parseArgs();

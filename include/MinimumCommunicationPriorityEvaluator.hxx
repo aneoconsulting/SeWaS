@@ -20,118 +20,131 @@
 
 #include "Config.hxx"
 
-class MinimumCommunicationPriorityEvaluator{
+class MinimumCommunicationPriorityEvaluator
+{
 public:
-  MinimumCommunicationPriorityEvaluator(const int nxx, const int nyy, const int nzz,
-                                        const int lnxx, const int lnyy, const int lnzz) : nxx_(nxx), nyy_(nyy), nzz_(nzz),
-                                                                                          lnxx_(lnxx), lnyy_(lnyy), lnzz_(lnzz)
+  MinimumCommunicationPriorityEvaluator(const int nxx,
+                                        const int nyy,
+                                        const int nzz,
+                                        const int lnxx,
+                                        const int lnyy,
+                                        const int lnzz)
+    : nxx_(nxx)
+    , nyy_(nyy)
+    , nzz_(nzz)
+    , lnxx_(lnxx)
+    , lnyy_(lnyy)
+    , lnzz_(lnzz)
   {
-    taskGroups_(COMPUTE_VELOCITY)=4;
-    taskGroups_(DISPLAY_VELOCITY)=4;
-    taskGroups_(COMPUTE_STRESS)=4;
-    taskGroups_(DISPLAY_STRESS)=4;
-    taskGroups_(UPDATE_VELOCITY)=3;
-    taskGroups_(UPDATE_STRESS)=3;
-    taskGroups_(EXTRACT_VELOCITY_HALO)=2;
-    taskGroups_(EXTRACT_STRESS_HALO)=2;
-    taskGroups_(INITIALIZE_FIELDS)=1;
+    taskGroups_(COMPUTE_VELOCITY) = 4;
+    taskGroups_(DISPLAY_VELOCITY) = 4;
+    taskGroups_(COMPUTE_STRESS) = 4;
+    taskGroups_(DISPLAY_STRESS) = 4;
+    taskGroups_(UPDATE_VELOCITY) = 3;
+    taskGroups_(UPDATE_STRESS) = 3;
+    taskGroups_(EXTRACT_VELOCITY_HALO) = 2;
+    taskGroups_(EXTRACT_STRESS_HALO) = 2;
+    taskGroups_(INITIALIZE_FIELDS) = 1;
   }
 
-  ~MinimumCommunicationPriorityEvaluator()
-  {
-  }
+  ~MinimumCommunicationPriorityEvaluator() {}
 
-  inline void buildPriorityField(SWS::TaskPriorities & taskPriorities)
+  inline void buildPriorityField(SWS::TaskPriorities& taskPriorities)
   {
-    for (auto taskType : {COMPUTE_VELOCITY, EXTRACT_VELOCITY_HALO, UPDATE_VELOCITY, DISPLAY_VELOCITY, COMPUTE_STRESS, EXTRACT_STRESS_HALO, UPDATE_STRESS, DISPLAY_STRESS, INITIALIZE_FIELDS}){
+    for (auto taskType : { COMPUTE_VELOCITY,
+                           EXTRACT_VELOCITY_HALO,
+                           UPDATE_VELOCITY,
+                           DISPLAY_VELOCITY,
+                           COMPUTE_STRESS,
+                           EXTRACT_STRESS_HALO,
+                           UPDATE_STRESS,
+                           DISPLAY_STRESS,
+                           INITIALIZE_FIELDS }) {
       taskPriorities(taskType).resize(nxx_, nyy_, nzz_);
       taskPriorities(taskType).setZero();
     }
   }
 
   template<typename MESH3D_PARTITIONING>
-  inline void evaluate(SWS::TaskPriorities & taskPriorities)
+  inline void evaluate(SWS::TaskPriorities& taskPriorities)
   {
     buildPriorityField(taskPriorities);
 
     // Only one MPI node
-    if (nxx_==lnxx_ && nyy_==lnyy_ && nzz_==lnzz_){
+    if (nxx_ == lnxx_ && nyy_ == lnyy_ && nzz_ == lnzz_) {
       return;
     }
 
     // Compute Maximum priority
-    int nCoucheMax = (std::max)({lnxx_, lnyy_, lnzz_});
+    int nCoucheMax = (std::max)({ lnxx_, lnyy_, lnzz_ });
     int offsetRankZero = 0;
-    if ( nxx_!=lnxx_ ){
+    if (nxx_ != lnxx_) {
       nCoucheMax = (std::min)(nCoucheMax, lnxx_);
       offsetRankZero = (std::max)(offsetRankZero, lnxx_);
     }
 
-    if ( nyy_!=lnyy_ ){
+    if (nyy_ != lnyy_) {
       nCoucheMax = (std::min)(nCoucheMax, lnyy_);
       offsetRankZero = (std::max)(offsetRankZero, lnyy_);
     }
 
-    if ( nzz_!=lnzz_ ){
+    if (nzz_ != lnzz_) {
       nCoucheMax = (std::min)(nCoucheMax, lnzz_);
       offsetRankZero = (std::max)(offsetRankZero, lnzz_);
     }
 
-    const int priorityMax = 4*( nCoucheMax ) * ( ( offsetRankZero ) + ( offsetRankZero - nCoucheMax + 1  ) ) / 2 - 1;
+    const int priorityMax = 4 * (nCoucheMax) * ((offsetRankZero) + (offsetRankZero - nCoucheMax + 1)) / 2 - 1;
 
-
-    //We compute the maximum distance to a communication border for each ii
+    // We compute the maximum distance to a communication border for each ii
 
     std::vector<int> distanceToCommunicationBorderXArray(nxx_);
-    for(int ii=0; ii<nxx_; ii++){
-      const int lii=MESH3D_PARTITIONING::getInstance()->lii(ii);
+    for (int ii = 0; ii < nxx_; ii++) {
+      const int lii = MESH3D_PARTITIONING::getInstance()->lii(ii);
 
-      if(nxx_!=lnxx_){
-        if( ii < lnxx_){ // Node 0
-          distanceToCommunicationBorderXArray[ii]=lnxx_-lii-1;
-        } else if (ii > nxx_-lnxx_) { // Last node
-          distanceToCommunicationBorderXArray[ii]=lii;
-        } else{
-          distanceToCommunicationBorderXArray[ii]=(std::min)(lnxx_-lii-1, lii);
+      if (nxx_ != lnxx_) {
+        if (ii < lnxx_) { // Node 0
+          distanceToCommunicationBorderXArray[ii] = lnxx_ - lii - 1;
+        } else if (ii > nxx_ - lnxx_) { // Last node
+          distanceToCommunicationBorderXArray[ii] = lii;
+        } else {
+          distanceToCommunicationBorderXArray[ii] = (std::min)(lnxx_ - lii - 1, lii);
         }
       }
     }
 
-
-    //We compute the maximum distance to a communication border for each ii
+    // We compute the maximum distance to a communication border for each ii
 
     std::vector<int> distanceToCommunicationBorderYArray(nyy_);
-    for(int jj=0; jj<nyy_;jj++){
-      const int ljj=MESH3D_PARTITIONING::getInstance()->ljj(jj);
+    for (int jj = 0; jj < nyy_; jj++) {
+      const int ljj = MESH3D_PARTITIONING::getInstance()->ljj(jj);
 
-      if(nyy_!=lnyy_) {
-        if( jj < lnyy_) { // Node 0
-          distanceToCommunicationBorderYArray[jj]=lnyy_-ljj-1;
-        } else if ( jj > nyy_-lnyy_) { // Last node
-          distanceToCommunicationBorderYArray[jj]=ljj;
+      if (nyy_ != lnyy_) {
+        if (jj < lnyy_) { // Node 0
+          distanceToCommunicationBorderYArray[jj] = lnyy_ - ljj - 1;
+        } else if (jj > nyy_ - lnyy_) { // Last node
+          distanceToCommunicationBorderYArray[jj] = ljj;
         } else {
-          distanceToCommunicationBorderYArray[jj]=(std::min)(lnyy_-ljj-1, ljj);
+          distanceToCommunicationBorderYArray[jj] = (std::min)(lnyy_ - ljj - 1, ljj);
         }
       }
     }
 
-    //We compute the maximum distance to a communication border for each ii
+    // We compute the maximum distance to a communication border for each ii
 
     std::vector<int> distanceToCommunicationBorderZArray(nzz_);
-    for(int kk=0; kk<nzz_;kk++){
-      const int lkk=MESH3D_PARTITIONING::getInstance()->lkk(kk);
+    for (int kk = 0; kk < nzz_; kk++) {
+      const int lkk = MESH3D_PARTITIONING::getInstance()->lkk(kk);
 
-      if(nzz_!=lnzz_){
-        if( kk < lnzz_){ // Node 0
-          distanceToCommunicationBorderZArray[kk]=lnzz_-lkk-1;
-        } else if ( kk > nzz_-lnzz_) { // Last node
-          distanceToCommunicationBorderZArray[kk]=lkk;
+      if (nzz_ != lnzz_) {
+        if (kk < lnzz_) { // Node 0
+          distanceToCommunicationBorderZArray[kk] = lnzz_ - lkk - 1;
+        } else if (kk > nzz_ - lnzz_) { // Last node
+          distanceToCommunicationBorderZArray[kk] = lkk;
         } else {
-          distanceToCommunicationBorderZArray[kk]=(std::min)(lnzz_-lkk-1, lkk);
+          distanceToCommunicationBorderZArray[kk] = (std::min)(lnzz_ - lkk - 1, lkk);
         }
       }
     }
-
 
     // We compute priorities
     int minDistanceToCommunicationBorderX;
@@ -141,51 +154,61 @@ public:
     int minDistanceToCommunicationBorder;
     int maxDistanceToCommunicationBorder;
 
-    for(int ii=0; ii<nxx_; ii++){
-      if(nxx_!=lnxx_){
+    for (int ii = 0; ii < nxx_; ii++) {
+      if (nxx_ != lnxx_) {
         minDistanceToCommunicationBorderX = distanceToCommunicationBorderXArray[ii];
         maxDistanceToCommunicationBorderX = distanceToCommunicationBorderXArray[ii];
-      } else{
-        minDistanceToCommunicationBorderX = (std::max)({lnxx_, lnyy_, lnzz_});
+      } else {
+        minDistanceToCommunicationBorderX = (std::max)({ lnxx_, lnyy_, lnzz_ });
         maxDistanceToCommunicationBorderX = 0;
       }
 
-      for(int jj=0; jj<nyy_; jj++){
-        if(nyy_!=lnyy_) {
-          minDistanceToCommunicationBorderXY = (std::min)(minDistanceToCommunicationBorderX, distanceToCommunicationBorderYArray[jj]);
-          maxDistanceToCommunicationBorderXY = (std::max)(maxDistanceToCommunicationBorderX, distanceToCommunicationBorderYArray[jj]);
+      for (int jj = 0; jj < nyy_; jj++) {
+        if (nyy_ != lnyy_) {
+          minDistanceToCommunicationBorderXY =
+            (std::min)(minDistanceToCommunicationBorderX, distanceToCommunicationBorderYArray[jj]);
+          maxDistanceToCommunicationBorderXY =
+            (std::max)(maxDistanceToCommunicationBorderX, distanceToCommunicationBorderYArray[jj]);
         } else {
           minDistanceToCommunicationBorderXY = minDistanceToCommunicationBorderX;
           maxDistanceToCommunicationBorderXY = maxDistanceToCommunicationBorderX;
         }
 
-        for(int kk=0; kk<nzz_; kk++){
-          if(nzz_!=lnzz_){
-            minDistanceToCommunicationBorder = (std::min)(minDistanceToCommunicationBorderXY, distanceToCommunicationBorderZArray[kk]);
-            maxDistanceToCommunicationBorder = (std::max)(maxDistanceToCommunicationBorderXY, distanceToCommunicationBorderZArray[kk]);
-          }else{
+        for (int kk = 0; kk < nzz_; kk++) {
+          if (nzz_ != lnzz_) {
+            minDistanceToCommunicationBorder =
+              (std::min)(minDistanceToCommunicationBorderXY, distanceToCommunicationBorderZArray[kk]);
+            maxDistanceToCommunicationBorder =
+              (std::max)(maxDistanceToCommunicationBorderXY, distanceToCommunicationBorderZArray[kk]);
+          } else {
             minDistanceToCommunicationBorder = minDistanceToCommunicationBorderXY;
             maxDistanceToCommunicationBorder = maxDistanceToCommunicationBorderXY;
           }
 
           const int nCouche = minDistanceToCommunicationBorder;
 
-          for (auto taskType : {COMPUTE_VELOCITY, EXTRACT_VELOCITY_HALO, UPDATE_VELOCITY, DISPLAY_VELOCITY, COMPUTE_STRESS, EXTRACT_STRESS_HALO, UPDATE_STRESS, DISPLAY_STRESS, INITIALIZE_FIELDS}){
-            auto offsetFactor=taskGroups_(taskType);
+          for (auto taskType : { COMPUTE_VELOCITY,
+                                 EXTRACT_VELOCITY_HALO,
+                                 UPDATE_VELOCITY,
+                                 DISPLAY_VELOCITY,
+                                 COMPUTE_STRESS,
+                                 EXTRACT_STRESS_HALO,
+                                 UPDATE_STRESS,
+                                 DISPLAY_STRESS,
+                                 INITIALIZE_FIELDS }) {
+            auto offsetFactor = taskGroups_(taskType);
 
             const int inversePriority =
-              nTaskGroups_*nCouche*( ( offsetRankZero ) + ( offsetRankZero - nCouche + 1 ) ) / 2
-              + (offsetRankZero - nCouche)*(offsetFactor - 1)
-              + (maxDistanceToCommunicationBorder - minDistanceToCommunicationBorder);
+              nTaskGroups_ * nCouche * ((offsetRankZero) + (offsetRankZero - nCouche + 1)) / 2 +
+              (offsetRankZero - nCouche) * (offsetFactor - 1) +
+              (maxDistanceToCommunicationBorder - minDistanceToCommunicationBorder);
 
-            taskPriorities(taskType)(ii,jj,kk) = priorityMax - inversePriority;
+            taskPriorities(taskType)(ii, jj, kk) = priorityMax - inversePriority;
           }
 
         } // kk
-      } // jj
-    } //ii
-
-
+      }   // jj
+    }     // ii
 
     // Version de Wil
     // const int a=(std::max)({lnxx_, lnyy_, lnzz_});
@@ -245,7 +268,7 @@ public:
 private:
   SWS::TaskGroups taskGroups_;
 
-  const int nTaskGroups_=4;
+  const int nTaskGroups_ = 4;
 
   /* Number of sub-blocks on each of the three axes */
   int nxx_;

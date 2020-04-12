@@ -22,16 +22,15 @@
 
 #include "ComputeVelocityUnitTest.hxx"
 
-
 TEST_F(ComputeVelocityTest, ComputeVelocityX)
 {
-  auto d=SWS::X;
+  auto d = SWS::X;
 
-  int ts=2;
+  int ts = 2;
 
-  int ii=0;
-  int jj=0;
-  int kk=0;
+  int ii = 0;
+  int jj = 0;
+  int kk = 0;
 
   // LinearSeismicWaveModel::computeVelocityWrapper(d, ts, ii, jj, kk);
 }

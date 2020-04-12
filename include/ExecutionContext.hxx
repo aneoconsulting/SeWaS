@@ -23,16 +23,16 @@
 #endif
 
 #ifdef SEWAS_WITH_PARSEC
-#include <parsec/parsec_config.h>
 #include <parsec.h>
+#include <parsec/arena.h>
 #include <parsec/data_distribution.h>
 #include <parsec/datatype.h>
-#include <parsec/utils/mca_param.h>
+#include <parsec/parsec_config.h>
 #include <parsec/scheduling.h>
-#include <parsec/arena.h>
+#include <parsec/utils/mca_param.h>
 
-#include "sewas.h"
 #include "SEWASPaRSEC.hxx"
+#include "sewas.h"
 #endif
 
 #include "SEWASParameterManager.hxx"
@@ -40,25 +40,15 @@
 class ExecutionContext
 {
 public:
-  ExecutionContext()
-  {
-  }
+  ExecutionContext() {}
 
-  ~ExecutionContext()
-  {
-  }
+  ~ExecutionContext() {}
 
-  static int init(SEWASParameterManager & pm);
+  static int init(SEWASParameterManager& pm);
 
-  static inline auto rank()
-  {
-    return rank_;
-  }
+  static inline auto rank() { return rank_; }
 
-  static inline auto world()
-  {
-    return world_;
-  }
+  static inline auto world() { return world_; }
 
   static inline void barrier()
   {
@@ -74,11 +64,11 @@ public:
 #endif
 
 #if SEWAS_DISTRIBUTED
-  MPI_Finalize();
+    MPI_Finalize();
 #endif
   }
 
 private:
-  static inline int world_=1;
-  static inline int rank_=0;
+  static inline int world_ = 1;
+  static inline int rank_ = 0;
 };

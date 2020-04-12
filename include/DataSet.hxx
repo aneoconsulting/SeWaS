@@ -18,43 +18,44 @@
 
 #pragma once
 
-#include <string>
 #include <fstream>
 #include <iostream>
+#include <string>
 
-#include "Config.hxx"
 #include "CartesianMesh3D.hxx"
+#include "Config.hxx"
 #include "Mesh3DPartitioning.hxx"
 #include "SEWASParameterManager.hxx"
 
-class DataSet{
+class DataSet
+{
 public:
-  static DataSet * getInstance(const SEWASParameterManager & pm);
-  static DataSet * getInstance();
+  static DataSet* getInstance(const SEWASParameterManager& pm);
+  static DataSet* getInstance();
 
   static void releaseInstance();
 
-  inline const auto & lambda(const SWS::StressFieldComponents & sc) const { return lambda_(sc); }
+  inline const auto& lambda(const SWS::StressFieldComponents& sc) const { return lambda_(sc); }
 
-  inline const auto & mu(const SWS::StressFieldComponents & sc) const { return mu_(sc); }
+  inline const auto& mu(const SWS::StressFieldComponents& sc) const { return mu_(sc); }
 
-  inline const auto & rho() const { return rho_; }
+  inline const auto& rho() const { return rho_; }
 
-  inline const auto & b(const SWS::Directions & d) const { return b_(d); }
+  inline const auto& b(const SWS::Directions& d) const { return b_(d); }
 
   void initialize(const int ii, const int jj, const int kk);
 
 private:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW // To force an object of this class to be allocated as aligned
 
-  DataSet(const SEWASParameterManager & pm);
+  DataSet(const SEWASParameterManager& pm);
   ~DataSet();
 
   const auto getLayer(const int k, const int ii, const int jj, const int kk) const;
 
-  static DataSet * pInstance_;
+  static DataSet* pInstance_;
 
-  const SEWASParameterManager & pm_;
+  const SEWASParameterManager& pm_;
 
   SWS::Elasticity lambda_;
   SWS::Elasticity mu_;

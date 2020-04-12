@@ -21,40 +21,37 @@
 #ifdef SEWAS_WITH_PARSEC
 #include <vector>
 
-#include <parsec/parsec_config.h>
 #include <parsec.h>
 #include <parsec/data_distribution.h>
+#include <parsec/parsec_config.h>
 
 #include "Config.hxx"
 
-#include "sewas.h"
 #include "SEWASParameterManager.hxx"
+#include "sewas.h"
 
 class SEWASPaRSEC
 {
 public:
-  static SEWASPaRSEC * getInstance(const int nt=1,
-				  const int nxx=1, const int nyy=1, const int nzz=1);
+  static SEWASPaRSEC* getInstance(const int nt = 1, const int nxx = 1, const int nyy = 1, const int nzz = 1);
   static void releaseInstance();
 
-  static void init(SEWASParameterManager & pm);
+  static void init(SEWASParameterManager& pm);
   static void finalize();
 
   int run();
 
 private:
-  SEWASPaRSEC(const int nt,
-              const int nxx, const int nyy, const int nzz);
+  SEWASPaRSEC(const int nt, const int nxx, const int nyy, const int nzz);
   ~SEWASPaRSEC();
 
   void buildDataDescriptor();
   void buildDAG();
   void enqueueDAG();
 
-  void addArena(const short arena_idx, const SWS::Locations l=SWS::NB_LOCATIONS);
+  void addArena(const short arena_idx, const SWS::Locations l = SWS::NB_LOCATIONS);
 
-
-  static SEWASPaRSEC * pInstance_;
+  static SEWASPaRSEC* pInstance_;
 
   int world_;
   int rank_;
@@ -65,8 +62,8 @@ private:
   int nyy_;
   int nzz_;
 
-  static parsec_context_t         * pPContext_;
-  parsec_data_collection_t * pDDesc_;
-  parsec_sewas_taskpool_t   * pDAG_;
+  static parsec_context_t* pPContext_;
+  parsec_data_collection_t* pDDesc_;
+  parsec_sewas_taskpool_t* pDAG_;
 };
 #endif

@@ -28,18 +28,16 @@ TEST_F(FDOTest, PartialDerivativeOverX)
 
   for (int k = fijk_.kStart(); k < fijk_.kEnd(); k++) {
 
-    const auto r =
-      (c1_ * fijk_(i0_ + 1, j0_, k) + c2_ * fijk_(i0_ - 2, j0_, k) +
-       c3_ * fijk_(i0_, j0_, k) + c4_ * fijk_(i0_ - 1, j0_, k)) /
-      ds_;
+    const auto r = (c1_ * fijk_(i0_ + 1, j0_, k) + c2_ * fijk_(i0_ - 2, j0_, k) + c3_ * fijk_(i0_, j0_, k) +
+                    c4_ * fijk_(i0_ - 1, j0_, k)) /
+                   ds_;
 
     if constexpr (std::is_same<SWS::RealType, float>::value) {
       EXPECT_FLOAT_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
     } else if constexpr (std::is_same<SWS::RealType, double>::value) {
       EXPECT_DOUBLE_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
     } else {
-      std::cerr << "Unsupported element type for SWS::RealType : "
-                << typeid(SWS::RealType).name() << "\n";
+      std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name() << "\n";
       exit(SWS::INVALID_REAL_TYPE);
     }
   }
@@ -51,18 +49,16 @@ TEST_F(FDOTest, PartialDerivativeOverY)
 
   for (int k = fijk_.kStart(); k < fijk_.kEnd(); k++) {
 
-    const auto r =
-      (c1_ * fijk_(i0_, j0_ + 1, k) + c2_ * fijk_(i0_, j0_ - 2, k) +
-       c3_ * fijk_(i0_, j0_, k) + c4_ * fijk_(i0_, j0_ - 1, k)) /
-      ds_;
+    const auto r = (c1_ * fijk_(i0_, j0_ + 1, k) + c2_ * fijk_(i0_, j0_ - 2, k) + c3_ * fijk_(i0_, j0_, k) +
+                    c4_ * fijk_(i0_, j0_ - 1, k)) /
+                   ds_;
 
     if constexpr (std::is_same<SWS::RealType, float>::value) {
       EXPECT_FLOAT_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
     } else if constexpr (std::is_same<SWS::RealType, double>::value) {
       EXPECT_DOUBLE_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
     } else {
-      std::cerr << "Unsupported element type for SWS::RealType : "
-                << typeid(SWS::RealType).name() << "\n";
+      std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name() << "\n";
       exit(SWS::INVALID_REAL_TYPE);
     }
   }
@@ -74,18 +70,16 @@ TEST_F(FDOTest, PartialDerivativeOverZ)
 
   for (int k = fijk_.kStart(); k < fijk_.kEnd(); k++) {
 
-    const auto r =
-      (c1_ * fijk_(i0_, j0_, k + 1) + c2_ * fijk_(i0_, j0_, k - 2) +
-       c3_ * fijk_(i0_, j0_, k) + c4_ * fijk_(i0_, j0_, k - 1)) /
-      ds_;
+    const auto r = (c1_ * fijk_(i0_, j0_, k + 1) + c2_ * fijk_(i0_, j0_, k - 2) + c3_ * fijk_(i0_, j0_, k) +
+                    c4_ * fijk_(i0_, j0_, k - 1)) /
+                   ds_;
 
     if constexpr (std::is_same<SWS::RealType, float>::value) {
       EXPECT_FLOAT_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
     } else if constexpr (std::is_same<SWS::RealType, double>::value) {
       EXPECT_DOUBLE_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
     } else {
-      std::cerr << "Unsupported element type for SWS::RealType : "
-                << typeid(SWS::RealType).name() << "\n";
+      std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name() << "\n";
       exit(SWS::INVALID_REAL_TYPE);
     }
   }

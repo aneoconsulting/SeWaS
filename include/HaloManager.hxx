@@ -20,132 +20,156 @@
 
 #include "Config.hxx"
 
-class HaloManager{
+class HaloManager
+{
 public:
-  static HaloManager * getInstance(SWS::StressField & sigma, SWS::Velocity & v,
-				   const int & hnx, const int & hny, const int & hnz);
-  static HaloManager * getInstance();
+  static HaloManager* getInstance(SWS::StressField& sigma,
+                                  SWS::Velocity& v,
+                                  const int& hnx,
+                                  const int& hny,
+                                  const int& hnz);
+  static HaloManager* getInstance();
 
   static void releaseInstance();
 
-
-
-  /* The following wrappers correspond to entry points called by the PaRSEC runtime when executing tasks' BODY */
+  /* The following wrappers correspond to entry points called by the PaRSEC runtime when executing tasks' BODY
+   */
   static int extractVelocityHaloWrapper(const int l,
-					const int d,
-					const int ts,
-					const int ii, const int jj, const int kk,
-					void * vH);
+                                        const int d,
+                                        const int ts,
+                                        const int ii,
+                                        const int jj,
+                                        const int kk,
+                                        void* vH);
 
   static int updateVelocityWrapper(const int l,
-				   const int d,
-				   const int ts,
-				   const int ii, const int jj, const int kk,
-				   void * vH);
+                                   const int d,
+                                   const int ts,
+                                   const int ii,
+                                   const int jj,
+                                   const int kk,
+                                   void* vH);
 
   static int extractStressHaloWrapper(const int l,
-				      const int sc,
-				      const int ts,
-				      const int ii, const int jj, const int kk,
-				      void * sigmaH);
+                                      const int sc,
+                                      const int ts,
+                                      const int ii,
+                                      const int jj,
+                                      const int kk,
+                                      void* sigmaH);
 
   static int updateStressWrapper(const int l,
-				 const int sc,
-				 const int ts,
-				 const int ii, const int jj, const int kk,
-				 void * sigmaH);
-
+                                 const int sc,
+                                 const int ts,
+                                 const int ii,
+                                 const int jj,
+                                 const int kk,
+                                 void* sigmaH);
 
   inline void setVelocityHalo(const SWS::Locations l,
-			      const SWS::Directions d,
-			      const int ii, const int jj, const int kk,
-			      void * vH) noexcept
+                              const SWS::Directions d,
+                              const int ii,
+                              const int jj,
+                              const int kk,
+                              void* vH) noexcept
   {
-    pInstance_->vH()(d)(ii,jj,kk)(l)=((SWS::RealType *) vH);
+    pInstance_->vH()(d)(ii, jj, kk)(l) = ((SWS::RealType*)vH);
   }
 
   int extractVelocityHalo(const SWS::Locations l,
-			  const SWS::Directions d,
-			  const int ts,
-			  const int ii, const int jj, const int kk) noexcept;
+                          const SWS::Directions d,
+                          const int ts,
+                          const int ii,
+                          const int jj,
+                          const int kk) noexcept;
 
   int updateVelocity(const SWS::Locations l,
-		     const SWS::Directions d,
-		     const int ts,
-		     const int ii, const int jj, const int kk) noexcept;
-
+                     const SWS::Directions d,
+                     const int ts,
+                     const int ii,
+                     const int jj,
+                     const int kk) noexcept;
 
   inline void setStressHalo(const SWS::Locations l,
-			    const SWS::StressFieldComponents sc,
-			    const int ii, const int jj, const int kk,
-			    void * sigmaH) noexcept
+                            const SWS::StressFieldComponents sc,
+                            const int ii,
+                            const int jj,
+                            const int kk,
+                            void* sigmaH) noexcept
   {
-    pInstance_->sigmaH()(sc)(ii,jj,kk)(l)=((SWS::RealType *) sigmaH);
+    pInstance_->sigmaH()(sc)(ii, jj, kk)(l) = ((SWS::RealType*)sigmaH);
   }
 
   int extractStressHalo(const SWS::Locations l,
-			const SWS::StressFieldComponents sc,
-			const int ts,
-			const int ii, const int jj, const int kk) noexcept;
+                        const SWS::StressFieldComponents sc,
+                        const int ts,
+                        const int ii,
+                        const int jj,
+                        const int kk) noexcept;
 
   int updateStress(const SWS::Locations l,
-		   const SWS::StressFieldComponents sc,
-		   const int ts,
-		   const int ii, const int jj, const int kk) noexcept;
+                   const SWS::StressFieldComponents sc,
+                   const int ts,
+                   const int ii,
+                   const int jj,
+                   const int kk) noexcept;
 
+  SWS::StressField& sigma() { return sigma_; }
 
-  SWS::StressField & sigma(){
-    return sigma_;
-  }
+  SWS::Velocity& v() { return v_; }
 
-  SWS::Velocity & v(){
-    return v_;
-  }
+  SWS::StressFieldHalo& sigmaH() { return sigmaH_; }
 
-  SWS::StressFieldHalo & sigmaH(){
-    return sigmaH_;
-  }
+  SWS::VelocityHalo& vH() { return vH_; }
 
-  SWS::VelocityHalo & vH(){
-    return vH_;
-  }
-
-  inline const int & hnx() const { return hnx_; }
-  inline const int & hny() const { return hny_; }
-  inline const int & hnz() const { return hnz_; }
+  inline const int& hnx() const { return hnx_; }
+  inline const int& hny() const { return hny_; }
+  inline const int& hnz() const { return hnz_; }
 
   size_t getHaloSize(const int ii, const int jj, const int kk) const;
 
-  size_t getHaloSize(const SWS::Locations l,
-                     const int ii, const int jj, const int kk) const;
+  size_t getHaloSize(const SWS::Locations l, const int ii, const int jj, const int kk) const;
 
 private:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW // To force an object of this class to be allocated as aligned
 
-  HaloManager(SWS::StressField & sigma, SWS::Velocity & v,
-	      const int & hnx, const int & hny, const int & hnz);
+  HaloManager(SWS::StressField& sigma, SWS::Velocity& v, const int& hnx, const int& hny, const int& hnz);
   HaloManager();
 
   ~HaloManager();
 
   void setExtractOffsets(const SWS::Locations l,
-                         const int ii, const int jj, const int kk,
-                         int & iStart, int & iEnd,
-                         int & jStart, int & jEnd,
-                         int & kStart, int & kEnd,
-                         int & iShift, int & jShift, int & kShift) noexcept;
+                         const int ii,
+                         const int jj,
+                         const int kk,
+                         int& iStart,
+                         int& iEnd,
+                         int& jStart,
+                         int& jEnd,
+                         int& kStart,
+                         int& kEnd,
+                         int& iShift,
+                         int& jShift,
+                         int& kShift) noexcept;
 
   void setUpdateOffsets(const SWS::Locations l,
-                        const int ii, const int jj, const int kk,
-                        int & iStart, int & iEnd,
-                        int & jStart, int & jEnd,
-                        int & kStart, int & kEnd,
-                        int & iShift, int & jShift, int & kShift) noexcept;
+                        const int ii,
+                        const int jj,
+                        const int kk,
+                        int& iStart,
+                        int& iEnd,
+                        int& jStart,
+                        int& jEnd,
+                        int& kStart,
+                        int& kEnd,
+                        int& iShift,
+                        int& jShift,
+                        int& kShift) noexcept;
 
-  static HaloManager * pInstance_;
+  static HaloManager* pInstance_;
 
-  SWS::StressField & sigma_;
-  SWS::Velocity & v_;
+  SWS::StressField& sigma_;
+  SWS::Velocity& v_;
 
   /* These members are allocated by the PaRSEC runtime and we keep here only the pointers to reference them */
   SWS::StressFieldHalo sigmaH_;

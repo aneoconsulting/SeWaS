@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "(gdb) Bash on Windows Launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/sewas",
@@ -20,7 +20,7 @@
                 "--dfile=${workspaceFolder}/data/input/TestA.json"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build",
+            "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

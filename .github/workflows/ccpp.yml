@@ -1,4 +1,4 @@
-name: Linux
+name: CI
 
 on:
   push:
@@ -7,31 +7,45 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  windows:
+    runs-on: windows-latest
 
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: bootstrap
+      run: .\bootstrap.bat
+
+    - name: configure
+      run: mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON && cd ..
+    - name: build
+      run: cmake --build build --config Release
+      
+    - name: test
+      run: cd build && ctest --output-on-failure
+
+  linux:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-      
-    - name: install boost
-      run: sudo apt-get install libboost-program-options-dev
-    - name: install openmpi
-      run: sudo apt-get install libopenmpi-dev openmpi-common
-    - name: install eigen3
-      run: sudo apt-get install libeigen3-dev
-    - name: install intel tbb
-      run: sudo apt-get install libtbb-dev
-    - name: install spdlog
-      run: sudo apt-get install libspdlog-dev
+
+    - name: install dependencies
+      run : |
+          sudo apt-get install libboost-program-options-dev
+          sudo apt-get install libopenmpi-dev openmpi-common
+          sudo apt-get install libeigen3-dev
+          sudo apt-get install libtbb-dev
+          sudo apt-get install libspdlog-dev
+          sudo apt-get install flex bison
 
     - name: bootstrap
       run: . bootstrap.sh
 
     - name: configure
-      run: mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON && cd -
+      run: mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=ON -DSEWAS_WITH_PARSEC=ON -DVERBOSE=ON && cd -
     - name: build
-      run: cd build && make && cd -
+      run: cmake --build build --config Release
       
     - name: test
       run: cd build && ctest --output-on-failure
