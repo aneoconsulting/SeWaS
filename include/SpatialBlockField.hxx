@@ -39,6 +39,7 @@
 #include "Constants.hxx"
 #include "Indexer.hxx"
 #include "LogManager.hxx"
+#include "Types.hxx"
 
 /*
   This class represents a 3D block of spatial cells. It internally uses Eigen::Array to store its data.
