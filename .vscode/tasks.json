@@ -5,7 +5,7 @@
     "tasks": [
         {
             "label": "Bootstrap",
-            "type": "process",
+            "type": "shell",
             "windows": { 
                 "command": ".\\bootstrap.bat"
             },

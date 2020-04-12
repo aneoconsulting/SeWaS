@@ -65,5 +65,6 @@
     "cmake.configureOnOpen": true,
     "cmake.configureArgs": [],
     "cmake.ctestArgs": [],
-    "cmake.platform": "x64"
+    "cmake.platform": "x64",
+    "cmake.buildDirectory": "${workspaceFolder}/build"
 }

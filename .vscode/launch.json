@@ -17,9 +17,38 @@
                 "--Q", "1",
                 "--R", "1",
                 "--nthreads", "1",
-                "--dfile=${workspaceFolder}/data/input/TestA.json"],
+                "--dfile=${workspaceFolder}/data/input/TestA.json"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Bash on Windows Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/sewas",
+            "args": [
+                "--cx", "50",
+                "--cy", "50",
+                "--cz", "100",
+                "--P", "1",
+                "--Q", "1",
+                "--R", "1",
+                "--nthreads", "1",
+                "--dfile=${workspaceFolder}/data/input/TestA.json"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
             "environment": [],
             "externalConsole": false,
             "pipeTransport": {
@@ -49,7 +78,8 @@
                 "--Q", "1",
                 "--R", "1",
                 "--nthreads", "1",
-                "--dfile=${workspaceFolder}/data/input/TestA.json"],
+                "--dfile=${workspaceFolder}/data/input/TestA.json"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",
             "environment": [],

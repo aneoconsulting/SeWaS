@@ -22,3 +22,4 @@ doc/*
 /.vs/SeWaS/v16/TestStore/0
 /.vs/*.fgp
 *.sqlite-journal
+*.log
