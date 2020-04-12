@@ -1,0 +1,25 @@
+name: Windows
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: bootstrap
+      run: .\bootstrap.bat
+
+    - name: configure
+      run: mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON && cd ..
+    - name: build
+      run: cmake --build build --config Release
+      
+    - name: test
+      run: cd build && ctest --output-on-failure
