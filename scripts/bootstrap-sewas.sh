@@ -8,8 +8,12 @@ VCPKG_BUILD=$SEWAS_ROOT/thirdparty/vcpkg/build
 echo "[START] Bootstraping"
 
 echo $VCPKG_ROOT
+command
+echo "1"
 which command
+echo "2"
 command -v $VCPKG_ROOT/vcpkg
+echo "3"
 _vcpkg=`command -v $VCPKG_ROOT/vcpkg`
 echo $_vcpkg
 if [ "$_vcpkg" = "" ]; then
