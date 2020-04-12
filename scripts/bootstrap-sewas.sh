@@ -7,7 +7,9 @@ VCPKG_BUILD=$SEWAS_ROOT/thirdparty/vcpkg/build
 
 echo "[START] Bootstraping"
 
+echo $VCPKG_ROOT
 _vcpkg=`command -v $VCPKG_ROOT/vcpkg`
+echo $_vcpkg
 if [ "$_vcpkg" = "" ]; then
 	echo "vcpkg has not been found"
 	
