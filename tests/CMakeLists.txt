@@ -1,5 +1,8 @@
 include(GoogleTest)
 
+set_source_files_properties(${JDF2C_SOURCES}
+                            PROPERTIES GENERATED TRUE)
+
 add_executable(FDOTest
     FDOUnitTest.cxx
     ../src/CartesianMesh3D.cxx
