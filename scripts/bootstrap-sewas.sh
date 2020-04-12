@@ -8,8 +8,7 @@ VCPKG_BUILD=$SEWAS_ROOT/thirdparty/vcpkg/build
 echo "[START] Bootstraping"
 
 _vcpkg=`command -v $VCPKG_ROOT/vcpkg`
-_vcpkg_toolchain_file=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
-if [ "$_vcpkg" = "" || ! -f $_vcpkg_toolchain_file ]; then
+if [ "$_vcpkg" = "" ]; then
 	echo "vcpkg has not been found"
 	
 	echo "[START] install vcpkg"
@@ -23,8 +22,8 @@ if [ "$_vcpkg" = "" || ! -f $_vcpkg_toolchain_file ]; then
 	echo "[STOP] install vcpkg"
 else
 	echo "vcpkg found : " $_vcpkg
-	$vcpkg version
-	$vcpkg update
+	$_vcpkg version
+	$_vcpkg update
 fi
 
 echo "[STOP] Bootstraping"
