@@ -15,7 +15,8 @@ doc/*
 .vs/VSWorkspaceState.json
 .vs/ProjectSettings.json
 .vs/tasks.vs.json
-/thirdparty/vcpkg
+/thirdparty/vcpkg/src
+/thirdparty/vcpkg/build
 /out
 /.vs/SeWaS/v16/.suo
 /.vs/CMake Overview

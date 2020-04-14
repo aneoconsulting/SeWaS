@@ -1,0 +1,13 @@
+diff --git a/scripts/buildsystems/vcpkg.cmake b/scripts/buildsystems/vcpkg.cmake
+index 1eebc3b8d..99595c0b8 100644
+--- a/scripts/buildsystems/vcpkg.cmake
++++ b/scripts/buildsystems/vcpkg.cmake
+@@ -78,6 +78,8 @@ else()
+             set(_VCPKG_TARGET_TRIPLET_ARCH x86)
+         elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+             set(_VCPKG_TARGET_TRIPLET_ARCH x64)
++        elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "aarch64")
++            set(_VCPKG_TARGET_TRIPLET_ARCH arm64)
+         else()
+             if( _CMAKE_IN_TRY_COMPILE )
+                 message(STATUS "Unable to determine target architecture, continuing without vcpkg.")

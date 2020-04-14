@@ -31,30 +31,6 @@ set(SEWAS_VERSION_PATCH 0)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules" CACHE STRING "")
 
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are None, Debug, Release, RelWithDebInfo and MinSizeRel." FORCE)
-endif(NOT CMAKE_BUILD_TYPE)
-
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
-	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        add_compile_options(-march=native -mtune=native)
-		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-funroll-loops>)
-		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-march=native>)
-		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-mtune=native>)
-	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	endif()
-
-	# add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
-endif()
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    add_compile_options(-mcx16)
-    add_compile_options(-m64)
-endif()
-
-
 # ----------------------------------------------
 # Build options
 # ----------------------------------------------
@@ -113,6 +89,29 @@ if (DOWNLOAD_MISSING_DEPS)
             message("[VCPKG] Successfully installed package : ${package}:${TARGET_PLATFORM}")
         endif()
     endmacro()
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are None, Debug, Release, RelWithDebInfo and MinSizeRel." FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        add_compile_options(-march=native -mtune=native)
+		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-funroll-loops>)
+		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-march=native>)
+		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-mtune=native>)
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	endif()
+
+	# add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DEIGEN_ENABLE_AVX512>)
+endif()
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND ${HOST_ARCH} MATCHES "(x64)")
+    add_compile_options(-mcx16)
+    add_compile_options(-m64)
 endif()
 
 if (SEWAS_DISTRIBUTED)
