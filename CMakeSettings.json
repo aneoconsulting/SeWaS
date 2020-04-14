@@ -138,14 +138,14 @@
       "generator": "Unix Makefiles",
       "configurationType": "Debug",
       "cmakeExecutable": "/usr/bin/cmake",
-      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg", "thirdparty/install", "thirdparty/parsec/src", "thirdparty/parsec/build", "thirdparty/adios" ],
+      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg/src", "thirdparty/vcpkg/build", "thirdparty/install", "thirdparty/parsec/src", "thirdparty/parsec/build", "thirdparty/adios", "build" ],
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "linux_x64" ],
       "remoteMachineName": "-1244664032;ec2-34-245-187-37.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
       "remoteCMakeListsRoot": "${env.REMOTE_SEWAS_ROOT}/src",
-      "remotePreGenerateCommand": "cd ${env.REMOTE_SEWAS_ROOT}/src && . bootstrap.sh",
+      "remotePreGenerateCommand": "cd ${env.REMOTE_SEWAS_ROOT}/src && . bootstrap.sh && cd -",
       "remoteBuildRoot": "${env.REMOTE_SEWAS_ROOT}/out/build/${name}",
       "remoteInstallRoot": "${env.REMOTE_SEWAS_ROOT}/out/install/${name}",
       "remoteCopySources": true,
@@ -160,6 +160,11 @@
           "type": "BOOL"
         },
         {
+          "name": "SEWAS_DISTRIBUTED",
+          "value": "False",
+          "type": "BOOL"
+        },
+        {
           "name": "SEWAS_WITH_PARSEC",
           "value": "false",
           "type": "BOOL"
@@ -167,11 +172,6 @@
         {
           "name": "VERBOSE",
           "value": "true",
-          "type": "BOOL"
-        },
-        {
-          "name": "SEWAS_DISTRIBUTED",
-          "value": "False",
           "type": "BOOL"
         },
         {
@@ -186,14 +186,14 @@
       "generator": "Unix Makefiles",
       "configurationType": "RelWithDebInfo",
       "cmakeExecutable": "/usr/bin/cmake",
-      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg", "thirdparty/install", "thirdparty/parsec/src", "thirdparty/parsec/build", "thirdparty/adios" ],
+      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg/src", "thirdparty/vcpkg/build", "thirdparty/install", "thirdparty/parsec/src", "thirdparty/parsec/build", "thirdparty/adios", "build" ],
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "linux_x64" ],
-      "remoteMachineName": "-288793425;ec2-34-241-104-129.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
+      "remoteMachineName": "687086411;ec2-34-244-134-100.eu-west-1.compute.amazonaws.com (username=ubuntu, port=22, authentication=PrivateKey)",
       "remoteCMakeListsRoot": "${env.REMOTE_SEWAS_ROOT}/src",
-      "remotePreGenerateCommand": "cd ${env.REMOTE_SEWAS_ROOT}/src && . bootstrap.sh",
+      "remotePreGenerateCommand": "cd ${env.REMOTE_SEWAS_ROOT}/src && . bootstrap.sh && cd -",
       "remoteBuildRoot": "${env.REMOTE_SEWAS_ROOT}/out/build/${name}",
       "remoteInstallRoot": "${env.REMOTE_SEWAS_ROOT}/out/install/${name}",
       "remoteCopySources": true,
@@ -208,18 +208,18 @@
           "type": "BOOL"
         },
         {
+          "name": "SEWAS_DISTRIBUTED",
+          "value": "true",
+          "type": "BOOL"
+        },
+        {
           "name": "SEWAS_WITH_PARSEC",
-          "value": "false",
+          "value": "true",
           "type": "BOOL"
         },
         {
           "name": "VERBOSE",
           "value": "true",
-          "type": "BOOL"
-        },
-        {
-          "name": "SEWAS_DISTRIBUTED",
-          "value": "false",
           "type": "BOOL"
         },
         {
