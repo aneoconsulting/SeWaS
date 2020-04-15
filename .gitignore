@@ -24,3 +24,4 @@ doc/*
 /.vs/*.fgp
 *.sqlite-journal
 *.log
+*.bin
