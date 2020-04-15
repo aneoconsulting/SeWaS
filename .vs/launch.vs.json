@@ -24,6 +24,60 @@
         "2",
         "--dfile=${workspaceRoot}/data/input/TestA.json"
       ]
+    },
+    {
+      "type": "cppdbg",
+      "name": "sewas",
+      "project": "CMakeLists.txt",
+      "projectTarget": "sewas",
+      "cwd": "${debugInfo.defaultWorkingDirectory}",
+      "program": "${debugInfo.fullTargetPath}",
+      "args": [
+        "--cx",
+        "50",
+        "--cy",
+        "50",
+        "--cz",
+        "100",
+        "--P",
+        "1",
+        "--Q",
+        "1",
+        "--R",
+        "1",
+        "--nthreads",
+        "8",
+        "--dfile=${env.REMOTE_SEWAS_ROOT}/src/data/input/TestA.json"
+      ],
+      "MIMode": "gdb",
+      "externalConsole": true,
+      "remoteMachineName": "${debugInfo.remoteMachineName}",
+      "setupCommands": [
+        {
+          "text": "Documentation: Learn how to configure remote debugging",
+          "description": "See here for more info http://aka.ms/vslinuxdebug",
+          "ignoreFailures": true
+        },
+        {
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "pipeTransport": {
+        "pipeProgram": "${debugInfo.shellexecPath}",
+        "pipeArgs": [
+          "/s",
+          "${debugInfo.remoteMachineId}",
+          "/p",
+          "${debugInfo.parentProcessId}",
+          "/c",
+          "${debuggerCommand}",
+          "--tty=${debugInfo.tty}"
+        ],
+        "debuggerPath": "/usr/bin/gdb"
+      },
+      "visualizerFile": "${debugInfo.linuxNatvisPath}",
+      "showDisplayString": true
     }
   ]
 }
