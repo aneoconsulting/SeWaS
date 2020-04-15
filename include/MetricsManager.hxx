@@ -37,10 +37,6 @@
 #include <vector>
 
 #ifdef COLLECT_STATS
-#include <tbb/concurrent_queue.h>
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/concurrent_vector.h>
-
 #ifdef USE_PAPI
 #include <papi.h>
 #endif
@@ -82,7 +78,7 @@ private:
 
 #ifdef COLLECT_STATS
   // (ELAPSED|CPU)(START, STOP, DURATION)(measurements)
-  typedef tbb::concurrent_vector<tbb::concurrent_vector<tbb::concurrent_queue<double>>> CollectedMeasurements;
+  typedef std::vector<std::vector<std::queue<double>>> CollectedMeasurements;
 
   typedef std::array<double, NB_STATISTICS> ComputedStatistics;
   typedef std::array<ComputedStatistics, NB_METRICS> ComputedMetrics;
@@ -99,8 +95,8 @@ private:
   {
     auto& events = events_[tn][eid][t][m];
 
-    double e = 0.0;
-    events.try_pop(e);
+    auto e = events.front();
+    events.pop();
 
     return e;
   }
@@ -144,15 +140,15 @@ private:
     return n;
   }
 
-  inline auto evalStats(tbb::concurrent_queue<double>& q)
+  inline auto evalStats(std::queue<double>& q)
   {
     double avg = 0.0, min = 1.e99, max = 0.0, tot = 0.0, sd = 0.0;
 
-    auto ncalls = q.unsafe_size();
+    auto ncalls = q.size();
 
     while (!q.empty()) {
-      double measure = 0.0;
-      q.try_pop(measure);
+      auto measure = q.front();
+      q.pop();
 
       min = (measure < min) ? measure : min;
       max = (measure > max) ? measure : max;
@@ -393,7 +389,7 @@ private:
   std::mutex guard_;
 
   // {"thread num" : {"event id" : [ELAPSED, CPU][START, STOP]}}
-  std::unordered_map<int, tbb::concurrent_unordered_map<std::string, CollectedMeasurements>> events_;
+  std::unordered_map<int, std::unordered_map<std::string, CollectedMeasurements>> events_;
 
   /* The list of computed metrics from collected data */
   std::vector<std::vector<std::pair<std::string, ComputedMetrics>>> cmetrics_;
