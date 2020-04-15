@@ -17,7 +17,7 @@ if [[ ! -x $_vcpkg ]]; then
 
 	cp $SEWAS_ROOT/cmake/resources/vcpkg/CMakeLists.txt $VCPKG_BUILD
 
-	cd $VCPKG_BUILD && pwd && cmake . && cmake --build . && cd -
+	cd $VCPKG_BUILD && cmake . && cmake --build . && cd -
 
 	echo "[STOP] install vcpkg"
 else

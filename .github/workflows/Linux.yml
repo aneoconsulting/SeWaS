@@ -18,7 +18,6 @@ jobs:
           sudo apt-get install libboost-program-options-dev
           sudo apt-get install libopenmpi-dev openmpi-common
           sudo apt-get install libeigen3-dev
-          sudo apt-get install libtbb-dev
           sudo apt-get install libspdlog-dev
           sudo apt-get install flex bison
 
@@ -26,7 +25,7 @@ jobs:
       run: . bootstrap.sh
 
     - name: configure
-      run: mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=ON -DSEWAS_WITH_PARSEC=ON -DVERBOSE=ON && cd -
+      run: mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DCOLLECT_STATS=ON -DSEWAS_DISTRIBUTED=ON -DSEWAS_WITH_PARSEC=ON -DVERBOSE=ON && cd -
     - name: build
       run: cmake --build build --config Release
       

@@ -17,7 +17,7 @@ jobs:
       run: .\bootstrap.bat
 
     - name: configure
-      run: mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON && cd ..
+      run: mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DCOLLECT_STATS=ON -DSEWAS_DISTRIBUTED=OFF -DSEWAS_WITH_PARSEC=OFF -DVERBOSE=ON && cd ..
     - name: build
       run: cmake --build build --config Release
       

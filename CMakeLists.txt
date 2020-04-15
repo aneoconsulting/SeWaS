@@ -396,23 +396,6 @@ if (BOOST_SIMD_VECTORIZATION)
 endif(BOOST_SIMD_VECTORIZATION)
 
 # -------------------------------------------------------------------
-# Intel TBB concurrent containers are used for collecting metrics
-# -------------------------------------------------------------------
-if (COLLECT_STATS)
-    find_package(TBB CONFIG)
-    if (NOT TBB_FOUND)
-        # TBB not found; trying to download it
-        if (DOWNLOAD_MISSING_DEPS)
-            _vcpkg_install(tbb)
-            find_package(TBB CONFIG REQUIRED)
-        else()
-            message(FATAL_ERROR "TBB not found. Please set DOWNLOAD_MISSING_DEPS for enabling automatic download of missing dependencies")        
-        endif()
-    endif()
-    set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} TBB::tbb)
-endif(COLLECT_STATS)
-
-# -------------------------------------------------------------------
 # matplotlibcpp
 # -------------------------------------------------------------------
 # The package matplotlib-cpp is used to plot data -> https://github.com/lava/matplotlib-cpp
