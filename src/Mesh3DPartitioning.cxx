@@ -28,18 +28,10 @@
 Mesh3DPartitioning* Mesh3DPartitioning::pInstance_ = nullptr;
 
 Mesh3DPartitioning*
-Mesh3DPartitioning::getInstance(const int cx,
-                                const int cy,
-                                const int cz,
-                                const int hnx,
-                                const int hny,
-                                const int hnz,
-                                const int P,
-                                const int Q,
-                                const int R)
+Mesh3DPartitioning::getInstance(const SEWASParameterManager& pm, const int hnx, const int hny, const int hnz)
 {
   if (nullptr == pInstance_) {
-    pInstance_ = new Mesh3DPartitioning(cx, cy, cz, hnx, hny, hnz, P, Q, R);
+    pInstance_ = new Mesh3DPartitioning(pm, hnx, hny, hnz);
     return pInstance_;
   } else {
     return pInstance_;
@@ -147,53 +139,38 @@ Mesh3DPartitioning::data_of(parsec_data_collection_t* desc, ...)
 }
 #endif
 
-Mesh3DPartitioning::Mesh3DPartitioning(const int cx,
-                                       const int cy,
-                                       const int cz,
+Mesh3DPartitioning::Mesh3DPartitioning(const SEWASParameterManager& pm,
                                        const int hnx,
                                        const int hny,
-                                       const int hnz,
-                                       const int P,
-                                       const int Q,
-                                       const int R)
-  : cx_(cx)
-  , cy_(cy)
-  , cz_(cz)
+                                       const int hnz)
+  : pm_(pm)
+  , cx_(pm.cx())
+  , cy_(pm.cy())
+  , cz_(pm.cz())
   , hnx_(hnx)
   , hny_(hny)
   , hnz_(hnz)
-  , P_(P)
-  , Q_(Q)
-  , R_(R)
+  , P_(pm.P())
+  , Q_(pm.Q())
+  , R_(pm.R())
 {
+  lnxx_ = pm.lnxx();
+  lnyy_ = pm.lnyy();
+  lnzz_ = pm.lnzz();
 
-  const auto& nx = CartesianMesh3D::getInstance()->nx();
-  const auto& ny = CartesianMesh3D::getInstance()->ny();
-  const auto& nz = CartesianMesh3D::getInstance()->nz();
-
-  nxx_ = nx / cx;
-  nyy_ = ny / cy;
-  nzz_ = nz / cz;
-
-  lnxx_ = nxx_ / P_;
-  lnyy_ = nyy_ / Q_;
-  lnzz_ = nzz_ / R_;
-
-  // TODO for the moment we assume a uniform distribution of the sub-blocks.
-  // This need to be generalized to take into account a custom mapping
-  // For each dimension, we are adding halo (hnx,hny,hnz) to the orginal size of the Sub-block of cells
+  // For each dimension, we are adding halo (hnx, hny, hnz) to the orginal size of the Sub-block of cells
 
   ccx_.resize(lnxx_);
   for (int ii = 0; ii < lnxx_; ii++)
-    ccx_[ii] = hnx + cx + hnx;
+    ccx_[ii] = hnx + pm.cx() + hnx;
 
   ccy_.resize(lnyy_);
   for (int jj = 0; jj < lnyy_; jj++)
-    ccy_[jj] = hny + cy + hny;
+    ccy_[jj] = hny + pm.cy() + hny;
 
   ccz_.resize(lnzz_);
   for (int kk = 0; kk < lnzz_; kk++)
-    ccz_[kk] = hnz + cz + hnz;
+    ccz_[kk] = hnz + pm.cz() + hnz;
 
   tileSize_ = ccx_[0] * ccy_[0] * ccz_[0];
 

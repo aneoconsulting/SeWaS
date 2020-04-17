@@ -22,6 +22,7 @@
 #include "CentralFDOperator.hxx"
 #include "HaloManager.hxx"
 #include "Mesh3DPartitioning.hxx"
+#include "SEWASParameterManager.hxx"
 
 class HaloExtractTest : public ::testing::Test
 {
@@ -34,23 +35,19 @@ protected:
     ny_ = 8;
     nz_ = 8;
 
-    // 4x4x4 tile with halos
-    cx_ = 4;
-    cy_ = 4;
-    cz_ = 4;
+    char** argv = (char**)calloc(argc_, sizeof(char*));
+    for (int i = 0; i < argc_; i++) {
+      argv[i] = (char*)argv_[i];
+    }
 
-    P_ = 1;
-    Q_ = 1;
-    R_ = 1;
-
-    ds_ = 0.1;
+    auto pm = *std::make_unique<SEWASParameterManager>(&argc_, &argv);
 
     int hnx = CentralFDOperator::hnx();
     int hny = CentralFDOperator::hny();
     int hnz = CentralFDOperator::hnz();
 
-    ASSERT_NE(nullptr, CartesianMesh3D::getInstance(nx_, ny_, nz_, ds_));
-    ASSERT_NE(nullptr, Mesh3DPartitioning::getInstance(cx_, cy_, cz_, hnx, hny, hnz, P_, Q_, R_));
+    ASSERT_NE(nullptr, CartesianMesh3D::getInstance(pm));
+    ASSERT_NE(nullptr, Mesh3DPartitioning::getInstance(pm, hnx, hny, hnz));
 
     auto init = [&](SWS::SpatialBlockField<SWS::RealType>& fijk) {
       for (int k = fijk.kStart(); k < fijk.kEnd(); k++) {
@@ -254,19 +251,13 @@ private:
   }
 
 protected:
+  static inline int argc_ = 17;
+  static inline const char* argv_[] = { "sewas", 
+                                        "--cx", "4", "--cy", "4", "--cz", "4", "--P", "1", "--Q", "1", "--R", "1", "--nthreads", "1", "--dfile", "TestX.json" };
+
   int nx_;
   int ny_;
   int nz_;
-
-  int cx_;
-  int cy_;
-  int cz_;
-
-  int P_;
-  int Q_;
-  int R_;
-
-  SWS::RealType ds_;
 
   /* The halo exchange test is performed for a given time-step */
   const int ts_ = 0;

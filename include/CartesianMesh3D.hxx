@@ -19,14 +19,14 @@
 #pragma once
 
 #include "Config.hxx"
+#include "SEWASParameterManager.hxx"
 
 class CartesianMesh3D
 {
 public:
-  static CartesianMesh3D* getInstance(const int nx = 1,
-                                      const int ny = 1,
-                                      const int nz = 1,
-                                      const SWS::RealType ds = 1.);
+  static CartesianMesh3D* getInstance(const SEWASParameterManager& pm);
+  static CartesianMesh3D* getInstance();
+
   static void releaseInstance();
 
   inline const int& nx() const { return nx_; }
@@ -40,10 +40,7 @@ public:
   inline const SWS::RealType& ds() const { return ds_; }
 
 private:
-  CartesianMesh3D(const int nx,
-                  const int ny,
-                  const int nz,
-                  const SWS::RealType ds);
+  CartesianMesh3D(const SEWASParameterManager& pm);
   ~CartesianMesh3D();
 
   static CartesianMesh3D* pInstance_;

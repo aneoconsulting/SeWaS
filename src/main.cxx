@@ -30,6 +30,7 @@
 #include "LogManager.hxx"
 #include "Mesh3DPartitioning.hxx"
 #include "SEWASParameterManager.hxx"
+#include "IOManager.hxx"
 #ifdef VISUALIZE_EXECUTION
 #include "VisualizationManager.hxx"
 #endif
@@ -81,18 +82,10 @@ main(int argc, char* argv[])
   /* Intialize application parameters */
   auto pm = *std::make_unique<SEWASParameterManager>(&argc, &argv);
 
-  const auto tmax = pm.tmax();
-  const auto nt = pm.nt();
-  const auto ds = pm.ds();
-  const auto nx = pm.nx(), ny = pm.ny(), nz = pm.nz();
-  const auto cx = pm.cx(), cy = pm.cy(), cz = pm.cz();
-  const auto P = pm.P(), Q = pm.Q(), R = pm.R();
-  const auto nthreads = pm.nthreads();
-
   ExecutionContext::init(pm);
 
   // Create the computational domain
-  if (nullptr == CartesianMesh3D::getInstance(nx, ny, nz, ds)) {
+  if (nullptr == CartesianMesh3D::getInstance(pm)) {
     LOG(SWS::LOG_CRITICAL, "Unable to create the mesh. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
@@ -102,7 +95,7 @@ main(int argc, char* argv[])
   CentralFDOperator fdo(pCartesianMesh->dx(), pCartesianMesh->dy(), pCartesianMesh->dz());
 
   // Create the domain partitioning
-  if (nullptr == Mesh3DPartitioning::getInstance(cx, cy, cz, fdo.hnx(), fdo.hny(), fdo.hnz(), P, Q, R)) {
+  if (nullptr == Mesh3DPartitioning::getInstance(pm, fdo.hnx(), fdo.hny(), fdo.hnz())) {
     LOG(SWS::LOG_CRITICAL, "Unable to partition the mesh. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
@@ -120,7 +113,7 @@ main(int argc, char* argv[])
   auto pDataSet = DataSet::getInstance();
 
   // Create the seismic wave model
-  if (nullptr == LinearSeismicWaveModel::getInstance(fdo, pm, nt, tmax)) {
+  if (nullptr == LinearSeismicWaveModel::getInstance(fdo, pm)) {
     LOG(SWS::LOG_CRITICAL, "Unable to create the linear seismic wave model. Exiting...");
     return SWS::OBJECT_CREATION_FAILURE;
   }
