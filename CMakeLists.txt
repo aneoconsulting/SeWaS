@@ -260,7 +260,7 @@ endif(SEWAS_DISTRIBUTED)
 # ADIOS2 is used for IO
 # -------------------------------------------------------------------
 if (ENABLE_IO)
-    find_package(ADIOS2 PATHS ${THIRDPARTY_ROOT}/install/lib64/cmake/adios2)
+    find_package(ADIOS2 PATHS ${THIRDPARTY_ROOT}/install/lib/cmake/adios2)
     if (NOT ADIOS2_FOUND)
         message(WARNING "ADIOS2 not found")
         if (DOWNLOAD_MISSING_DEPS)
@@ -280,7 +280,7 @@ if (ENABLE_IO)
                 message(FATAL_ERROR "Build step for ADIOS2 failed: ${result}")
             endif()
                         
-            find_package(ADIOS2 REQUIRED PATHS ${THIRDPARTY_ROOT}/install/lib64/cmake/adios2)
+            find_package(ADIOS2 REQUIRED PATHS ${THIRDPARTY_ROOT}/install/lib/cmake/adios2)
         else(DOWNLOAD_MISSING_DEPS)
             message(FATAL_ERROR "ADIOS2 not found. Please set DOWNLOAD_MISSING_DEPS for enabling automatic download of missing dependencies")
         endif(DOWNLOAD_MISSING_DEPS)
