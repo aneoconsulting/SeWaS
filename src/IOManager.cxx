@@ -172,12 +172,12 @@ IOManager::init()
 
   io_.DefineAttribute<std::int16_t>("adios2_schema/mesh/ordering", SWS::Ordering);
 
-  io_.DefineAttribute<std::int64_t>("adios2_schema/mesh/nxx", Mesh3DPartitioning::getInstance()->nxx());
-  io_.DefineAttribute<std::int64_t>("adios2_schema/mesh/nyy", Mesh3DPartitioning::getInstance()->nyy());
-  io_.DefineAttribute<std::int64_t>("adios2_schema/mesh/nzz", Mesh3DPartitioning::getInstance()->nzz());
+  io_.DefineAttribute<std::int64_t>("adios2_schema/mesh/nxx", Mesh3DPartitioning::getInstance()->pm().nxx());
+  io_.DefineAttribute<std::int64_t>("adios2_schema/mesh/nyy", Mesh3DPartitioning::getInstance()->pm().nyy());
+  io_.DefineAttribute<std::int64_t>("adios2_schema/mesh/nzz", Mesh3DPartitioning::getInstance()->pm().nzz());
 
   // io_.SetParameter("StatsLevel", "0");
-  io_.SetParameter("MaxBufferSize", "2Gb");
+  // io_.SetParameter("MaxBufferSize", "2Gb");
   // io_.SetParameter("Threads", "2");
 
   for (int ii = 0; ii < lnxx_; ii++) {

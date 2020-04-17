@@ -31,9 +31,7 @@ class LinearSeismicWaveModel
 {
 public:
   static LinearSeismicWaveModel* getInstance(const CentralFDOperator& fdo,
-                                             const SEWASParameterManager& pm,
-                                             const int nt = 1,
-                                             const float tmax = 1.0);
+                                             const SEWASParameterManager& pm);
   static LinearSeismicWaveModel* getInstance();
 
   static void releaseInstance();
@@ -57,9 +55,7 @@ private:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW // To force an object of this class to be allocated as aligned
 
   LinearSeismicWaveModel(const CentralFDOperator& fdo,
-                         const SEWASParameterManager& pm,
-                         const int nt,
-                         const float tmax);
+                         const SEWASParameterManager& pm);
   ~LinearSeismicWaveModel();
 
   void initialize(const int ii, const int jj, const int kk);

@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <map>
@@ -30,6 +31,7 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include "Config.hxx"
+#include "LogManager.hxx"
 
 class SEWASParameterManager
 {
@@ -65,6 +67,14 @@ public:
   inline const auto& nx() const { return nx_; }
   inline const auto& ny() const { return ny_; }
   inline const auto& nz() const { return nz_; }
+
+  inline const auto& nxx() const { return nxx_; }
+  inline const auto& nyy() const { return nyy_; }
+  inline const auto& nzz() const { return nzz_; }
+
+  inline const auto& lnxx() const { return lnxx_; }
+  inline const auto& lnyy() const { return lnyy_; }
+  inline const auto& lnzz() const { return lnzz_; }
 
   inline const auto& layers() const { return layers_; }
 
@@ -150,6 +160,21 @@ private:
     return 0;
   }
 
+  inline void evaluateLayerBoundaries(const std::string& layerName,
+                                      const boost::property_tree::ptree& s,
+                                      const SWS::Directions d,
+                                      const SWS::RealType initial_l,
+                                      const SWS::RealType l)
+  {
+    start_[layerName][d] = s.get<SWS::RealType>("start");
+    end_[layerName][d] = s.get<SWS::RealType>("end");
+
+    // Add padding on the last layer
+    if (end_[layerName][d] == initial_l) {
+      end_[layerName][d] = l;
+    }
+  }
+
   inline void parseDataFile()
   {
     namespace pt = boost::property_tree;
@@ -162,27 +187,48 @@ private:
     tmax_ = root.get<SWS::RealType>("tmax");
     dt_ = root.get<SWS::RealType>("dt");
 
-    nt_ = ceil(tmax_ / dt_);
+    nt_ = std::ceil(tmax_ / dt_);
 
-    lx_ = root.get<SWS::RealType>("lx");
-    ly_ = root.get<SWS::RealType>("ly");
-    lz_ = root.get<SWS::RealType>("lz");
+    lx_ = initial_lx_ = root.get<SWS::RealType>("lx");
+    ly_ = initial_ly_ = root.get<SWS::RealType>("ly");
+    lz_ = initial_lz_ = root.get<SWS::RealType>("lz");
 
     ds_ = root.get<SWS::RealType>("ds");
 
-    // TODO handle the case where ds l{x,y,z}_ is not a multiple of ds_
-    nx_ = lx_ / ds_;
-    ny_ = ly_ / ds_;
-    nz_ = lz_ / ds_;
+    /* Evaluate and adjust discretization/partitioning parameters */
+    nx_ = std::ceil(lx_ / ds_);
+    ny_ = std::ceil(ly_ / ds_);
+    nz_ = std::ceil(lz_ / ds_);
+
+    nxx_ = (nx_ + cx() - 1) / cx();
+    nyy_ = (ny_ + cy() - 1) / cy();
+    nzz_ = (nz_ + cz() - 1) / cz();
+
+    lnxx_ = (nxx_ + P() - 1) / P();
+    lnyy_ = (nyy_ + Q() - 1) / Q();
+    lnzz_ = (nzz_ + R() - 1) / R();
+
+    /* Recompute parameters for taking into account all padding */
+    nxx_ = lnxx_ * P();
+    nyy_ = lnyy_ * Q();
+    nzz_ = lnzz_ * R();
+
+    nx_ = nxx_ * cx();
+    ny_ = nyy_ * cy();
+    nz_ = nzz_ * cz();
+
+    lx_ = SWS::RealType(nx_) * ds_;
+    ly_ = SWS::RealType(ny_) * ds_;
+    lz_ = SWS::RealType(nz_) * ds_;
 
     /* Layers */
     for (auto& layer : root.get_child("Layers")) {
-      const auto& name = layer.second.get<std::string>("Name");
+      const auto& layerName = layer.second.get<std::string>("Name");
 
-      layers_.push_back(name);
+      layers_.push_back(layerName);
 
-      start_[name].resize(SWS::DIM);
-      end_[name].resize(SWS::DIM);
+      start_[layerName].resize(SWS::DIM);
+      end_[layerName].resize(SWS::DIM);
 
       const auto& size = layer.second.get_child("Size");
       pt::ptree s;
@@ -190,23 +236,29 @@ private:
         switch (d) {
           case SWS::X:
             s = size.get_child("X");
+
+            evaluateLayerBoundaries(layerName, s, d, initial_lx_, lx_);
+
             break;
           case SWS::Y:
             s = size.get_child("Y");
+
+            evaluateLayerBoundaries(layerName, s, d, initial_ly_, ly_);
+
             break;
           case SWS::Z:
             s = size.get_child("Z");
+
+            evaluateLayerBoundaries(layerName, s, d, initial_lz_, lz_);
+
             break;
           default:
             break;
         }
 
-        start_[name][d] = s.get<SWS::RealType>("start");
-        end_[name][d] = s.get<SWS::RealType>("end");
-
-        Vp_[name] = layer.second.get<SWS::RealType>("Vp");
-        Vs_[name] = layer.second.get<SWS::RealType>("Vs");
-        rho_[name] = layer.second.get<SWS::RealType>("rho");
+        Vp_[layerName] = layer.second.get<SWS::RealType>("Vp");
+        Vs_[layerName] = layer.second.get<SWS::RealType>("Vs");
+        rho_[layerName] = layer.second.get<SWS::RealType>("rho");
         // Q_[name]=layer.second.get<SWS::RealType>("Q");
       } // d
 
@@ -214,17 +266,17 @@ private:
 
     /* Sources */
     for (auto& source : root.get_child("Sources")) {
-      const auto& name = source.second.get<std::string>("Name");
+      const auto& sourceName = source.second.get<std::string>("Name");
 
-      sources_.push_back(name);
+      sources_.push_back(sourceName);
 
       const auto& xs = source.second.get<SWS::RealType>("xs");
       const auto& ys = source.second.get<SWS::RealType>("ys");
       const auto& zs = source.second.get<SWS::RealType>("zs");
 
-      xs_[name] = xs;
-      ys_[name] = ys;
-      zs_[name] = zs;
+      xs_[sourceName] = xs;
+      ys_[sourceName] = ys;
+      zs_[sourceName] = zs;
     }
   }
 
@@ -242,14 +294,28 @@ private:
   int nt_;
 
   /* Spatial discretization */
+  SWS::RealType initial_lx_;
+  SWS::RealType initial_ly_;
+  SWS::RealType initial_lz_;
+
   SWS::RealType lx_;
   SWS::RealType ly_;
   SWS::RealType lz_;
+
   SWS::RealType ds_;
 
   int nx_;
   int ny_;
   int nz_;
+
+  int nxx_;
+  int nyy_;
+  int nzz_;
+
+  /* Spatial blocks count per local MPI process */
+  int lnxx_;
+  int lnyy_;
+  int lnzz_;
 
   /* Layers structure */
   std::vector<std::string> layers_;

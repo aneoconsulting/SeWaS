@@ -47,12 +47,10 @@ LinearSeismicWaveModel* LinearSeismicWaveModel::pInstance_ = nullptr;
 
 LinearSeismicWaveModel*
 LinearSeismicWaveModel::getInstance(const CentralFDOperator& fdo,
-                                    const SEWASParameterManager& pm,
-                                    const int nt,
-                                    const float tmax)
+                                    const SEWASParameterManager& pm)
 {
   if (nullptr == pInstance_) {
-    pInstance_ = new LinearSeismicWaveModel(fdo, pm, nt, tmax);
+    pInstance_ = new LinearSeismicWaveModel(fdo, pm);
     return pInstance_;
   } else {
     return pInstance_;
@@ -78,15 +76,10 @@ LinearSeismicWaveModel::releaseInstance()
 int
 LinearSeismicWaveModel::propagate() noexcept
 {
-
-  const int& nxx = Mesh3DPartitioning::getInstance()->nxx();
-  const int& nyy = Mesh3DPartitioning::getInstance()->nyy();
-  const int& nzz = Mesh3DPartitioning::getInstance()->nzz();
-
 #ifdef SEWAS_WITH_PARSEC
   LOG(SWS::LOG_INFO, "Starting the PaRSEC-based runner");
 
-  SEWASPaRSEC* sewasPaRSEC = SEWASPaRSEC::getInstance(nt_, nxx, nyy, nzz);
+  SEWASPaRSEC* sewasPaRSEC = SEWASPaRSEC::getInstance(nt_, pm_.nxx(), pm_.nyy(), pm_.nzz());
   LOG(SWS::LOG_INFO, "PaRSEC-based runner started");
 
   LOG(SWS::LOG_INFO, "Starting execution of the core seismic simulation");
@@ -96,7 +89,7 @@ LinearSeismicWaveModel::propagate() noexcept
   SEWASPaRSEC::releaseInstance();
 #else
   LOG(SWS::LOG_INFO, "Starting the sequential runner");
-  SEWASSequential* sewasSequential = SEWASSequential::getInstance(nt_, nxx, nyy, nzz);
+  SEWASSequential* sewasSequential = SEWASSequential::getInstance(nt_, pm_.nxx(), pm_.nyy(), pm_.nzz());
   LOG(SWS::LOG_INFO, "Sequential runner started");
 
   LOG(SWS::LOG_INFO, "Starting execution of the core seismic simulation");
@@ -806,19 +799,17 @@ LinearSeismicWaveModel::setVelocitySourceLocations()
 }
 
 LinearSeismicWaveModel::LinearSeismicWaveModel(const CentralFDOperator& fdo,
-                                               const SEWASParameterManager& pm,
-                                               const int nt,
-                                               const float tmax)
+                                               const SEWASParameterManager& pm)
   : fdo_(fdo)
   , pm_(pm)
 {
-  nt_ = 2 * nt; // Using of a staggered-grid
-  tmax_ = tmax;
+  nt_ = 2 * pm.nt(); // Using of a staggered-grid
+  tmax_ = pm.tmax();
 
   dt_ = tmax_ / nt_;
 
-  LOG(SWS::LOG_INFO, "Adjusted time-step: Dt={}", dt_);
-  LOG(SWS::LOG_INFO, "Adjusted time-step count: Nt={}", nt_);
+  LOG(SWS::LOG_INFO, "Adjusted temporal discretization step: dt = {}", dt_);
+  LOG(SWS::LOG_INFO, "Adjusted temporal mesh size: nt={}", nt_);
 
   auto pMesh = Mesh3DPartitioning::getInstance();
 

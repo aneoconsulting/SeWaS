@@ -72,7 +72,6 @@ DataSet::getLayer(const int k, const int ii, const int jj, const int kk) const
 {
   /* Get the layer to which belongs the plane of order k within the tile (ii,jj,kk) */
 
-  // FIXME we assume a uniform tile size
   const auto cz = pm_.cz(); /* Actual z-size of the tile without halo and padding */
 
   const auto lz = (kk * cz + k) * pm_.ds();
@@ -81,13 +80,18 @@ DataSet::getLayer(const int k, const int ii, const int jj, const int kk) const
     const auto start = pm_.start().at(layer)[SWS::Z];
     const auto end = pm_.end().at(layer)[SWS::Z];
 
+    LOG(SWS::LOG_TRACE, "layer = {}, start = {}, end = {}", layer, start, end);
+
     if (start <= lz && lz < end)
       return layer;
   }
 
   LOG(SWS::LOG_CRITICAL,
-      "The plane {} from the tile {} does not belong to any layer. Check the topology file configuration. "
-      "Exiting...");
+      "The plane {} from the tile ({}, {}, {}) does not belong to any layer. Check the topology file configuration",
+      k,
+      ii,
+      jj,
+      kk);
 
   exit(SWS::BAD_TOPOLOGY_FILE_CONFIGURATION);
 }
@@ -105,6 +109,8 @@ DataSet::initialize(const int ii, const int jj, const int kk)
 
   auto& _rho = rho_(lii, ljj, lkk);
 
+  /* TODO for the moment we assume a stacked model: all geophysical layers are stacked over the z-axis.
+   This needs to be generalized for taking into account layers over x and y axes */
   for (int k = _rho.kStart(); k < _rho.kEnd(); k++) {
 
     const auto layer = getLayer(k - _rho.kStart(), ii, jj, kk);

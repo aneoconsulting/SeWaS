@@ -22,7 +22,7 @@
 
 #include "ComputeVelocityUnitTest.hxx"
 
-TEST_F(ComputeVelocityTest, ComputeVelocityX)
+TEST_F(DISABLED_ComputeVelocityTest, ComputeVelocityX)
 {
   auto d = SWS::X;
 

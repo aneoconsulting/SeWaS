@@ -96,8 +96,6 @@ SEWASPaRSEC::init(SEWASParameterManager& pm)
 
   pPContext_ = parsec_init(pm.nthreads(), &parsec_argc, &parsec_argv);
 
-  LOG(SWS::LOG_INFO, "Thread number: {}", pm.nthreads());
-
   free(parsec_argv);
 }
 
@@ -176,7 +174,6 @@ SEWASPaRSEC::addArena(const short arena_idx, const SWS::Locations l)
     asize = HaloManager::getInstance()->getHaloSize(l, 0, 0, 0);
   }
 
-  // TODO we assume that each spatial block of cells have the same halo size
   parsec_type_create_contiguous(asize, oldtype, &newtype);
   parsec_type_extent(newtype, &lb, &extent);
   parsec_arena_construct(pDAG_->arenas[arena_idx], extent, SWS::Alignment, newtype);

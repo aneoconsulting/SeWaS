@@ -30,7 +30,7 @@
 #include "SEWASPaRSEC.hxx"
 #include "SEWASSequential.hxx"
 
-class ComputeVelocityTest : public ::testing::Test
+class DISABLED_ComputeVelocityTest : public ::testing::Test
 {
 protected:
   void SetUp() override
@@ -39,9 +39,11 @@ protected:
 
     char** argv = (char**)calloc(argc_, sizeof(char*));
     for (int i = 0; i < argc_; i++) {
-      argv[i] = argv_[i];
+      argv[i] = (char*)argv_[i];
     }
 
+    ASSERT_NE(nullptr, LogManager::getInstance());
+    
     auto pm = *std::make_unique<SEWASParameterManager>(&argc_, &argv);
 
     nx_ = pm.nx();
@@ -63,8 +65,8 @@ protected:
     int hny = CentralFDOperator::hny();
     int hnz = CentralFDOperator::hnz();
 
-    ASSERT_NE(nullptr, CartesianMesh3D::getInstance(nx_, ny_, nz_, ds_));
-    ASSERT_NE(nullptr, Mesh3DPartitioning::getInstance(cx_, cy_, cz_, hnx, hny, hnz, P_, Q_, R_));
+    ASSERT_NE(nullptr, CartesianMesh3D::getInstance(pm));
+    ASSERT_NE(nullptr, Mesh3DPartitioning::getInstance(pm, hnx, hny, hnz));
 
     auto init = [&](SWS::SpatialBlockField<SWS::RealType>& fijk) {
       for (int k = fijk.kStart(); k < fijk.kEnd(); k++) {
@@ -123,7 +125,7 @@ protected:
                           CartesianMesh3D::getInstance()->dz());
 
     ASSERT_NE(nullptr, DataSet::getInstance(pm));
-    ASSERT_NE(nullptr, LinearSeismicWaveModel::getInstance(fdo, pm, pm.nt(), pm.tmax()));
+    ASSERT_NE(nullptr, LinearSeismicWaveModel::getInstance(fdo, pm));
 
     /* k == 2
        ------
@@ -274,9 +276,8 @@ private:
 
 protected:
   static inline int argc_ = 17;
-  static inline char* argv_[] = { "sewas", "--cx",       "4", "--cy",    "4",         "--cz",
-                                  "4",     "--P",        "1", "--Q",     "1",         "--R",
-                                  "1",     "--nthreads", "1", "--dfile", "TestX.json" };
+  static inline const char* argv_[] = { "sewas", 
+                                        "--cx", "4", "--cy", "4", "--cz", "4", "--P", "1", "--Q", "1", "--R", "1", "--nthreads", "1", "--dfile", "TestX.json" };
 
   int nx_;
   int ny_;

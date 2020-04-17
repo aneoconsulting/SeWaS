@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include "CartesianMesh3D.hxx"
 #include "CentralFDOperator.hxx"
 
 class FDOTest : public ::testing::Test
@@ -43,14 +42,8 @@ protected:
 
     ds_ = 0.1;
 
-    // Create the computational domain
-    ASSERT_NE(nullptr, CartesianMesh3D::getInstance(nx_, ny_, nz_, ds_));
-
-    auto pCartesianMesh = CartesianMesh3D::getInstance();
-
     // Create a finite difference operator
-    fdo_ =
-      std::make_shared<CentralFDOperator>(pCartesianMesh->dx(), pCartesianMesh->dy(), pCartesianMesh->dz());
+    fdo_ = std::make_shared<CentralFDOperator>(ds_, ds_, ds_);
 
     fijk_.resize(cx_, cy_, cz_);
     fijk_.setHaloSize(hnx, hny, hnz);
@@ -102,7 +95,7 @@ protected:
     rijk_ = 0.0;
   }
 
-  void TearDown() override { CartesianMesh3D::releaseInstance(); }
+  void TearDown() override { }
 
   const SWS::RealType c1_ = -1. / 24;
   const SWS::RealType c2_ = +1. / 24;

@@ -27,6 +27,17 @@ SEWASParameterManager::SEWASParameterManager(int* pargc, char*** pargv)
   pargv_ = pargv;
 
   parse();
+
+  LOG(SWS::LOG_INFO, "Spatial discretization step: ds = {}", ds_);
+  LOG(SWS::LOG_INFO, "Temporal discretization step: dt = {}", dt_);
+  LOG(SWS::LOG_INFO, "Initial global domain size: ({}, {}, {})", initial_lx_, initial_ly_, initial_lz_);
+  LOG(SWS::LOG_INFO, "Adjusted global domain size: ({}, {}, {})", lx_, ly_, lz_);
+  LOG(SWS::LOG_INFO, "Global spatial mesh size: (nx, ny, nz) = ({}, {}, {})", nx_, ny_, nz_);
+  LOG(SWS::LOG_INFO, "Spatial blocks size: (cx, cy, cz) = ({}, {}, {})", cx(), cy(), cz());
+  LOG(SWS::LOG_INFO, "Global spatial blocks count: (nxx, nyy, nzz) = ({}, {}, {})", nxx_, nyy_, nzz_);
+  LOG(SWS::LOG_INFO, "Local spatial blocks count: (lnxx, lnyy, lnzz) = ({}, {}, {})", lnxx_, lnyy_, lnzz_);
+
+  LOG(SWS::LOG_INFO, "Thread count: {}", nthreads());
 }
 
 SEWASParameterManager::~SEWASParameterManager() {}
@@ -37,7 +48,7 @@ SEWASParameterManager::parse()
   /* Parse command line arguments */
   parseArgs();
 
-  /* Read the geophysic data file */
+  /* Read the geophysic data file and evaluate partitioning parameters */
   parseDataFile();
 
   return 0;

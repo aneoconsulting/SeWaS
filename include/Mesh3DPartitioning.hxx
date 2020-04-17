@@ -32,32 +32,26 @@
 #include "DataSet.hxx"
 #include "LinearSeismicWaveModel.hxx"
 #include "MinimumCommunicationPriorityEvaluator.hxx"
+#include "SEWASParameterManager.hxx"
 
 class Mesh3DPartitioning
 {
 public:
-  static Mesh3DPartitioning* getInstance(const int cx,
-                                         const int cy,
-                                         const int cz,
+  static Mesh3DPartitioning* getInstance(const SEWASParameterManager& pm,
                                          const int hnx,
                                          const int hny,
-                                         const int hnz,
-                                         const int P,
-                                         const int Q,
-                                         const int R);
+                                         const int hnz);
   static Mesh3DPartitioning* getInstance();
 
   static void releaseInstance();
 
   void buildSpatialField(SWS::SpatialField& f);
+  
+  const auto& pm() { return pm_; }
 
   inline const auto& ccx() const { return ccx_; }
   inline const auto& ccy() const { return ccy_; }
   inline const auto& ccz() const { return ccz_; }
-
-  inline const auto& nxx() const { return nxx_; }
-  inline const auto& nyy() const { return nyy_; }
-  inline const auto& nzz() const { return nzz_; }
 
   inline const auto& P() const { return P_; }
   inline const auto& Q() const { return Q_; }
@@ -125,13 +119,13 @@ public:
     {
       auto pMeshPartitioning = Mesh3DPartitioning::getInstance();
 
-      auto nxx = pMeshPartitioning->nxx();
-      auto nyy = pMeshPartitioning->nyy();
-      auto nzz = pMeshPartitioning->nzz();
+      auto nxx = pMeshPartitioning->pm().nxx();
+      auto nyy = pMeshPartitioning->pm().nyy();
+      auto nzz = pMeshPartitioning->pm().nzz();
 
-      auto lnxx = pMeshPartitioning->lnxx();
-      auto lnyy = pMeshPartitioning->lnyy();
-      auto lnzz = pMeshPartitioning->lnzz();
+      auto lnxx = pMeshPartitioning->pm().lnxx();
+      auto lnyy = pMeshPartitioning->pm().lnyy();
+      auto lnzz = pMeshPartitioning->pm().lnzz();
 
       auto priorityEvaluator =
         std::make_unique<MinimumCommunicationPriorityEvaluator>(nxx, nyy, nzz, lnxx, lnyy, lnzz);
@@ -161,21 +155,18 @@ public:
   inline TaskPriorityManager* getTaskPriorityManager() { return pTaskPriorityManager_; }
 
 private:
-  Mesh3DPartitioning(const int cx,
-                     const int cy,
-                     const int cz,
+  Mesh3DPartitioning(const SEWASParameterManager& pm,
                      const int hnx,
                      const int hny,
-                     const int hnz,
-                     const int P,
-                     const int Q,
-                     const int R);
+                     const int hnz);
   ~Mesh3DPartitioning();
 
   static Mesh3DPartitioning* pInstance_;
 
   /* Priority manager */
   TaskPriorityManager* pTaskPriorityManager_;
+
+  const SEWASParameterManager& pm_;
 
   /* Size of a single sub-block */
   const int cx_;
