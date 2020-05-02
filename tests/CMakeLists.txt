@@ -66,17 +66,32 @@ endforeach()
 
 # copy input data file used by some tests
 configure_file(${CMAKE_SOURCE_DIR}/data/input/TestX.json ${CMAKE_CURRENT_BINARY_DIR}/TestX.json)
+configure_file(${CMAKE_SOURCE_DIR}/data/input/TestC.json ${CMAKE_CURRENT_BINARY_DIR}/TestC.json)
 
 ### 2) Integration testing
 
 add_test(NAME TestC
          COMMAND $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 1 --nthreads 2 --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
-            
-if (SEWAS_DISTRIBUTED)
-    add_test(NAME TestCSplitX
-             COMMAND ${MPIEXEC_EXECUTABLE} -n 2 $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 2 --Q 1 --R 1 --nthreads 1 --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
-    add_test(NAME TestCSplitY
-             COMMAND ${MPIEXEC_EXECUTABLE} -n 2 $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 2 --R 1 --nthreads 1 --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
-    add_test(NAME TestCSplitZ
-             COMMAND ${MPIEXEC_EXECUTABLE} -n 2 $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 2 --nthreads 1 --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
+
+find_package(Python3 COMPONENTS Interpreter)
+if (Python3_FOUND)
+    ## Check tiling (cx, cy, cz)
+    add_test(NAME TestTiling
+             COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/testers/test_tiling.py -v
+             WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+    ## Check parallel partitionning (P, Q, R)
+    if (SEWAS_DISTRIBUTED)
+        add_test(NAME TestParallelPartitionning
+                 COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/testers/test_parallel_partitionning.py -v
+                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+        set_tests_properties(TestParallelPartitionning PROPERTIES ENVIRONMENT "MPIEXEC_EXECUTABLE=${MPIEXEC_EXECUTABLE}")
+        set_tests_properties(TestParallelPartitionning PROPERTIES ENVIRONMENT "MPIEXEC_NUMPROC_FLAG=${MPIEXEC_NUMPROC_FLAG}")
+    endif()
+
+    if (ENABLE_IO)
+        set_tests_properties(TestTiling PROPERTIES ENVIRONMENT "PYTHONPATH=${ADIOS2_DIR}/../../../bin")
+    endif()
+else()
+    message(WARNING "Python3 has not been found. Integration testing will not run")
 endif()

@@ -25,6 +25,7 @@
 #include "Config.hxx"
 #include "DataSet.hxx"
 #include "ExecutionContext.hxx"
+#include "Numerics.hxx"
 #include "ExternalSource.hxx"
 #include "LinearSeismicWaveModel.hxx"
 #include "LogManager.hxx"
@@ -159,9 +160,9 @@ main(int argc, char* argv[])
   ExecutionContext::barrier();
 
   if (0 == rank) {
-    LOG(SWS::LOG_INFO, "||Vx(0,0,0)||^2 = {}", pSEWAS->v(SWS::X)(0, 0, 0).norm2());
-    LOG(SWS::LOG_INFO, "||Vy(0,0,0)||^2 = {}", pSEWAS->v(SWS::Y)(0, 0, 0).norm2());
-    LOG(SWS::LOG_INFO, "||Vz(0,0,0)||^2 = {}", pSEWAS->v(SWS::Z)(0, 0, 0).norm2());
+    LOG(SWS::LOG_INFO, "||Vx|| = {}", SWS::Numerics::Norm(pSEWAS->v(SWS::X)));
+    LOG(SWS::LOG_INFO, "||Vy|| = {}", SWS::Numerics::Norm(pSEWAS->v(SWS::Y)));
+    LOG(SWS::LOG_INFO, "||Vz|| = {}", SWS::Numerics::Norm(pSEWAS->v(SWS::Z)));
   }
 
   // Release memory

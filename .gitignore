@@ -25,3 +25,6 @@ doc/*
 *.sqlite-journal
 *.log
 *.bin
+/thirdparty/adios
+/thirdparty/install
+/tests/testers/__pycache__

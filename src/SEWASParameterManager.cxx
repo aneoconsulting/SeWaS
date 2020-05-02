@@ -28,6 +28,7 @@ SEWASParameterManager::SEWASParameterManager(int* pargc, char*** pargv)
 
   parse();
 
+  LOG(SWS::LOG_INFO, "Geophysical data model: {}", model_);
   LOG(SWS::LOG_INFO, "Spatial discretization step: ds = {}", ds_);
   LOG(SWS::LOG_INFO, "Temporal discretization step: dt = {}", dt_);
   LOG(SWS::LOG_INFO, "Initial global domain size: ({}, {}, {})", initial_lx_, initial_ly_, initial_lz_);

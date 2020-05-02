@@ -52,7 +52,8 @@
         "typeinfo": "cpp",
         "utility": "cpp",
         "tensor": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "execution": "cpp"
     },
     "cmake.configureSettings": {
         "VERBOSE": "ON",
@@ -60,11 +61,22 @@
         "SEWAS_WITH_PARSEC": "OFF",
         "COLLECT_STATS": "OFF",
         "PLOT_DATA": "OFF",
-        "BUILD_TESTING": "OFF"
+        "BUILD_TESTING": "ON",
+        "ENABLE_IO": "ON"
     },
     "cmake.configureOnOpen": true,
     "cmake.configureArgs": [],
     "cmake.ctestArgs": [],
     "cmake.platform": "x64",
-    "cmake.buildDirectory": "${workspaceFolder}/build"
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests/testers",
+        "-p",
+        "*test*.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.unittestEnabled": true
 }

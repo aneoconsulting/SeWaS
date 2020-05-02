@@ -186,18 +186,18 @@ IOManager::init()
         for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
           auto tileID = "Velocity-" + getUID(d, ii, jj, kk);
           io_.DefineVariable<SWS::RealType>(tileID,
-                                            { (uint)world * lncells },
-                                            { (uint)rank * lncells },
-                                            { (uint)tileSize },
+                                            { (unsigned int)world * lncells },
+                                            { (unsigned int)rank * lncells },
+                                            { (unsigned int)tileSize },
                                             adios2::ConstantDims);
         }
 
         for (auto sc : { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
           auto tileID = "Stress-" + getUID(sc, ii, jj, kk);
           io_.DefineVariable<SWS::RealType>(tileID,
-                                            { (uint)world * lncells },
-                                            { (uint)rank * lncells },
-                                            { (uint)tileSize },
+                                            { (unsigned int)world * lncells },
+                                            { (unsigned int)rank * lncells },
+                                            { (unsigned int)tileSize },
                                             adios2::ConstantDims);
         }
       }

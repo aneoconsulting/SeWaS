@@ -140,10 +140,10 @@
       "cmakeExecutable": "/usr/bin/cmake",
       "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg/src", "thirdparty/vcpkg/build", "thirdparty/install", "thirdparty/parsec/src", "thirdparty/parsec/build", "thirdparty/adios", "build" ],
       "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
+      "buildCommandArgs": "-j 8",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "linux_x64" ],
-      "remoteMachineName": "-1244664032;ec2-34-245-187-37.eu-west-1.compute.amazonaws.com (username=ec2-user, port=22, authentication=PrivateKey)",
+      "remoteMachineName": "-1129115750;ec2-52-19-69-223.eu-west-1.compute.amazonaws.com (username=ubuntu, port=22, authentication=PrivateKey)",
       "remoteCMakeListsRoot": "${env.REMOTE_SEWAS_ROOT}/src",
       "remotePreGenerateCommand": "cd ${env.REMOTE_SEWAS_ROOT}/src && . bootstrap.sh && cd -",
       "remoteBuildRoot": "${env.REMOTE_SEWAS_ROOT}/out/build/${name}",
@@ -156,21 +156,26 @@
       "variables": [
         {
           "name": "COLLECT_STATS",
-          "value": "false",
+          "value": "True",
           "type": "BOOL"
         },
         {
           "name": "SEWAS_DISTRIBUTED",
-          "value": "False",
+          "value": "True",
           "type": "BOOL"
         },
         {
           "name": "SEWAS_WITH_PARSEC",
-          "value": "false",
+          "value": "True",
           "type": "BOOL"
         },
         {
           "name": "VERBOSE",
+          "value": "true",
+          "type": "BOOL"
+        },
+        {
+          "name": "BUILD_TESTING",
           "value": "true",
           "type": "BOOL"
         },
@@ -188,10 +193,10 @@
       "cmakeExecutable": "/usr/bin/cmake",
       "remoteCopySourcesExclusionList": [ ".vs", ".git", "out", "thirdparty/vcpkg/src", "thirdparty/vcpkg/build", "thirdparty/install", "thirdparty/parsec/src", "thirdparty/parsec/build", "thirdparty/adios", "build" ],
       "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
+      "buildCommandArgs": "-j 8",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "linux_x64" ],
-      "remoteMachineName": "687086411;ec2-34-244-134-100.eu-west-1.compute.amazonaws.com (username=ubuntu, port=22, authentication=PrivateKey)",
+      "remoteMachineName": "-814095530;ec2-34-240-17-42.eu-west-1.compute.amazonaws.com (username=ubuntu, port=22, authentication=PrivateKey)",
       "remoteCMakeListsRoot": "${env.REMOTE_SEWAS_ROOT}/src",
       "remotePreGenerateCommand": "cd ${env.REMOTE_SEWAS_ROOT}/src && . bootstrap.sh && cd -",
       "remoteBuildRoot": "${env.REMOTE_SEWAS_ROOT}/out/build/${name}",
@@ -204,7 +209,7 @@
       "variables": [
         {
           "name": "COLLECT_STATS",
-          "value": "false",
+          "value": "True",
           "type": "BOOL"
         },
         {
@@ -223,8 +228,13 @@
           "type": "BOOL"
         },
         {
+          "name": "BUILD_TESTING",
+          "value": "true",
+          "type": "BOOL"
+        },
+        {
           "name": "ENABLE_IO",
-          "value": "false",
+          "value": "True",
           "type": "BOOL"
         }
       ]

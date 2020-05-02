@@ -9,11 +9,11 @@
       "name": "sewas.exe",
       "args": [
         "--cx",
-        "50",
+        "3",
         "--cy",
-        "50",
+        "200",
         "--cz",
-        "100",
+        "200",
         "--P",
         "1",
         "--Q",
@@ -22,8 +22,9 @@
         "1",
         "--nthreads",
         "2",
-        "--dfile=${workspaceRoot}/data/input/TestA.json"
-      ]
+        "--dfile=${workspaceRoot}/data/input/TestC.json"
+      ],
+      "env": { "VERBOSITY_LEVEL": "INFO" }
     },
     {
       "type": "cppdbg",

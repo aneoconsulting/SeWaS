@@ -286,8 +286,13 @@ if (ENABLE_IO)
         endif(DOWNLOAD_MISSING_DEPS)
     else(NOT ADIOS2_FOUND)
         message(STATUS "ADIOS2 found")
+        message(STATUS "  ADIOS2_DIR = ${ADIOS2_DIR}")
     endif(NOT ADIOS2_FOUND)
     set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${ADIOS2_LIBRARIES})
+    
+    if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+        add_compile_definitions(NOMINMAX)
+    endif()
 endif(ENABLE_IO)
 
 # -------------------------------------------------------------------
@@ -462,7 +467,7 @@ target_link_libraries(sewas ${SEWAS_LIBRARIES})
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
 if (BUILD_TESTING)
-    enable_testing()
+    include(CTest)
 
     # unit tests
     add_subdirectory(tests)
