@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
 
     steps:
     - uses: actions/checkout@v2
@@ -61,5 +61,5 @@ jobs:
       uses: mattdavis0351/actions/docker-gpr@v1.3.0
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        image-name: sewas
+        image-name: sewas-${{ github.sha }}-${{ github.run_id }}
     
