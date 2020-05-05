@@ -31,9 +31,10 @@ jobs:
     
     - name: prepare artifacts
       run: |
-         mkdir public
-         cp build/sewas public
-         cp -r data public
+         mkdir -p public/sewas
+         cp build/sewas public/sewas
+         cp -r data public/sewas
+         cp -r thirdparty/install public
 
     - uses: actions/upload-artifact@master
       with:
@@ -60,5 +61,5 @@ jobs:
       uses: mattdavis0351/actions/docker-gpr@v1.3.0
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        image-name: sewas
+        image-name: sewas-linux
     
