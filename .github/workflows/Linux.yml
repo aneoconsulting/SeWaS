@@ -28,6 +28,37 @@ jobs:
       run: mkdir build && cd build && cmake .. -DBUILD_TESTING=ON -DCOLLECT_STATS=ON -DSEWAS_DISTRIBUTED=ON -DSEWAS_WITH_PARSEC=ON -DVERBOSE=ON && cd -
     - name: build
       run: cmake --build build --config Release
+    
+    - name: prepare artifacts
+      run: |
+         mkdir public
+         cp build/sewas public
+         cp -r data public
+
+    - uses: actions/upload-artifact@master
+      with:
+        name: upload sewas artifacts
+        path: public
       
     - name: test
       run: cd build && ctest -C Release --output-on-failure -V
+
+  package:
+    runs-on: ubuntu-latest
+    needs: build
+    name: Docker Build, Tag, Push
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+    - name: Download built artifact
+      uses: actions/download-artifact@master
+      with:
+        name: download sewas artifacts
+        path: public
+    - name: Build, Tag, Push
+      uses: mattdavis0351/actions/docker-gpr@v1.3.0
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        image-name: sewas-$GITHUB_SHA-$GITHUB_RUN_ID
+    
