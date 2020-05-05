@@ -5,5 +5,5 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install build-essential openmpi-bin openmpi-common
 
-COPY public/sewas /home/sewas
+#COPY public/sewas /home/sewas
 COPY . /home/sewas
