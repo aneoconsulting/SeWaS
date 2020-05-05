@@ -37,7 +37,7 @@ jobs:
 
     - uses: actions/upload-artifact@master
       with:
-        name: sewas artifacts
+        name: sewas-artifacts
         path: public
       
     - name: test
@@ -54,11 +54,11 @@ jobs:
     - name: Download built artifact
       uses: actions/download-artifact@master
       with:
-        name: sewas artifacts
+        name: sewas-artifacts
         path: public
     - name: Build, Tag, Push
       uses: mattdavis0351/actions/docker-gpr@v1.3.0
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        image-name: sewas-$GITHUB_SHA-$GITHUB_RUN_ID
+        image-name: sewas-${{ github.run_id }}-${{ github.run_number }}
     
