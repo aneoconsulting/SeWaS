@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-RUN apt -y update && apt install -y
+RUN apt-get -y update && apt-get install -y
 
-RUN apt -y install build-essential openmpi-bin openmpi-common
+RUN apt-get -y install build-essential openmpi-bin openmpi-common
 
