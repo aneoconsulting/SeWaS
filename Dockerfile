@@ -1,6 +1,7 @@
 FROM ubuntu:latest
 
-RUN apt-get -y update && apt-get install -y
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y
 
-RUN apt-get -y install build-essential openmpi-bin openmpi-common
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install build-essential openmpi-bin openmpi-common
 
