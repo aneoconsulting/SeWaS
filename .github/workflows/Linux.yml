@@ -37,7 +37,7 @@ jobs:
 
     - uses: actions/upload-artifact@master
       with:
-        name: upload sewas artifacts
+        name: sewas artifacts
         path: public
       
     - name: test
@@ -54,7 +54,7 @@ jobs:
     - name: Download built artifact
       uses: actions/download-artifact@master
       with:
-        name: download sewas artifacts
+        name: sewas artifacts
         path: public
     - name: Build, Tag, Push
       uses: mattdavis0351/actions/docker-gpr@v1.3.0
