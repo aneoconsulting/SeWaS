@@ -759,10 +759,9 @@ LinearSeismicWaveModel::setVelocitySourceLocations()
 
   LOG(SWS::LOG_DEBUG, "[start] Evaluating velocity source locations");
 
-  // FIXME for the moment we assume that all SpatialBlocks have the same size
-  const auto cx = pMesh->ccx()[0];
-  const auto cy = pMesh->ccy()[0];
-  const auto cz = pMesh->ccz()[0];
+  const auto cx = pm_.cx();
+  const auto cy = pm_.cy();
+  const auto cz = pm_.cz();
 
   for (auto& source : pm_.sources()) {
     const auto xs = pm_.xs().at(source);
