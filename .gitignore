@@ -17,6 +17,9 @@ doc/*
 .vs/tasks.vs.json
 /thirdparty/vcpkg/src
 /thirdparty/vcpkg/build
+/thirdparty/parsec/src
+/thirdparty/parsec/build
+/thirdparty/install
 /out
 /.vs/SeWaS/v16/.suo
 /.vs/CMake Overview
