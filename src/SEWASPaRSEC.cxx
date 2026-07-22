@@ -20,6 +20,8 @@
 
 #ifdef SEWAS_WITH_PARSEC
 
+#include <parsec/parsec_internal.h> // parsec_arena_datatype_construct
+
 #include "Config.hxx"
 #include "HaloManager.hxx"
 #include "LinearSeismicWaveModel.hxx"
@@ -158,12 +160,12 @@ SEWASPaRSEC::buildDAG()
 void
 SEWASPaRSEC::enqueueDAG()
 {
-  int status = parsec_enqueue(pPContext_, (parsec_taskpool_t*)pDAG_);
-  PARSEC_CHECK_ERROR(status, "parsec_enqueue");
+  int status = parsec_context_add_taskpool(pPContext_, (parsec_taskpool_t*)pDAG_);
+  PARSEC_CHECK_ERROR(status, "parsec_context_add_taskpool");
 }
 
 void
-SEWASPaRSEC::addArena(const short arena_idx, const SWS::Locations l)
+SEWASPaRSEC::addArena(const short adt_idx, const SWS::Locations l)
 {
   parsec_datatype_t oldtype = SWS::PARSECRealType;
   parsec_datatype_t newtype;
@@ -176,7 +178,7 @@ SEWASPaRSEC::addArena(const short arena_idx, const SWS::Locations l)
 
   parsec_type_create_contiguous(asize, oldtype, &newtype);
   parsec_type_extent(newtype, &lb, &extent);
-  parsec_arena_construct(pDAG_->arenas[arena_idx], extent, SWS::Alignment, newtype);
+  parsec_arena_datatype_construct(&pDAG_->arenas_datatypes[adt_idx], extent, SWS::Alignment, newtype);
 }
 
 SEWASPaRSEC::SEWASPaRSEC(const int nt, const int nxx, const int nyy, const int nzz)
@@ -195,23 +197,23 @@ SEWASPaRSEC::SEWASPaRSEC(const int nt, const int nxx, const int nyy, const int n
   buildDAG();
 
   /* Default halo arena */
-  addArena(PARSEC_sewas_DEFAULT_ARENA);
+  addArena(PARSEC_sewas_DEFAULT_ADT_IDX);
 
   /* Stress field halo arenas */
-  addArena(PARSEC_sewas_SLEFT_HALO_ARENA, SWS::LEFT);
-  addArena(PARSEC_sewas_SRIGHT_HALO_ARENA, SWS::RIGHT);
-  addArena(PARSEC_sewas_SBACKWARD_HALO_ARENA, SWS::BACKWARD);
-  addArena(PARSEC_sewas_SFORWARD_HALO_ARENA, SWS::FORWARD);
-  addArena(PARSEC_sewas_SBOTTOM_HALO_ARENA, SWS::BOTTOM);
-  addArena(PARSEC_sewas_STOP_HALO_ARENA, SWS::TOP);
+  addArena(PARSEC_sewas_SLEFT_HALO_ADT_IDX, SWS::LEFT);
+  addArena(PARSEC_sewas_SRIGHT_HALO_ADT_IDX, SWS::RIGHT);
+  addArena(PARSEC_sewas_SBACKWARD_HALO_ADT_IDX, SWS::BACKWARD);
+  addArena(PARSEC_sewas_SFORWARD_HALO_ADT_IDX, SWS::FORWARD);
+  addArena(PARSEC_sewas_SBOTTOM_HALO_ADT_IDX, SWS::BOTTOM);
+  addArena(PARSEC_sewas_STOP_HALO_ADT_IDX, SWS::TOP);
 
   /* Velocity halo arenas */
-  addArena(PARSEC_sewas_VLEFT_HALO_ARENA, SWS::LEFT);
-  addArena(PARSEC_sewas_VRIGHT_HALO_ARENA, SWS::RIGHT);
-  addArena(PARSEC_sewas_VBACKWARD_HALO_ARENA, SWS::BACKWARD);
-  addArena(PARSEC_sewas_VFORWARD_HALO_ARENA, SWS::FORWARD);
-  addArena(PARSEC_sewas_VBOTTOM_HALO_ARENA, SWS::BOTTOM);
-  addArena(PARSEC_sewas_VTOP_HALO_ARENA, SWS::TOP);
+  addArena(PARSEC_sewas_VLEFT_HALO_ADT_IDX, SWS::LEFT);
+  addArena(PARSEC_sewas_VRIGHT_HALO_ADT_IDX, SWS::RIGHT);
+  addArena(PARSEC_sewas_VBACKWARD_HALO_ADT_IDX, SWS::BACKWARD);
+  addArena(PARSEC_sewas_VFORWARD_HALO_ADT_IDX, SWS::FORWARD);
+  addArena(PARSEC_sewas_VBOTTOM_HALO_ADT_IDX, SWS::BOTTOM);
+  addArena(PARSEC_sewas_VTOP_HALO_ADT_IDX, SWS::TOP);
 
   enqueueDAG();
 }

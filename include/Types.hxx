@@ -33,7 +33,9 @@ namespace SWS {
 using RealType = double;
 
 #ifdef SEWAS_WITH_PARSEC
-constexpr auto PARSECRealType = parsec_datatype_double_t;
+// Not constexpr: under Open MPI, MPI_DOUBLE (and thus parsec_datatype_double_t)
+// expands to a pointer cast, which isn't a valid constant expression.
+static const auto PARSECRealType = parsec_datatype_double_t;
 #endif
 
 constexpr auto Ordering = Orderings::Y_MAJOR;
