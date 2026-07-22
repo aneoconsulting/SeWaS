@@ -295,7 +295,7 @@ $ sudo apt-get install libopenmpi-dev openmpi-common
 
 + PaRSEC 2.0
 ```sh
-$ git clone https://bitbucket.org/icldistcomp/parsec.git
+$ git clone https://github.com/icldisco/parsec.git
 $ cd parsec
 $ cmake .. -DPARSEC_WITH_DEVEL_HEADERS=1 -DPARSEC_GPU_WITH_CUDA=0
 $ make install
