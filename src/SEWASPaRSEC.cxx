@@ -197,23 +197,26 @@ SEWASPaRSEC::SEWASPaRSEC(const int nt, const int nxx, const int nyy, const int n
   buildDAG();
 
   /* Default halo arena */
-  addArena(PARSEC_sewas_DEFAULT_ADT_IDX);
+  /* Macro suffix is _ARENA, not _ADT_IDX: pinned PaRSEC predates the parsec-ptgpp
+     rename to _ADT_IDX (see cmake/resources/parsec/CMakeLists.txt for why this
+     specific commit is pinned instead of a later tag). */
+  addArena(PARSEC_sewas_DEFAULT_ARENA);
 
   /* Stress field halo arenas */
-  addArena(PARSEC_sewas_SLEFT_HALO_ADT_IDX, SWS::LEFT);
-  addArena(PARSEC_sewas_SRIGHT_HALO_ADT_IDX, SWS::RIGHT);
-  addArena(PARSEC_sewas_SBACKWARD_HALO_ADT_IDX, SWS::BACKWARD);
-  addArena(PARSEC_sewas_SFORWARD_HALO_ADT_IDX, SWS::FORWARD);
-  addArena(PARSEC_sewas_SBOTTOM_HALO_ADT_IDX, SWS::BOTTOM);
-  addArena(PARSEC_sewas_STOP_HALO_ADT_IDX, SWS::TOP);
+  addArena(PARSEC_sewas_SLEFT_HALO_ARENA, SWS::LEFT);
+  addArena(PARSEC_sewas_SRIGHT_HALO_ARENA, SWS::RIGHT);
+  addArena(PARSEC_sewas_SBACKWARD_HALO_ARENA, SWS::BACKWARD);
+  addArena(PARSEC_sewas_SFORWARD_HALO_ARENA, SWS::FORWARD);
+  addArena(PARSEC_sewas_SBOTTOM_HALO_ARENA, SWS::BOTTOM);
+  addArena(PARSEC_sewas_STOP_HALO_ARENA, SWS::TOP);
 
   /* Velocity halo arenas */
-  addArena(PARSEC_sewas_VLEFT_HALO_ADT_IDX, SWS::LEFT);
-  addArena(PARSEC_sewas_VRIGHT_HALO_ADT_IDX, SWS::RIGHT);
-  addArena(PARSEC_sewas_VBACKWARD_HALO_ADT_IDX, SWS::BACKWARD);
-  addArena(PARSEC_sewas_VFORWARD_HALO_ADT_IDX, SWS::FORWARD);
-  addArena(PARSEC_sewas_VBOTTOM_HALO_ADT_IDX, SWS::BOTTOM);
-  addArena(PARSEC_sewas_VTOP_HALO_ADT_IDX, SWS::TOP);
+  addArena(PARSEC_sewas_VLEFT_HALO_ARENA, SWS::LEFT);
+  addArena(PARSEC_sewas_VRIGHT_HALO_ARENA, SWS::RIGHT);
+  addArena(PARSEC_sewas_VBACKWARD_HALO_ARENA, SWS::BACKWARD);
+  addArena(PARSEC_sewas_VFORWARD_HALO_ARENA, SWS::FORWARD);
+  addArena(PARSEC_sewas_VBOTTOM_HALO_ARENA, SWS::BOTTOM);
+  addArena(PARSEC_sewas_VTOP_HALO_ARENA, SWS::TOP);
 
   enqueueDAG();
 }
