@@ -7,7 +7,7 @@ include(ExternalProject)
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     ExternalProject_Add(adios
         GIT_REPOSITORY    https://github.com/ornladios/ADIOS2.git
-        GIT_TAG           v2.5.0
+        GIT_TAG           v2.12.1
         SOURCE_DIR        "${ADIOS_DOWNLOAD_ROOT}/src"
         BINARY_DIR        "${ADIOS_DOWNLOAD_ROOT}/build"
         PATCH_COMMAND     ""

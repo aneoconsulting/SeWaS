@@ -146,9 +146,9 @@ IOManager::init()
   int status = 0;
 #ifdef ENABLE_IO
 #if SEWAS_DISTRIBUTED
-  adios_ = std::make_unique<adios2::ADIOS>(MPI_COMM_WORLD, adios2::DebugON);
+  adios_ = std::make_unique<adios2::ADIOS>(MPI_COMM_WORLD);
 #else
-  adios_ = std::make_unique<adios2::ADIOS>(adios2::DebugON);
+  adios_ = std::make_unique<adios2::ADIOS>();
 #endif
 
   processedTasks_[0] = 3 * lnxx_ * lnyy_ * lnzz_;
