@@ -11,7 +11,7 @@ endif()
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     ExternalProject_Add(vcpkg
         GIT_REPOSITORY    https://github.com/microsoft/vcpkg.git
-        GIT_TAG           941d5464544eb5812b2cbd6e687c3ebc78ed2624
+        GIT_TAG           40f3c709db80acf154ac4b17a1f83c564ebd022e
         SOURCE_DIR        "../src"
         BUILD_IN_SOURCE   true
         CONFIGURE_COMMAND ""
@@ -20,13 +20,16 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
         TEST_COMMAND      ""
     )
 elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+    # arm64-linux support is native to vcpkg since well before this pin; the old
+    # add_aarch64_support.patch/community triplet copy is both unneeded and no
+    # longer applies (scripts/buildsystems/vcpkg.cmake has since been rewritten
+    # upstream).
     ExternalProject_Add(vcpkg
         GIT_REPOSITORY    https://github.com/microsoft/vcpkg.git
-        GIT_TAG           941d5464544eb5812b2cbd6e687c3ebc78ed2624
+        GIT_TAG           40f3c709db80acf154ac4b17a1f83c564ebd022e
         SOURCE_DIR        "../src"
         BUILD_IN_SOURCE   true
         CONFIGURE_COMMAND ""
-        PATCH_COMMAND     cp ../triplets/arm64-linux.cmake ../src/triplets/community && cd ../src && git apply ../patches/add_aarch64_support.patch
         BUILD_COMMAND     ./bootstrap-vcpkg.sh ${_VCPKG_BOOTSTRAP_OPTIONS}
         INSTALL_COMMAND   ""
         TEST_COMMAND      ""
