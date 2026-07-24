@@ -19,6 +19,8 @@ doc/*
 /thirdparty/vcpkg/build
 /thirdparty/parsec/src
 /thirdparty/parsec/build
+/thirdparty/adios/src
+/thirdparty/adios/build
 /thirdparty/install
 /out
 /.vs/SeWaS/v16/.suo
