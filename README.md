@@ -279,49 +279,76 @@ DisplayStress
 
 Those visualization tasks interact with [VTK](http://www.vtk.org/) actors to render the scene.
 
-# Building the application
-The application has been tested on Debian 9 and CentOS. The following steps are suitable for a Debian-like OS. Our experiments were carried out using Intel compiler 18, but according to our recent experiments using gcc 7.3 there is no significant performance differences between these two compilers. So all the following experiments can be obtained using gcc.
+# Building and installing
 
-## Dependencies
-+ Boost 1.62 (program-options module)
+SeWaS is a CMake project. Its dependencies (Boost `program_options`, Eigen3, spdlog, and — for
+distributed/PaRSEC builds — OpenMPI and PaRSEC) are resolved automatically at configure time through
+[vcpkg](https://github.com/microsoft/vcpkg), vendored under `thirdparty/vcpkg`, so there is no dependency
+installation step to perform by hand. It has been validated on Linux (Ubuntu/Debian-like, via CI) and
+Windows; a C++17 compiler and CMake 3.10.3+ are required either way.
+
+## 1. System prerequisites
+
+Only build tooling that vcpkg itself cannot provide needs to be present on the system beforehand:
+
++ Linux: a C++17 compiler (gcc/clang), CMake, and — only when building with `-DSEWAS_WITH_PARSEC=ON`,
+  since PaRSEC's JDF files are compiled with `parsec-ptgpp` — `flex` and `bison`:
+  ```sh
+  sudo apt-get install build-essential cmake flex bison
+  ```
++ Windows: Visual Studio (with the C++ workload) and CMake.
+
+## 2. Bootstrap
+
+Run once per clone, before the first configure. This downloads and builds vcpkg into
+`thirdparty/vcpkg` if it isn't already present:
+
 ```sh
-$ sudo apt-get install libboost-program-options-dev
+./bootstrap.sh          # Linux/macOS
+bootstrap.bat           # Windows
 ```
 
-+ OpenMPI 2.0.2
+## 3. Configure
+
 ```sh
-$ sudo apt-get install libopenmpi-dev openmpi-common
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release \
+         -DSEWAS_DISTRIBUTED=ON -DSEWAS_WITH_PARSEC=ON \
+         -DBUILD_TESTING=ON -DCOLLECT_STATS=ON -DVERBOSE=ON
 ```
 
-+ PaRSEC 2.0
+`SEWAS_DISTRIBUTED` enables MPI-based distributed execution, and `SEWAS_WITH_PARSEC` (which requires it)
+enables the PaRSEC task-based scheduler; both are ON in Linux CI, and Windows CI builds with both OFF. With
+`DOWNLOAD_MISSING_DEPS` on (the default), CMake will download and build any of the above dependencies not
+already found on the system — expect the first configure to take a while, since it also builds PaRSEC from
+source.
+
+Other build options (all defined at the top of `CMakeLists.txt` and OFF unless noted) let you tune what
+gets compiled in:
+
+| Option | Effect |
+|---|---|
+| `VISUALIZE_EXECUTION` (+ `ENABLE_VELOCITY_RENDERING`, `ENABLE_STRESS_RENDERING`, `ENABLE_CLUSTER_RENDERING`) | Real-time VTK rendering of the simulation |
+| `ENABLE_IO` | ADIOS2-based output |
+| `USE_BLOCKWISE_FDO` (ON), `VECTORIZE_COMPUTATIONS` (ON), `EIGEN_VECTORIZATION` (ON), `BOOST_SIMD_VECTORIZATION` | Control how the finite-difference operator is vectorized |
+| `DOWNLOAD_MISSING_DEPS` (ON) | Auto-fetch missing dependencies through vcpkg instead of failing configure |
+
+## 4. Build
+
 ```sh
-$ git clone https://github.com/icldisco/parsec.git
-$ cd parsec
-$ cmake .. -DPARSEC_WITH_DEVEL_HEADERS=1 -DPARSEC_GPU_WITH_CUDA=0
-$ make install
+cmake --build . --config Release
 ```
 
-+ Eigen 3.3.3
-```sh
-$ sudo apt-get install libeigen3-dev
-```
+This produces the `sewas` executable directly inside `build/` — there is no separate install step/prefix;
+run it in place (see [User Interface](#user-interface) above) or copy the binary wherever you need it.
 
-+ Intel TBB 4.3
-```sh
-$ sudo apt-get install libtbb-dev
-```
-     
-## SeWaS build
-```sh
-$ export SEWAS_ROOT=/path/to/SeismicWaveSimulator
-$ cd $SEWAS_ROOT/build
-$ cmake ../src -DCMAKE_BUILD_TYPE=Release
-$ make
-```
+## 5. Test (optional)
 
-At this stage the `build/` directory should contain an executable `sewas`
+With `-DBUILD_TESTING=ON`, the GoogleTest suite can be run via CTest:
 
-/!\ The results presented in our paper are obtained on a cluster of Intel KNL processors. Hence it is mandatory to build the SeWaS application natively on one co-processor for best performances.
+```sh
+ctest -C Release --output-on-failure -V
+```
 
 # Benchmarks
 Performance studies have been carried out using two test cases: TestA and TestB.
