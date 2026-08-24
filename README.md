@@ -258,7 +258,10 @@ v_(L2S::X)(ii,jj,kk)(is,js,ks)-=a*((ts-2)*dt-1.2/7.)*exp(-M_PI*M_PI*7.*7.*((ts-2
 ```
 
 # Parallelization Scheme
-The algorithm is implemented using a *task-based approach* and the parallelization is handled by the [PaRSEC](http://icl.utk.edu/parsec/) runtime system. We defined 6 computational tasks within the dataflow:
+The algorithm is implemented using a *task-based approach*. The parallelization can be handled by either of
+two interchangeable runtime systems: [StarPU](https://starpu.gitlabpages.inria.fr/) (the default distributed
+backend, used by CI) or [PaRSEC](http://icl.utk.edu/parsec/) (**deprecated**, kept for now behind
+`-DSEWAS_WITH_PARSEC=ON` but no longer built/tested by CI). We defined 6 computational tasks within the dataflow:
 
 ```c++
 ComputeVelocity
@@ -324,6 +327,9 @@ cmake .. -DCMAKE_BUILD_TYPE=Release \
 `SEWAS_DISTRIBUTED`+`SEWAS_WITH_STARPU`; Windows CI builds with both OFF. With `DOWNLOAD_MISSING_DEPS` on
 (the default), CMake will download and build any of the above dependencies not already found on the
 system — expect the first configure to take a while, since it also builds StarPU (or PaRSEC) from source.
+
+`SEWAS_WITH_PARSEC` is **deprecated**: CI no longer builds or tests it, and it is kept only for backward
+compatibility. Use `SEWAS_WITH_STARPU` for distributed builds going forward.
 
 Other build options (all defined at the top of `CMakeLists.txt` and OFF unless noted) let you tune what
 gets compiled in:
@@ -437,6 +443,43 @@ ComputeVelocity
 	#Calls           : 	4752
 	Elapsed Time (s) : 	1.493992e-03	1.189589e-03	3.632833e-03	7.099449e+00	5.015644e-04
 	CPU Time (s)     : 	3.005864e-03	1.190000e-03	8.809000e-03	1.428387e+01	1.283688e-03
+```
+
+## TestA results with the StarPU backend
+
+The following run uses the current StarPU-based distributed backend (`-DSEWAS_WITH_STARPU=ON`), single
+MPI process (`P=Q=R=1`), on an Intel Core i7-1255U (10 cores / 12 threads), 30 GiB RAM, Linux.
+
+```sh
+$ ./sewas -C TestA.cfg
+...
+MPI process 0 completed the simulation
+++++++++++++++++++++++++++++++++++++++++++
+ Statistics 
+------------------------------------------
+ SEWAS 
+++++++++++++++++++++++++++++++++++++++++++
+                                AVG	        MIN	        MAX	        TOT	        SD          
+Global
+	#Calls           : 	1
+	Elapsed Time (s) : 	2.497147e+01	2.497147e+01	2.497147e+01	2.497147e+01	-nan
+	CPU Time (s)     : 	1.975859e+01	1.975859e+01	1.975859e+01	1.975859e+01	-nan
+Core simulation
+	#Calls           : 	1
+	Elapsed Time (s) : 	2.294819e+01	2.294819e+01	2.294819e+01	2.294819e+01	-nan
+	CPU Time (s)     : 	1.957796e+01	1.957796e+01	1.957796e+01	1.957796e+01	-nan
+Initialization
+	#Calls           : 	1
+	Elapsed Time (s) : 	1.970548e+00	1.970548e+00	1.970548e+00	1.970548e+00	-nan
+	CPU Time (s)     : 	8.290600e-02	8.290600e-02	8.290600e-02	8.290600e-02	5.008250e-10
+ComputeVelocity
+	#Calls           : 	4752
+	Elapsed Time (s) : 	2.478652e-03	7.825990e-04	1.336099e-02	1.177855e+01	2.241160e-03
+	CPU Time (s)     : 	2.115218e-03	7.820000e-04	8.818000e-03	1.005152e+01	1.439207e-03
+ComputeStress
+	#Calls           : 	9504
+	Elapsed Time (s) : 	2.355225e-03	6.287920e-04	1.401961e-02	2.238405e+01	2.185724e-03
+	CPU Time (s)     : 	2.016684e-03	6.290000e-04	8.457000e-03	1.916656e+01	1.399096e-03
 ```
 
 # Results reproducibility
