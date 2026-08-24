@@ -37,6 +37,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules" C
 
 option(SEWAS_DISTRIBUTED            "Build SeWaS for distributed memory platforms (default OFF)"                        OFF)
 option(SEWAS_WITH_PARSEC            "Use PaRSEC for task-scheduling (default OFF)"                                      OFF)
+option(SEWAS_WITH_STARPU            "Use StarPU for task-scheduling (default OFF)"                                      OFF)
 option(VERBOSE                      "Enable collecting and displaying of traced events at runtime (default OFF)"        OFF)
 option(BUILD_TESTING                "Build the testing tree (default OFF)"                                              OFF)
 option(COLLECT_STATS                "Collect statistics during execution (default ON)"                                  ON)
@@ -120,6 +121,14 @@ endif(SEWAS_DISTRIBUTED)
 
 if(SEWAS_WITH_PARSEC)
     add_compile_options(-DSEWAS_WITH_PARSEC)
+endif()
+
+if(SEWAS_WITH_STARPU)
+    add_compile_options(-DSEWAS_WITH_STARPU)
+endif()
+
+if(SEWAS_WITH_PARSEC AND SEWAS_WITH_STARPU)
+    message(FATAL_ERROR "SEWAS_WITH_PARSEC and SEWAS_WITH_STARPU are mutually exclusive.")
 endif()
 
 if (VERBOSE)
@@ -355,6 +364,34 @@ if(SEWAS_WITH_PARSEC)
 endif(SEWAS_WITH_PARSEC)
 
 # -------------------------------------------------------------------
+# StarPU
+# -------------------------------------------------------------------
+if(SEWAS_WITH_STARPU)
+    if (NOT SEWAS_DISTRIBUTED)
+        message(FATAL_ERROR "The distributed version of SeWaS relies on StarPU.")
+    endif(NOT SEWAS_DISTRIBUTED)
+
+    find_package(PkgConfig REQUIRED)
+    set(STARPU_PC_VERSION "1.4" CACHE STRING "StarPU pkg-config version suffix")
+    pkg_check_modules(STARPU starpumpi-${STARPU_PC_VERSION})
+    if (NOT STARPU_FOUND)
+        message(FATAL_ERROR "StarPU (starpumpi-${STARPU_PC_VERSION}) not found via pkg-config. "
+                             "Install it (e.g. 'apt install libstarpu-dev' on Debian/Ubuntu, or build it "
+                             "via Spack) and make sure its .pc files are on PKG_CONFIG_PATH. "
+                             "Automatic download of StarPU is not currently supported.")
+    endif()
+
+    message(STATUS "StarPU found")
+    message(STATUS "  STARPU_INCLUDE_DIRS = ${STARPU_INCLUDE_DIRS}")
+    message(STATUS "  STARPU_LIBRARY_DIRS = ${STARPU_LIBRARY_DIRS}")
+    message(STATUS "  STARPU_LIBRARIES = ${STARPU_LIBRARIES}")
+
+    include_directories("${STARPU_INCLUDE_DIRS}")
+    link_directories("${STARPU_LIBRARY_DIRS}")
+    set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${STARPU_LIBRARIES})
+endif(SEWAS_WITH_STARPU)
+
+# -------------------------------------------------------------------
 # Boost
 # -------------------------------------------------------------------
 find_package(Boost 1.62 COMPONENTS program_options)
@@ -445,6 +482,7 @@ set(SOURCES
     src/SEWASParameterManager.cxx
     src/SEWASSequential.cxx
     src/SEWASPaRSEC.cxx
+    src/SEWASStarPU.cxx
     src/Mesh3DPartitioning.cxx
     src/VisualizationManager.cxx
     src/MetricsManager.cxx

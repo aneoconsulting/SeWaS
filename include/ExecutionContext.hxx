@@ -35,6 +35,10 @@
 #include "sewas.h"
 #endif
 
+#ifdef SEWAS_WITH_STARPU
+#include "SEWASStarPU.hxx"
+#endif
+
 #include "SEWASParameterManager.hxx"
 
 class ExecutionContext
@@ -61,6 +65,10 @@ public:
   {
 #ifdef SEWAS_WITH_PARSEC
     SEWASPaRSEC::finalize();
+#endif
+
+#ifdef SEWAS_WITH_STARPU
+    SEWASStarPU::finalize();
 #endif
 
 #if SEWAS_DISTRIBUTED
