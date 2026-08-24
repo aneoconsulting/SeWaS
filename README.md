@@ -282,7 +282,8 @@ Those visualization tasks interact with [VTK](http://www.vtk.org/) actors to ren
 # Building and installing
 
 SeWaS is a CMake project. Its dependencies (Boost `program_options`, Eigen3, spdlog, and — for
-distributed/PaRSEC builds — OpenMPI and PaRSEC) are resolved automatically at configure time through
+distributed builds — OpenMPI plus PaRSEC or StarPU, depending on which task-based scheduler is
+selected) are resolved automatically at configure time through
 [vcpkg](https://github.com/microsoft/vcpkg), vendored under `thirdparty/vcpkg`, so there is no dependency
 installation step to perform by hand. It has been validated on Linux (Ubuntu/Debian-like, via CI) and
 Windows; a C++17 compiler and CMake 3.10.3+ are required either way.
@@ -292,7 +293,8 @@ Windows; a C++17 compiler and CMake 3.10.3+ are required either way.
 Only build tooling that vcpkg itself cannot provide needs to be present on the system beforehand:
 
 + Linux: a C++17 compiler (gcc/clang), CMake, and — only when building with `-DSEWAS_WITH_PARSEC=ON`,
-  since PaRSEC's JDF files are compiled with `parsec-ptgpp` — `flex` and `bison`:
+  since PaRSEC's JDF files are compiled with `parsec-ptgpp` — `flex` and `bison`. `-DSEWAS_WITH_STARPU=ON`
+  needs no extra tooling beyond that:
   ```sh
   sudo apt-get install build-essential cmake flex bison
   ```
@@ -313,15 +315,15 @@ bootstrap.bat           # Windows
 ```sh
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release \
-         -DSEWAS_DISTRIBUTED=ON -DSEWAS_WITH_PARSEC=ON \
+         -DSEWAS_DISTRIBUTED=ON -DSEWAS_WITH_STARPU=ON \
          -DBUILD_TESTING=ON -DCOLLECT_STATS=ON -DVERBOSE=ON
 ```
 
-`SEWAS_DISTRIBUTED` enables MPI-based distributed execution, and `SEWAS_WITH_PARSEC` (which requires it)
-enables the PaRSEC task-based scheduler; both are ON in Linux CI, and Windows CI builds with both OFF. With
-`DOWNLOAD_MISSING_DEPS` on (the default), CMake will download and build any of the above dependencies not
-already found on the system — expect the first configure to take a while, since it also builds PaRSEC from
-source.
+`SEWAS_DISTRIBUTED` enables MPI-based distributed execution, and `SEWAS_WITH_STARPU`/`SEWAS_WITH_PARSEC`
+(mutually exclusive, each requiring it) select the task-based scheduler. Linux CI builds
+`SEWAS_DISTRIBUTED`+`SEWAS_WITH_STARPU`; Windows CI builds with both OFF. With `DOWNLOAD_MISSING_DEPS` on
+(the default), CMake will download and build any of the above dependencies not already found on the
+system — expect the first configure to take a while, since it also builds StarPU (or PaRSEC) from source.
 
 Other build options (all defined at the top of `CMakeLists.txt` and OFF unless noted) let you tune what
 gets compiled in:
