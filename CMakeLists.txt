@@ -78,10 +78,17 @@ if (DOWNLOAD_MISSING_DEPS)
     set(TARGET_PLATFORM "${HOST_ARCH}-${SYSTEM_NAME}")
     
     
+    # Ports pinned here to a version older than what the vcpkg commit above ships by
+    # default, because SEWAS' find_package() calls require compatibility with an older
+    # version than what is currently in the upstream port tree (e.g. eigen3 defaults to
+    # a 5.x release, which find_package(Eigen3 3.3.3) rejects as incompatible).
+    set(VCPKG_OVERLAY_PORTS_DIR ${CMAKE_SOURCE_DIR}/cmake/resources/vcpkg/overlay-ports)
+
     # define helper macro for downloading packages through vpckg
     macro(_vcpkg_install package)
         message("[VCPKG] Installing package : ${package}:${TARGET_PLATFORM}")
         execute_process(COMMAND           ${VCPKG_EXE} install ${package}:${TARGET_PLATFORM}
+                                           --overlay-ports=${VCPKG_OVERLAY_PORTS_DIR}
                         RESULT_VARIABLE   STATUS
                         WORKING_DIRECTORY ${VCPKG_ROOT})
         if (STATUS)
