@@ -326,7 +326,7 @@ LinearSeismicWaveModel::computeVelocity(const SWS::Directions& d,
     default:
       LOG(SWS::LOG_ERROR,
           "Unknown spatial direction {} requested within LinearSeismicWaveModel::computeVelocity()",
-          d);
+          static_cast<int>(d));
       break;
   }
 
@@ -628,7 +628,7 @@ LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents& sc,
     default:
       LOG(SWS::LOG_ERROR,
           "Unknown stress component {} requested within LinearSeismicWaveModel::computeStress()",
-          sc);
+          static_cast<int>(sc));
       break;
   }
 
@@ -726,7 +726,7 @@ LinearSeismicWaveModel::addVelocitySource(const SWS::Directions& d,
     default:
       LOG(SWS::LOG_ERROR,
           "Unknown spatial direction {} requested within LinearSeismicWaveModel::addVelocitySource()",
-          d);
+          static_cast<int>(d));
       break;
   }
 }

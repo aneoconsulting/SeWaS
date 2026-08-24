@@ -173,7 +173,7 @@ HaloManager::getHaloSize(const SWS::Locations l, const int ii, const int jj, con
       hs = cx * cy * hnz_;
       break;
     default:
-      LOG(SWS::LOG_ERROR, "Unknown location {} requested within HaloManager::getHaloSize()", l);
+      LOG(SWS::LOG_ERROR, "Unknown location {} requested within HaloManager::getHaloSize()", static_cast<int>(l));
       break;
   }
 
@@ -431,7 +431,9 @@ HaloManager::setExtractOffsets(const SWS::Locations l,
       kShift = kEnd - hnz_;
       break;
     default:
-      LOG(SWS::LOG_ERROR, "Unknown halo location {} requested within HaloManager::setExtractOffsets()", l);
+      LOG(SWS::LOG_ERROR,
+          "Unknown halo location {} requested within HaloManager::setExtractOffsets()",
+          static_cast<int>(l));
       break;
   }
 }
@@ -499,7 +501,9 @@ HaloManager::setUpdateOffsets(const SWS::Locations l,
       kShift = kEnd;
       break;
     default:
-      LOG(SWS::LOG_ERROR, "Unknown halo location {} requested within HaloManager::setUpdateOffsets()", l);
+      LOG(SWS::LOG_ERROR,
+          "Unknown halo location {} requested within HaloManager::setUpdateOffsets()",
+          static_cast<int>(l));
       break;
   }
 }

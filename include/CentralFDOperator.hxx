@@ -204,7 +204,7 @@ public:
       default:
         LOG(SWS::LOG_ERROR,
             "Unknown direction {} requested within CentralFDOperator::apply()",
-            d);
+            static_cast<int>(d));
         break;
     }
 

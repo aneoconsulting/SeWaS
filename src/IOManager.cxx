@@ -65,7 +65,7 @@ IOManager::dumpVelocity(const SWS::Directions d, const int ts, const int ii, con
   int status = 0;
 
 #ifdef ENABLE_IO
-  LOG(SWS::LOG_DEBUG, "[start] Dumping v({})({},{},{}) at ts={}", d, ii, jj, kk, ts);
+  LOG(SWS::LOG_DEBUG, "[start] Dumping v({})({},{},{}) at ts={}", static_cast<int>(d), ii, jj, kk, ts);
 
   const auto& tile3D = LinearSeismicWaveModel::getInstance()->v(d)(ii, jj, kk);
 
@@ -77,7 +77,7 @@ IOManager::dumpVelocity(const SWS::Directions d, const int ts, const int ii, con
     status = dumpTile(velocityWriter_, tile3D, tileID);
   }
 
-  LOG(SWS::LOG_DEBUG, "[stop] Dumping v({})({},{},{}) at ts={}", d, ii, jj, kk, ts);
+  LOG(SWS::LOG_DEBUG, "[stop] Dumping v({})({},{},{}) at ts={}", static_cast<int>(d), ii, jj, kk, ts);
 #endif
 
   return status;
@@ -105,7 +105,7 @@ IOManager::dumpStress(const SWS::StressFieldComponents sc,
   int status = 0;
 
 #ifdef ENABLE_IO
-  LOG(SWS::LOG_DEBUG, "[start] Dumping sigma({})({},{},{}) at ts={}", sc, ii, jj, kk, ts);
+  LOG(SWS::LOG_DEBUG, "[start] Dumping sigma({})({},{},{}) at ts={}", static_cast<int>(sc), ii, jj, kk, ts);
 
   const auto& tile3D = LinearSeismicWaveModel::getInstance()->sigma(sc)(ii, jj, kk);
 
@@ -117,7 +117,7 @@ IOManager::dumpStress(const SWS::StressFieldComponents sc,
     status = dumpTile(stressWriter_, tile3D, tileID);
   }
 
-  LOG(SWS::LOG_DEBUG, "[stop] Dumping sigma({})({},{},{}) at ts={}", sc, ii, jj, kk, ts);
+  LOG(SWS::LOG_DEBUG, "[stop] Dumping sigma({})({},{},{}) at ts={}", static_cast<int>(sc), ii, jj, kk, ts);
 #endif
 
   return status;

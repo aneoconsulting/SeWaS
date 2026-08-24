@@ -167,7 +167,9 @@ SEWASStarPU::neighborCoords(const int ii,
       nkk = kk + 1;
       break;
     default:
-      LOG(SWS::LOG_ERROR, "Unknown location {} requested within SEWASStarPU::neighborCoords()", l);
+      LOG(SWS::LOG_ERROR,
+          "Unknown location {} requested within SEWASStarPU::neighborCoords()",
+          static_cast<int>(l));
       return false;
   }
 
@@ -191,7 +193,7 @@ SEWASStarPU::opposite(const SWS::Locations l) noexcept
     case SWS::TOP:
       return SWS::BOTTOM;
     default:
-      LOG(SWS::LOG_ERROR, "Unknown location {} requested within SEWASStarPU::opposite()", l);
+      LOG(SWS::LOG_ERROR, "Unknown location {} requested within SEWASStarPU::opposite()", static_cast<int>(l));
       return SWS::NB_LOCATIONS;
   }
 }
