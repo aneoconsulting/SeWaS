@@ -37,6 +37,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules" C
 
 option(SEWAS_DISTRIBUTED            "Build SeWaS for distributed memory platforms (default OFF)"                        OFF)
 option(SEWAS_WITH_PARSEC            "Use PaRSEC for task-scheduling (default OFF)"                                      OFF)
+option(SEWAS_WITH_STARPU            "Use StarPU for task-scheduling (default OFF)"                                      OFF)
 option(VERBOSE                      "Enable collecting and displaying of traced events at runtime (default OFF)"        OFF)
 option(BUILD_TESTING                "Build the testing tree (default OFF)"                                              OFF)
 option(COLLECT_STATS                "Collect statistics during execution (default ON)"                                  ON)
@@ -77,10 +78,17 @@ if (DOWNLOAD_MISSING_DEPS)
     set(TARGET_PLATFORM "${HOST_ARCH}-${SYSTEM_NAME}")
     
     
+    # Ports pinned here to a version older than what the vcpkg commit above ships by
+    # default, because SEWAS' find_package() calls require compatibility with an older
+    # version than what is currently in the upstream port tree (e.g. eigen3 defaults to
+    # a 5.x release, which find_package(Eigen3 3.3.3) rejects as incompatible).
+    set(VCPKG_OVERLAY_PORTS_DIR ${CMAKE_SOURCE_DIR}/cmake/resources/vcpkg/overlay-ports)
+
     # define helper macro for downloading packages through vpckg
     macro(_vcpkg_install package)
         message("[VCPKG] Installing package : ${package}:${TARGET_PLATFORM}")
         execute_process(COMMAND           ${VCPKG_EXE} install ${package}:${TARGET_PLATFORM}
+                                           --overlay-ports=${VCPKG_OVERLAY_PORTS_DIR}
                         RESULT_VARIABLE   STATUS
                         WORKING_DIRECTORY ${VCPKG_ROOT})
         if (STATUS)
@@ -120,6 +128,14 @@ endif(SEWAS_DISTRIBUTED)
 
 if(SEWAS_WITH_PARSEC)
     add_compile_options(-DSEWAS_WITH_PARSEC)
+endif()
+
+if(SEWAS_WITH_STARPU)
+    add_compile_options(-DSEWAS_WITH_STARPU)
+endif()
+
+if(SEWAS_WITH_PARSEC AND SEWAS_WITH_STARPU)
+    message(FATAL_ERROR "SEWAS_WITH_PARSEC and SEWAS_WITH_STARPU are mutually exclusive.")
 endif()
 
 if (VERBOSE)
@@ -355,6 +371,62 @@ if(SEWAS_WITH_PARSEC)
 endif(SEWAS_WITH_PARSEC)
 
 # -------------------------------------------------------------------
+# StarPU
+# -------------------------------------------------------------------
+if(SEWAS_WITH_STARPU)
+    if (NOT SEWAS_DISTRIBUTED)
+        message(FATAL_ERROR "The distributed version of SeWaS relies on StarPU.")
+    endif(NOT SEWAS_DISTRIBUTED)
+
+    find_package(PkgConfig REQUIRED)
+    set(STARPU_PC_VERSION "1.4" CACHE STRING "StarPU pkg-config version suffix")
+
+    # Also look under the same install prefix vcpkg-downloaded/built dependencies
+    # (PaRSEC, ADIOS2, ...) land in, in case a previous DOWNLOAD_MISSING_DEPS run
+    # already built StarPU there.
+    set(ENV{PKG_CONFIG_PATH} "${THIRDPARTY_ROOT}/install/lib/pkgconfig:${THIRDPARTY_ROOT}/install/lib64/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+    pkg_check_modules(STARPU starpumpi-${STARPU_PC_VERSION})
+
+    if (NOT STARPU_FOUND)
+        message(WARNING "StarPU not found")
+        if (DOWNLOAD_MISSING_DEPS)
+            # StarPU not found; trying to download and build it (autotools-based,
+            # see cmake/resources/starpu/CMakeLists.txt)
+            set(STARPU_DOWNLOAD_ROOT ${THIRDPARTY_ROOT}/starpu)
+            configure_file(${CMAKE_SOURCE_DIR}/cmake/resources/starpu/CMakeLists.txt ${STARPU_DOWNLOAD_ROOT}/build/starpu-download/CMakeLists.txt)
+            execute_process(COMMAND           ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                            RESULT_VARIABLE   result
+                            WORKING_DIRECTORY ${STARPU_DOWNLOAD_ROOT}/build/starpu-download)
+            if(result)
+                message(FATAL_ERROR "CMake step for starpu failed: ${result}")
+            endif()
+            execute_process(COMMAND           ${CMAKE_COMMAND} --build .
+                            RESULT_VARIABLE   result
+                            WORKING_DIRECTORY ${STARPU_DOWNLOAD_ROOT}/build/starpu-download)
+            if(result)
+                message(FATAL_ERROR "Build step for starpu failed: ${result}")
+            endif()
+
+            pkg_check_modules(STARPU REQUIRED starpumpi-${STARPU_PC_VERSION})
+        else(DOWNLOAD_MISSING_DEPS)
+            message(FATAL_ERROR "StarPU (starpumpi-${STARPU_PC_VERSION}) not found via pkg-config. "
+                                 "Install it (e.g. 'apt install libstarpu-dev' on Debian/Ubuntu, or build it "
+                                 "via Spack) and make sure its .pc files are on PKG_CONFIG_PATH, or set "
+                                 "DOWNLOAD_MISSING_DEPS for enabling automatic download of missing dependencies")
+        endif(DOWNLOAD_MISSING_DEPS)
+    endif(NOT STARPU_FOUND)
+
+    message(STATUS "StarPU found")
+    message(STATUS "  STARPU_INCLUDE_DIRS = ${STARPU_INCLUDE_DIRS}")
+    message(STATUS "  STARPU_LIBRARY_DIRS = ${STARPU_LIBRARY_DIRS}")
+    message(STATUS "  STARPU_LIBRARIES = ${STARPU_LIBRARIES}")
+
+    include_directories("${STARPU_INCLUDE_DIRS}")
+    link_directories("${STARPU_LIBRARY_DIRS}")
+    set(SEWAS_LIBRARIES ${SEWAS_LIBRARIES} ${STARPU_LIBRARIES})
+endif(SEWAS_WITH_STARPU)
+
+# -------------------------------------------------------------------
 # Boost
 # -------------------------------------------------------------------
 find_package(Boost 1.62 COMPONENTS program_options)
@@ -445,6 +517,7 @@ set(SOURCES
     src/SEWASParameterManager.cxx
     src/SEWASSequential.cxx
     src/SEWASPaRSEC.cxx
+    src/SEWASStarPU.cxx
     src/Mesh3DPartitioning.cxx
     src/VisualizationManager.cxx
     src/MetricsManager.cxx

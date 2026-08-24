@@ -71,7 +71,7 @@ public:
       default:
         logger_->warn("The selected log level ({}) is not supported. Fall back "
                       "to INFO level.",
-                      level);
+                      static_cast<int>(level));
         logger_->info(msg...);
         break;
     }

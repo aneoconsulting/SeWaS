@@ -131,7 +131,9 @@ private:
         }
         break;
       default:
-        LOG(SWS::LOG_ERROR, "Unknown location {} requested within SEWASSequential::sendreceive()", l);
+        LOG(SWS::LOG_ERROR,
+            "Unknown location {} requested within SEWASSequential::sendreceive()",
+            static_cast<int>(l));
         break;
     }
 
@@ -183,7 +185,9 @@ private:
         }
         break;
       default:
-        LOG(SWS::LOG_ERROR, "Unknown location {} requested within SEWASSequential::sendreceive()", l);
+        LOG(SWS::LOG_ERROR,
+            "Unknown location {} requested within SEWASSequential::sendreceive()",
+            static_cast<int>(l));
     }
 
     return status;

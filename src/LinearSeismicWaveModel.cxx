@@ -42,6 +42,7 @@
 #include "MetricsManager.hxx"
 #include "SEWASPaRSEC.hxx"
 #include "SEWASSequential.hxx"
+#include "SEWASStarPU.hxx"
 
 LinearSeismicWaveModel* LinearSeismicWaveModel::pInstance_ = nullptr;
 
@@ -76,7 +77,7 @@ LinearSeismicWaveModel::releaseInstance()
 int
 LinearSeismicWaveModel::propagate() noexcept
 {
-#ifdef SEWAS_WITH_PARSEC
+#if defined(SEWAS_WITH_PARSEC)
   LOG(SWS::LOG_INFO, "Starting the PaRSEC-based runner");
 
   SEWASPaRSEC* sewasPaRSEC = SEWASPaRSEC::getInstance(nt_, pm_.nxx(), pm_.nyy(), pm_.nzz());
@@ -87,6 +88,17 @@ LinearSeismicWaveModel::propagate() noexcept
   LOG(SWS::LOG_INFO, "Seismic simulation completed");
 
   SEWASPaRSEC::releaseInstance();
+#elif defined(SEWAS_WITH_STARPU)
+  LOG(SWS::LOG_INFO, "Starting the StarPU-based runner");
+
+  SEWASStarPU* sewasStarPU = SEWASStarPU::getInstance(nt_, pm_.nxx(), pm_.nyy(), pm_.nzz());
+  LOG(SWS::LOG_INFO, "StarPU-based runner started");
+
+  LOG(SWS::LOG_INFO, "Starting execution of the core seismic simulation");
+  sewasStarPU->run();
+  LOG(SWS::LOG_INFO, "Seismic simulation completed");
+
+  SEWASStarPU::releaseInstance();
 #else
   LOG(SWS::LOG_INFO, "Starting the sequential runner");
   SEWASSequential* sewasSequential = SEWASSequential::getInstance(nt_, pm_.nxx(), pm_.nyy(), pm_.nzz());
@@ -314,7 +326,7 @@ LinearSeismicWaveModel::computeVelocity(const SWS::Directions& d,
     default:
       LOG(SWS::LOG_ERROR,
           "Unknown spatial direction {} requested within LinearSeismicWaveModel::computeVelocity()",
-          d);
+          static_cast<int>(d));
       break;
   }
 
@@ -616,7 +628,7 @@ LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents& sc,
     default:
       LOG(SWS::LOG_ERROR,
           "Unknown stress component {} requested within LinearSeismicWaveModel::computeStress()",
-          sc);
+          static_cast<int>(sc));
       break;
   }
 
@@ -714,7 +726,7 @@ LinearSeismicWaveModel::addVelocitySource(const SWS::Directions& d,
     default:
       LOG(SWS::LOG_ERROR,
           "Unknown spatial direction {} requested within LinearSeismicWaveModel::addVelocitySource()",
-          d);
+          static_cast<int>(d));
       break;
   }
 }

@@ -20,6 +20,8 @@
 
 #ifdef SEWAS_WITH_PARSEC
 
+#include <parsec/parsec_internal.h> // parsec_arena_datatype_construct
+
 #include "Config.hxx"
 #include "HaloManager.hxx"
 #include "LinearSeismicWaveModel.hxx"
@@ -158,12 +160,12 @@ SEWASPaRSEC::buildDAG()
 void
 SEWASPaRSEC::enqueueDAG()
 {
-  int status = parsec_enqueue(pPContext_, (parsec_taskpool_t*)pDAG_);
-  PARSEC_CHECK_ERROR(status, "parsec_enqueue");
+  int status = parsec_context_add_taskpool(pPContext_, (parsec_taskpool_t*)pDAG_);
+  PARSEC_CHECK_ERROR(status, "parsec_context_add_taskpool");
 }
 
 void
-SEWASPaRSEC::addArena(const short arena_idx, const SWS::Locations l)
+SEWASPaRSEC::addArena(const short adt_idx, const SWS::Locations l)
 {
   parsec_datatype_t oldtype = SWS::PARSECRealType;
   parsec_datatype_t newtype;
@@ -176,7 +178,7 @@ SEWASPaRSEC::addArena(const short arena_idx, const SWS::Locations l)
 
   parsec_type_create_contiguous(asize, oldtype, &newtype);
   parsec_type_extent(newtype, &lb, &extent);
-  parsec_arena_construct(pDAG_->arenas[arena_idx], extent, SWS::Alignment, newtype);
+  parsec_arena_datatype_construct(&pDAG_->arenas_datatypes[adt_idx], extent, SWS::Alignment, newtype);
 }
 
 SEWASPaRSEC::SEWASPaRSEC(const int nt, const int nxx, const int nyy, const int nzz)
@@ -195,6 +197,9 @@ SEWASPaRSEC::SEWASPaRSEC(const int nt, const int nxx, const int nyy, const int n
   buildDAG();
 
   /* Default halo arena */
+  /* Macro suffix is _ARENA, not _ADT_IDX: pinned PaRSEC predates the parsec-ptgpp
+     rename to _ADT_IDX (see cmake/resources/parsec/CMakeLists.txt for why this
+     specific commit is pinned instead of a later tag). */
   addArena(PARSEC_sewas_DEFAULT_ARENA);
 
   /* Stress field halo arenas */

@@ -38,6 +38,7 @@ add_executable(ComputeVelocityTest
     ../src/Mesh3DPartitioning.cxx
     ../src/SEWASParameterManager.cxx
     ../src/SEWASPaRSEC.cxx
+    ../src/SEWASStarPU.cxx
     ../src/SEWASSequential.cxx
     ../src/ExecutionContext.cxx
     ../src/MetricsManager.cxx

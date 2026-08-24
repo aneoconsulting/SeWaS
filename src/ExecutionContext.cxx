@@ -19,6 +19,7 @@
 #include "ExecutionContext.hxx"
 #include "LogManager.hxx"
 #include "SEWASPaRSEC.hxx"
+#include "SEWASStarPU.hxx"
 
 int
 ExecutionContext::init(SEWASParameterManager& pm)
@@ -48,6 +49,15 @@ ExecutionContext::init(SEWASParameterManager& pm)
   SEWASPaRSEC::init(pm);
 
   LOG(SWS::LOG_INFO, "PaRSEC runtime is started");
+#endif
+
+#ifdef SEWAS_WITH_STARPU
+  /* StarPU initialization */
+  LOG(SWS::LOG_INFO, "Starting the StarPU runtime");
+
+  SEWASStarPU::init(pm);
+
+  LOG(SWS::LOG_INFO, "StarPU runtime is started");
 #endif
 
   return 0;
