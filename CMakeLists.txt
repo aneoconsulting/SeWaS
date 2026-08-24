@@ -373,13 +373,41 @@ if(SEWAS_WITH_STARPU)
 
     find_package(PkgConfig REQUIRED)
     set(STARPU_PC_VERSION "1.4" CACHE STRING "StarPU pkg-config version suffix")
+
+    # Also look under the same install prefix vcpkg-downloaded/built dependencies
+    # (PaRSEC, ADIOS2, ...) land in, in case a previous DOWNLOAD_MISSING_DEPS run
+    # already built StarPU there.
+    set(ENV{PKG_CONFIG_PATH} "${THIRDPARTY_ROOT}/install/lib/pkgconfig:${THIRDPARTY_ROOT}/install/lib64/pkgconfig:$ENV{PKG_CONFIG_PATH}")
     pkg_check_modules(STARPU starpumpi-${STARPU_PC_VERSION})
+
     if (NOT STARPU_FOUND)
-        message(FATAL_ERROR "StarPU (starpumpi-${STARPU_PC_VERSION}) not found via pkg-config. "
-                             "Install it (e.g. 'apt install libstarpu-dev' on Debian/Ubuntu, or build it "
-                             "via Spack) and make sure its .pc files are on PKG_CONFIG_PATH. "
-                             "Automatic download of StarPU is not currently supported.")
-    endif()
+        message(WARNING "StarPU not found")
+        if (DOWNLOAD_MISSING_DEPS)
+            # StarPU not found; trying to download and build it (autotools-based,
+            # see cmake/resources/starpu/CMakeLists.txt)
+            set(STARPU_DOWNLOAD_ROOT ${THIRDPARTY_ROOT}/starpu)
+            configure_file(${CMAKE_SOURCE_DIR}/cmake/resources/starpu/CMakeLists.txt ${STARPU_DOWNLOAD_ROOT}/build/starpu-download/CMakeLists.txt)
+            execute_process(COMMAND           ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                            RESULT_VARIABLE   result
+                            WORKING_DIRECTORY ${STARPU_DOWNLOAD_ROOT}/build/starpu-download)
+            if(result)
+                message(FATAL_ERROR "CMake step for starpu failed: ${result}")
+            endif()
+            execute_process(COMMAND           ${CMAKE_COMMAND} --build .
+                            RESULT_VARIABLE   result
+                            WORKING_DIRECTORY ${STARPU_DOWNLOAD_ROOT}/build/starpu-download)
+            if(result)
+                message(FATAL_ERROR "Build step for starpu failed: ${result}")
+            endif()
+
+            pkg_check_modules(STARPU REQUIRED starpumpi-${STARPU_PC_VERSION})
+        else(DOWNLOAD_MISSING_DEPS)
+            message(FATAL_ERROR "StarPU (starpumpi-${STARPU_PC_VERSION}) not found via pkg-config. "
+                                 "Install it (e.g. 'apt install libstarpu-dev' on Debian/Ubuntu, or build it "
+                                 "via Spack) and make sure its .pc files are on PKG_CONFIG_PATH, or set "
+                                 "DOWNLOAD_MISSING_DEPS for enabling automatic download of missing dependencies")
+        endif(DOWNLOAD_MISSING_DEPS)
+    endif(NOT STARPU_FOUND)
 
     message(STATUS "StarPU found")
     message(STATUS "  STARPU_INCLUDE_DIRS = ${STARPU_INCLUDE_DIRS}")

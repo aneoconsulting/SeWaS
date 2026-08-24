@@ -21,6 +21,8 @@ doc/*
 /thirdparty/parsec/build
 /thirdparty/adios/src
 /thirdparty/adios/build
+/thirdparty/starpu/src
+/thirdparty/starpu/build
 /thirdparty/install
 /out
 /.vs/SeWaS/v16/.suo
