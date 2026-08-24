@@ -20,6 +20,7 @@
 
 #ifdef SEWAS_WITH_STARPU
 
+#include <algorithm>
 #include <cstring>
 
 #include "ExecutionContext.hxx"
@@ -38,6 +39,18 @@ makeCodelet(void (*func)(void*[], void*), const char* name)
   cl.cpu_funcs_name[0] = name;
   cl.nbuffers = 0;
   return cl;
+}
+
+/* Clamp into StarPU's currently valid priority range: the active scheduling
+ * policy may support only a single priority level (or a narrower range than
+ * MinimumCommunicationPriorityEvaluator's raw output), and starpu_task_insert
+ * gives no other feedback for an out-of-range value. */
+int
+clampPriority(const int priority) noexcept
+{
+  const int minPrio = starpu_sched_get_min_priority();
+  const int maxPrio = starpu_sched_get_max_priority();
+  return (std::max)(minPrio, (std::min)(maxPrio, priority));
 }
 }
 
@@ -459,6 +472,8 @@ SEWASStarPU::run()
   static struct starpu_codelet phaseACl = makeCodelet(phaseAVelocityCodelet, "phaseAVelocityCodelet");
   static struct starpu_codelet phaseBCl = makeCodelet(phaseBStressCodelet, "phaseBStressCodelet");
 
+  auto* pPriorityManager = Mesh3DPartitioning::getInstance()->getTaskPriorityManager();
+
   auto forEachLocalTile = [this](auto&& fn) {
     for (int ii = 0; ii < nxx_; ii++) {
       for (int jj = 0; jj < nyy_; jj++) {
@@ -471,10 +486,12 @@ SEWASStarPU::run()
   };
 
   forEachLocalTile([&](int ii, int jj, int kk, int /*lii*/, int /*ljj*/, int /*lkk*/) {
+    const auto prio = clampPriority(pPriorityManager->getPriority(INITIALIZE_FIELDS, 0, ii, jj, kk));
     starpu_task_insert(&initCl,
                        STARPU_VALUE, &ii, sizeof(ii),
                        STARPU_VALUE, &jj, sizeof(jj),
                        STARPU_VALUE, &kk, sizeof(kk),
+                       STARPU_PRIORITY, (unsigned long long)prio,
                        0);
   });
   starpu_task_wait_for_all();
@@ -483,6 +500,13 @@ SEWASStarPU::run()
     LOG(SWS::LOG_TRACE, "[start] Processing time-step {}", ts);
 
     forEachLocalTile([&](int ii, int jj, int kk, int lii, int ljj, int lkk) {
+      /* Bundles UPDATE_STRESS + COMPUTE_VELOCITY + EXTRACT_VELOCITY_HALO into one
+       * task; take the most urgent of the three sub-steps' priorities. */
+      const auto prio = clampPriority((std::max)({
+        pPriorityManager->getPriority(UPDATE_STRESS, ts, ii, jj, kk),
+        pPriorityManager->getPriority(COMPUTE_VELOCITY, ts, ii, jj, kk),
+        pPriorityManager->getPriority(EXTRACT_VELOCITY_HALO, ts, ii, jj, kk),
+      }));
       starpu_task_insert(&phaseACl,
                          STARPU_VALUE, &ts, sizeof(ts),
                          STARPU_VALUE, &ii, sizeof(ii),
@@ -491,6 +515,7 @@ SEWASStarPU::run()
                          STARPU_VALUE, &lii, sizeof(lii),
                          STARPU_VALUE, &ljj, sizeof(ljj),
                          STARPU_VALUE, &lkk, sizeof(lkk),
+                         STARPU_PRIORITY, (unsigned long long)prio,
                          0);
     });
     starpu_task_wait_for_all();
@@ -501,6 +526,13 @@ SEWASStarPU::run()
     starpu_mpi_wait_for_all(MPI_COMM_WORLD);
 
     forEachLocalTile([&](int ii, int jj, int kk, int lii, int ljj, int lkk) {
+      /* Bundles UPDATE_VELOCITY + COMPUTE_STRESS + EXTRACT_STRESS_HALO into one
+       * task; take the most urgent of the three sub-steps' priorities. */
+      const auto prio = clampPriority((std::max)({
+        pPriorityManager->getPriority(UPDATE_VELOCITY, ts, ii, jj, kk),
+        pPriorityManager->getPriority(COMPUTE_STRESS, ts, ii, jj, kk),
+        pPriorityManager->getPriority(EXTRACT_STRESS_HALO, ts, ii, jj, kk),
+      }));
       starpu_task_insert(&phaseBCl,
                          STARPU_VALUE, &ts, sizeof(ts),
                          STARPU_VALUE, &ii, sizeof(ii),
@@ -509,6 +541,7 @@ SEWASStarPU::run()
                          STARPU_VALUE, &lii, sizeof(lii),
                          STARPU_VALUE, &ljj, sizeof(ljj),
                          STARPU_VALUE, &lkk, sizeof(lkk),
+                         STARPU_PRIORITY, (unsigned long long)prio,
                          0);
     });
     starpu_task_wait_for_all();
