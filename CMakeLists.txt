@@ -40,6 +40,7 @@ option(SEWAS_WITH_PARSEC            "Use PaRSEC for task-scheduling (default OFF
 option(SEWAS_WITH_STARPU            "Use StarPU for task-scheduling (default OFF)"                                      OFF)
 option(SEWAS_STARPU_ENABLE_FXT      "Build StarPU with FxT execution-trace recording, needed to extract the compute/overlap/comm phase decomposition from Paje/OTF2 traces (requires FXT_ROOT; default OFF)" OFF)
 set(FXT_ROOT "" CACHE PATH "Install prefix of the FxT tracing library (only used when SEWAS_STARPU_ENABLE_FXT is ON)")
+option(SEWAS_SINGLE_PRECISION       "Use float instead of double for SWS::RealType (default OFF)"                       OFF)
 option(VERBOSE                      "Enable collecting and displaying of traced events at runtime (default OFF)"        OFF)
 option(BUILD_TESTING                "Build the testing tree (default OFF)"                                              OFF)
 option(COLLECT_STATS                "Collect statistics during execution (default ON)"                                  ON)
@@ -138,6 +139,10 @@ endif()
 
 if(SEWAS_WITH_PARSEC AND SEWAS_WITH_STARPU)
     message(FATAL_ERROR "SEWAS_WITH_PARSEC and SEWAS_WITH_STARPU are mutually exclusive.")
+endif()
+
+if(SEWAS_SINGLE_PRECISION)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DSEWAS_SINGLE_PRECISION>)
 endif()
 
 if (VERBOSE)
