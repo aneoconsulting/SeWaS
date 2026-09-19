@@ -32,13 +32,32 @@
 #                            Default: "mpirun -np {np} --oversubscribe" (single
 #                            node, oversubscribing cores -- fine for P*Q*R <=
 #                            the node's core count, not for a real multi-node run)
+#                            For a real multi-node run, the template also needs
+#                            to forward STARPU_FXT_TRACE, STARPU_GENERATE_TRACE
+#                            and STARPU_FXT_PREFIX to every rank (e.g. OpenMPI's
+#                            "-x STARPU_FXT_TRACE -x STARPU_GENERATE_TRACE -x
+#                            STARPU_FXT_PREFIX"), the same way it already needs
+#                            to forward LD_LIBRARY_PATH -- mpirun does not
+#                            forward the launching shell's environment to
+#                            remote ranks on its own. Without this, only the
+#                            launching rank's trace gets recorded, so
+#                            starpu_fxt_tool sees just one of several ranks and
+#                            can't resolve any MPI transfers between them
+#                            (comm/overlap silently come out as zero, not an
+#                            error).
 #   --csv PATH                output file (default bench/baseline.csv);
 #                            appended to, header written only if the file is new
 #   --trace-dir DIR           where to keep each run's raw FxT trace + the
 #                            starpu_fxt_tool outputs derived from it, named
-#                            <cx>x<cy>x<cz>_<P>x<Q>x<R>/ (default bench/traces);
-#                            skipped (with a warning) if the binary wasn't
-#                            built with FxT support (no prof_file produced)
+#                            <cx>x<cy>x<cz>_<P>x<Q>x<R>_<precision>/ (default
+#                            bench/traces). For a multi-node run this MUST be
+#                            on storage shared across every node the launcher
+#                            can place a rank on (e.g. NFS-mounted $HOME) --
+#                            every rank writes its raw trace under here
+#                            (STARPU_FXT_PREFIX), and this script only looks
+#                            for those files on the node it itself runs on.
+#                            Skipped (with a warning) if the binary wasn't
+#                            built with FxT support (no prof_file produced).
 #   --starpu-fxt-tool PATH    starpu_fxt_tool binary (default: same directory
 #                            as --binary's StarPU install, if found on PATH)
 
@@ -108,7 +127,7 @@ parse_stat() {
 run_one() {
   local cx="$1" cy="$2" cz="$3" P="$4" Q="$5" R="$6"
   local np=$((P * Q * R))
-  local run_id="${cx}x${cy}x${cz}_${P}x${Q}x${R}"
+  local run_id="${cx}x${cy}x${cz}_${P}x${Q}x${R}_${PRECISION_LABEL}"
   local run_dir
   run_dir="$(mktemp -d)"
   trap 'rm -rf "$run_dir"' RETURN
@@ -117,7 +136,14 @@ run_one() {
 
   echo "[run_baseline] $run_id: $launcher $BINARY --nthreads $NTHREADS"
 
-  local fxt_prefix="$run_dir/"
+  # Every rank writes its raw trace under STARPU_FXT_PREFIX, and ranks can run
+  # on different physical nodes -- this has to be reachable from all of them,
+  # not just wherever this script itself runs, so it lives under --trace-dir
+  # (the caller's responsibility to put on shared storage for a real
+  # multi-node run) rather than a node-local mktemp.
+  local trace_out_dir="$TRACE_DIR/$run_id"
+  local fxt_prefix="$trace_out_dir/raw/"
+  mkdir -p "$fxt_prefix"
   local log="$run_dir/run.log"
 
   STARPU_SCHED="$SCHEDULER" \
@@ -153,8 +179,6 @@ print(int(-(-d['tmax'] // d['dt'])))  # ceil, matches SEWASParameterManager::par
   if [ -n "$STARPU_FXT_TOOL" ]; then
     local prof_files=("$fxt_prefix"prof_file_*)
     if [ -e "${prof_files[0]}" ]; then
-      local trace_out_dir="$TRACE_DIR/$run_id"
-      mkdir -p "$trace_out_dir"
       local fxt_args=()
       for f in "${prof_files[@]}"; do
         fxt_args+=(-i "$f")
