@@ -5,13 +5,11 @@ project(starpu-download)
 include(ExternalProject)
 
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-    # SEWAS_STARPU_ENABLE_FXT/FXT_ROOT are substituted to literal values (e.g.
-    # "if(ON)", a literal prefix path) by the configure_file() call in the
-    # top-level CMakeLists.txt that generates this file from the template.
-    set(STARPU_EXTRA_CONFIGURE_ARGS "")
-    if(${SEWAS_STARPU_ENABLE_FXT})
-        list(APPEND STARPU_EXTRA_CONFIGURE_ARGS "--with-fxt=${FXT_ROOT}")
-    endif()
+    # STARPU_FXT_CONFIGURE_ARG (used below) is already a fully-resolved literal
+    # (either empty, or "--with-fxt=<prefix>") by the time it lands here --
+    # computed in the top-level CMakeLists.txt, in the same scope that calls
+    # configure_file() on this template; see the comment there for why it
+    # can't be computed in this file instead.
 
     # Release tarball (ships a pre-generated `configure`, so no autoreconf/automake/
     # libtool is required at build time). Version/hash pinned to StarPU 1.4.7.
@@ -40,7 +38,7 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
                           --disable-cuda
                           --disable-opencl
                           --enable-maxcpus=128
-                          ${STARPU_EXTRA_CONFIGURE_ARGS}
+                          ${STARPU_FXT_CONFIGURE_ARG}
         BUILD_COMMAND     make -j
         INSTALL_COMMAND   make install
         TEST_COMMAND      ""

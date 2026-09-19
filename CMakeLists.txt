@@ -396,6 +396,19 @@ if(SEWAS_WITH_STARPU)
                 message(FATAL_ERROR "SEWAS_STARPU_ENABLE_FXT is ON but FXT_ROOT is not set to an installed FxT prefix.")
             endif()
 
+            # Resolved here, in the PARENT scope, rather than inside the template
+            # substituted below: configure_file() does a single flat text
+            # substitution of every ${VAR} in the template using values from
+            # THIS scope, so a ${VAR} meant to be computed/used only within the
+            # generated file's own later execution (e.g. via a local
+            # list(APPEND ...)) gets silently blanked out by that same pass
+            # before the generated file is ever run -- it must already be a
+            # fully-resolved literal by the time configure_file() sees it.
+            set(STARPU_FXT_CONFIGURE_ARG "")
+            if (SEWAS_STARPU_ENABLE_FXT)
+                set(STARPU_FXT_CONFIGURE_ARG "--with-fxt=${FXT_ROOT}")
+            endif()
+
             # StarPU not found; trying to download and build it (autotools-based,
             # see cmake/resources/starpu/CMakeLists.txt)
             set(STARPU_DOWNLOAD_ROOT ${THIRDPARTY_ROOT}/starpu)
