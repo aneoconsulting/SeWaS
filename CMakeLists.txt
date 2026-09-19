@@ -559,3 +559,16 @@ if (BUILD_TESTING)
     # unit tests
     add_subdirectory(tests)
 endif(BUILD_TESTING)
+
+# -------------------------------------------------------------------
+# Validation: compares a distributed run's final velocity field against the
+# sequential oracle's. Needs both a SEWASSequential-only build (ORACLE_BIN)
+# and the build under test (CANDIDATE_BIN) -- two different compile-time
+# configurations, so this target doesn't build either itself. See
+# validation/run_check.sh for the env vars that select them.
+# -------------------------------------------------------------------
+add_custom_target(check
+    COMMAND ${CMAKE_SOURCE_DIR}/validation/run_check.sh
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Validation: compare a run against the sequential oracle"
+    USES_TERMINAL)
