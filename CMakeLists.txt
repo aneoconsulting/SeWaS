@@ -38,6 +38,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules" C
 option(SEWAS_DISTRIBUTED            "Build SeWaS for distributed memory platforms (default OFF)"                        OFF)
 option(SEWAS_WITH_PARSEC            "Use PaRSEC for task-scheduling (default OFF)"                                      OFF)
 option(SEWAS_WITH_STARPU            "Use StarPU for task-scheduling (default OFF)"                                      OFF)
+option(SEWAS_STARPU_ENABLE_FXT      "Build StarPU with FxT execution-trace recording, needed to extract the compute/overlap/comm phase decomposition from Paje/OTF2 traces (requires FXT_ROOT; default OFF)" OFF)
+set(FXT_ROOT "" CACHE PATH "Install prefix of the FxT tracing library (only used when SEWAS_STARPU_ENABLE_FXT is ON)")
+option(SEWAS_SINGLE_PRECISION       "Use float instead of double for SWS::RealType (default OFF)"                       OFF)
 option(VERBOSE                      "Enable collecting and displaying of traced events at runtime (default OFF)"        OFF)
 option(BUILD_TESTING                "Build the testing tree (default OFF)"                                              OFF)
 option(COLLECT_STATS                "Collect statistics during execution (default ON)"                                  ON)
@@ -136,6 +139,10 @@ endif()
 
 if(SEWAS_WITH_PARSEC AND SEWAS_WITH_STARPU)
     message(FATAL_ERROR "SEWAS_WITH_PARSEC and SEWAS_WITH_STARPU are mutually exclusive.")
+endif()
+
+if(SEWAS_SINGLE_PRECISION)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-DSEWAS_SINGLE_PRECISION>)
 endif()
 
 if (VERBOSE)
@@ -390,6 +397,23 @@ if(SEWAS_WITH_STARPU)
     if (NOT STARPU_FOUND)
         message(WARNING "StarPU not found")
         if (DOWNLOAD_MISSING_DEPS)
+            if (SEWAS_STARPU_ENABLE_FXT AND NOT FXT_ROOT)
+                message(FATAL_ERROR "SEWAS_STARPU_ENABLE_FXT is ON but FXT_ROOT is not set to an installed FxT prefix.")
+            endif()
+
+            # Resolved here, in the PARENT scope, rather than inside the template
+            # substituted below: configure_file() does a single flat text
+            # substitution of every ${VAR} in the template using values from
+            # THIS scope, so a ${VAR} meant to be computed/used only within the
+            # generated file's own later execution (e.g. via a local
+            # list(APPEND ...)) gets silently blanked out by that same pass
+            # before the generated file is ever run -- it must already be a
+            # fully-resolved literal by the time configure_file() sees it.
+            set(STARPU_FXT_CONFIGURE_ARG "")
+            if (SEWAS_STARPU_ENABLE_FXT)
+                set(STARPU_FXT_CONFIGURE_ARG "--with-fxt=${FXT_ROOT}")
+            endif()
+
             # StarPU not found; trying to download and build it (autotools-based,
             # see cmake/resources/starpu/CMakeLists.txt)
             set(STARPU_DOWNLOAD_ROOT ${THIRDPARTY_ROOT}/starpu)
@@ -540,3 +564,16 @@ if (BUILD_TESTING)
     # unit tests
     add_subdirectory(tests)
 endif(BUILD_TESTING)
+
+# -------------------------------------------------------------------
+# Validation: compares a distributed run's final velocity field against the
+# sequential oracle's. Needs both a SEWASSequential-only build (ORACLE_BIN)
+# and the build under test (CANDIDATE_BIN) -- two different compile-time
+# configurations, so this target doesn't build either itself. See
+# validation/run_check.sh for the env vars that select them.
+# -------------------------------------------------------------------
+add_custom_target(check
+    COMMAND ${CMAKE_SOURCE_DIR}/validation/run_check.sh
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Validation: compare a run against the sequential oracle"
+    USES_TERMINAL)

@@ -16,6 +16,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ==============================================================================*/
 
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -162,6 +163,39 @@ main(int argc, char* argv[])
     LOG(SWS::LOG_INFO, "||Vx(0,0,0)||^2 = {}", pSEWAS->v(SWS::X)(0, 0, 0).norm2());
     LOG(SWS::LOG_INFO, "||Vy(0,0,0)||^2 = {}", pSEWAS->v(SWS::Y)(0, 0, 0).norm2());
     LOG(SWS::LOG_INFO, "||Vz(0,0,0)||^2 = {}", pSEWAS->v(SWS::Z)(0, 0, 0).norm2());
+  }
+
+  // Dump the final velocity field for validation/'s oracle comparison. One
+  // raw binary file per (rank, component, local tile), each holding
+  // tileSize() SWS::RealType cells -- note that's the tile's PADDED extent
+  // (cx+2*hn, cy+2*hn, cz+2*hn), halo margin included, flattened Y_MAJOR (k
+  // fastest); the comparison script slices out the physical
+  // [hn:hn+cx, hn:hn+cy, hn:hn+cz] interior and reassembles the global field
+  // from the tiling parameters it already knows.
+  if (!pm.dumpVelocityDir().empty()) {
+    const auto& dumpDir = pm.dumpVelocityDir();
+
+    for (int ii = 0; ii < pMeshPartitioning->lnxx(); ii++) {
+      for (int jj = 0; jj < pMeshPartitioning->lnyy(); jj++) {
+        for (int kk = 0; kk < pMeshPartitioning->lnzz(); kk++) {
+          for (auto [d, dName] : { std::pair{ SWS::X, "x" }, { SWS::Y, "y" }, { SWS::Z, "z" } }) {
+            const auto& tile = pSEWAS->v(d)(ii, jj, kk);
+
+            auto path = dumpDir + "/velocity_rank" + std::to_string(rank) + "_" + dName + "_" +
+                        std::to_string(ii) + "_" + std::to_string(jj) + "_" + std::to_string(kk) + ".bin";
+
+            std::ofstream out(path, std::ios::binary);
+            if (!out) {
+              LOG(SWS::LOG_CRITICAL, "Unable to open {} for the velocity dump. Exiting...", path);
+              return SWS::OBJECT_CREATION_FAILURE;
+            }
+
+            out.write(reinterpret_cast<const char*>(tile.data().data()),
+                      static_cast<std::streamsize>(pMeshPartitioning->tileSize() * sizeof(SWS::RealType)));
+          }
+        }
+      }
+    }
   }
 
   // Release memory

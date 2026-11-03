@@ -54,6 +54,8 @@ public:
 
   inline const auto& dfile() const { return getOption<std::string>("dfile"); }
 
+  inline const auto& dumpVelocityDir() const { return getOption<std::string>("dump-velocity"); }
+
   inline const auto& tmax() const { return tmax_; }
   inline const auto& dt() const { return dt_; }
 
@@ -128,7 +130,12 @@ private:
       "dfile,D",
       po::value<std::string>(),
       "Path to the Json file containing mechanical properties and kinematic source parameter")(
-      "config,C", po::value<std::string>(), "Configuration file");
+      "config,C", po::value<std::string>(), "Configuration file")(
+      "dump-velocity",
+      po::value<std::string>()->default_value(""),
+      "Directory to dump each local tile's final velocity field to, one raw binary file per "
+      "(rank, component, tile); empty (default) disables dumping. Used by validation/ to compare "
+      "against the sequential oracle.");
 
     try {
 

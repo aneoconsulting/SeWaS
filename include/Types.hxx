@@ -30,9 +30,16 @@
 #include "Indexer.hxx"
 
 namespace SWS {
+#ifdef SEWAS_SINGLE_PRECISION
+using RealType = float;
+#else
 using RealType = double;
+#endif
 
 #ifdef SEWAS_WITH_PARSEC
+#ifdef SEWAS_SINGLE_PRECISION
+#error "SEWAS_WITH_PARSEC does not support SEWAS_SINGLE_PRECISION yet"
+#endif
 // Not constexpr: under Open MPI, MPI_DOUBLE (and thus parsec_datatype_double_t)
 // expands to a pointer cast, which isn't a valid constant expression.
 static const auto PARSECRealType = parsec_datatype_double_t;

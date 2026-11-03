@@ -32,3 +32,5 @@ doc/*
 *.sqlite-journal
 *.log
 *.bin
+/bench/baseline.csv
+/bench/traces
