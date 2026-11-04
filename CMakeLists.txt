@@ -557,6 +557,19 @@ target_include_directories(sewas PRIVATE ${SEWAS_INCLUDE_DIRS})
 target_link_libraries(sewas ${SEWAS_LIBRARIES})
 
 # -------------------------------------------------------------------
+# Isolated-kernel benchmark (Phase 1.1 of sewas_transformation_plan_en.md): A/B times
+# CentralFDOperator::applyZ<Variant> on a cached synthetic tile. Not a GoogleTest binary
+# (a timing harness, not a correctness check -- see tests/FDOUnitTest.cxx for that), so it
+# is registered here rather than under tests/, and always built alongside sewas rather than
+# gated behind BUILD_TESTING, matching bench/run_baseline.sh's assumption that bench/ tools
+# ship next to the sewas binary.
+# -------------------------------------------------------------------
+add_executable(kernel_bench bench/kernel_bench.cxx src/LogManager.cxx)
+set_property(TARGET kernel_bench PROPERTY CXX_STANDARD 17)
+target_include_directories(kernel_bench PRIVATE ${SEWAS_INCLUDE_DIRS})
+target_link_libraries(kernel_bench ${SEWAS_LIBRARIES})
+
+# -------------------------------------------------------------------
 # -------------------------------------------------------------------
 if (BUILD_TESTING)
     enable_testing()

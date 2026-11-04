@@ -144,9 +144,13 @@ LinearSeismicWaveModel::computeVelocityWrapper(const int d,
   const int ljj = pMesh->ljj(jj);
   const int lkk = pMesh->lkk(kk);
 
-  return pInstance_->computeVelocity((SWS::Directions)d, ts, lii, ljj, lkk);
+  if (pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Legacy) {
+    return pInstance_->computeVelocity<SWS::KernelVariant::Legacy>((SWS::Directions)d, ts, lii, ljj, lkk);
+  }
+  return pInstance_->computeVelocity<SWS::KernelVariant::Unaligned>((SWS::Directions)d, ts, lii, ljj, lkk);
 }
 
+template<SWS::KernelVariant Variant>
 int
 LinearSeismicWaveModel::computeVelocity(const SWS::Directions& d,
                                         const int& ts,
@@ -199,7 +203,7 @@ LinearSeismicWaveModel::computeVelocity(const SWS::Directions& d,
         for (int j = jStart; j < jEnd; j++) {
           vX(i, j) +=
             (fdo_.apply<SWS::X>(sigmaXX, i, j, SWS::DK) + fdo_.apply<SWS::Y>(sigmaXY, i, j, SWS::DK) +
-             fdo_.apply<SWS::Z>(sigmaXZ, i, j, SWS::DK)) *
+             fdo_.applyZ<Variant>(sigmaXZ, i, j, SWS::DK)) *
             dt * bx(i, j);
         }
       }
@@ -244,7 +248,7 @@ LinearSeismicWaveModel::computeVelocity(const SWS::Directions& d,
         for (int j = jStart; j < jEnd; j++) {
           vY(i, j) +=
             (fdo_.apply<SWS::X>(sigmaXY, i + 1, j, SWS::DK) + fdo_.apply<SWS::Y>(sigmaYY, i, j + 1, SWS::DK) +
-             fdo_.apply<SWS::Z>(sigmaYZ, i, j, SWS::DK)) *
+             fdo_.applyZ<Variant>(sigmaYZ, i, j, SWS::DK)) *
             dt * by(i, j);
         }
       }
@@ -289,7 +293,7 @@ LinearSeismicWaveModel::computeVelocity(const SWS::Directions& d,
         for (int j = jStart; j < jEnd; j++) {
           vZ(i, j) +=
             (fdo_.apply<SWS::X>(sigmaXZ, i + 1, j, SWS::DK) + fdo_.apply<SWS::Y>(sigmaYZ, i, j, SWS::DK) +
-             fdo_.apply<SWS::Z>(sigmaZZ, i, j, SWS::DK + 1)) *
+             fdo_.applyZ<Variant>(sigmaZZ, i, j, SWS::DK + 1)) *
             dt * bz(i, j);
         }
       }
@@ -350,9 +354,13 @@ LinearSeismicWaveModel::computeStressWrapper(const int sc,
   const int ljj = pMesh->ljj(jj);
   const int lkk = pMesh->lkk(kk);
 
-  return pInstance_->computeStress((SWS::StressFieldComponents)sc, ts, lii, ljj, lkk);
+  if (pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Legacy) {
+    return pInstance_->computeStress<SWS::KernelVariant::Legacy>((SWS::StressFieldComponents)sc, ts, lii, ljj, lkk);
+  }
+  return pInstance_->computeStress<SWS::KernelVariant::Unaligned>((SWS::StressFieldComponents)sc, ts, lii, ljj, lkk);
 }
 
+template<SWS::KernelVariant Variant>
 int
 LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents& sc,
                                       const int& ts,
@@ -403,7 +411,7 @@ LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents& sc,
       for (int i = iStart; i < iEnd; i++) {
         for (int j = jStart; j < jEnd; j++) {
           sigmaXX(i, j) +=
-            ((fdo_.apply<SWS::Y>(vY, i, j, SWS::DK) + fdo_.apply<SWS::Z>(vZ, i, j, SWS::DK)) * lambda(i, j) +
+            ((fdo_.apply<SWS::Y>(vY, i, j, SWS::DK) + fdo_.applyZ<Variant>(vZ, i, j, SWS::DK)) * lambda(i, j) +
              (lambda(i, j) + 2.0 * mu(i, j)) * fdo_.apply<SWS::X>(vX, i + 1, j, SWS::DK)) *
             dt;
         }
@@ -443,7 +451,7 @@ LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents& sc,
       for (int i = iStart; i < iEnd; i++) {
         for (int j = jStart; j < jEnd; j++) {
           sigmaYY(i, j) +=
-            ((fdo_.apply<SWS::X>(vX, i + 1, j, SWS::DK) + fdo_.apply<SWS::Z>(vZ, i, j, SWS::DK)) *
+            ((fdo_.apply<SWS::X>(vX, i + 1, j, SWS::DK) + fdo_.applyZ<Variant>(vZ, i, j, SWS::DK)) *
                lambda(i, j) +
              (lambda(i, j) + 2.0 * mu(i, j)) * fdo_.apply<SWS::Y>(vY, i, j, SWS::DK)) *
             dt;
@@ -486,7 +494,7 @@ LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents& sc,
           sigmaZZ(i, j) +=
             ((fdo_.apply<SWS::X>(vX, i + 1, j, SWS::DK) + fdo_.apply<SWS::Y>(vY, i, j, SWS::DK)) *
                lambda(i, j) +
-             (lambda(i, j) + 2.0 * mu(i, j)) * fdo_.apply<SWS::Z>(vZ, i, j, SWS::DK)) *
+             (lambda(i, j) + 2.0 * mu(i, j)) * fdo_.applyZ<Variant>(vZ, i, j, SWS::DK)) *
             dt;
         }
       }
@@ -561,7 +569,7 @@ LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents& sc,
       for (int i = iStart; i < iEnd; i++) {
         for (int j = jStart; j < jEnd; j++) {
           sigmaXZ(i, j) +=
-            (fdo_.apply<SWS::Z>(vX, i, j, SWS::DK + 1) + fdo_.apply<SWS::X>(vZ, i, j, SWS::DK)) * mu(i, j) *
+            (fdo_.applyZ<Variant>(vX, i, j, SWS::DK + 1) + fdo_.apply<SWS::X>(vZ, i, j, SWS::DK)) * mu(i, j) *
             dt;
         }
       }
@@ -597,7 +605,7 @@ LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents& sc,
       for (int i = iStart; i < iEnd; i++) {
         for (int j = jStart; j < jEnd; j++) {
           sigmaYZ(i, j) +=
-            (fdo_.apply<SWS::Z>(vY, i, j, SWS::DK + 1) + fdo_.apply<SWS::Y>(vZ, i, j + 1, SWS::DK)) *
+            (fdo_.applyZ<Variant>(vY, i, j, SWS::DK + 1) + fdo_.apply<SWS::Y>(vZ, i, j + 1, SWS::DK)) *
             mu(i, j) * dt;
         }
       }
@@ -638,6 +646,16 @@ LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents& sc,
 
   return 0;
 }
+
+template int LinearSeismicWaveModel::computeVelocity<SWS::KernelVariant::Legacy>(
+  const SWS::Directions&, const int&, const int&, const int&, const int&);
+template int LinearSeismicWaveModel::computeVelocity<SWS::KernelVariant::Unaligned>(
+  const SWS::Directions&, const int&, const int&, const int&, const int&);
+
+template int LinearSeismicWaveModel::computeStress<SWS::KernelVariant::Legacy>(
+  const SWS::StressFieldComponents&, const int&, const int&, const int&, const int&);
+template int LinearSeismicWaveModel::computeStress<SWS::KernelVariant::Unaligned>(
+  const SWS::StressFieldComponents&, const int&, const int&, const int&, const int&);
 
 void
 LinearSeismicWaveModel::addVelocitySource(const SWS::Directions& d,

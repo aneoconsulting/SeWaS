@@ -51,6 +51,17 @@ enum Locations
   NB_LOCATIONS = _NB_LOCATIONS
 };
 
+/* Runtime-selectable Dz kernel variant (see CentralFDOperator::apply<SWS::Z, Variant>):
+ * Legacy is the pre-vectorization scalar tap loop, Unaligned is the Eigen
+ * unaligned-segment path (the default; matches today's EIGEN_VECTORIZATION behavior). Not
+ * backed by a constants.h macro, unlike the enums above: it never crosses into PaRSEC's
+ * generated C code. */
+enum KernelVariant
+{
+  Legacy,
+  Unaligned
+};
+
 enum Errors
 {
   SUCCESS = 0,
