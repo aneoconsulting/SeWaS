@@ -66,6 +66,8 @@ public:
     exit(-1);
   }
 
+  inline bool fuseFields() const { return getOption<bool>("fuse-fields"); }
+
   inline const auto& tmax() const { return tmax_; }
   inline const auto& dt() const { return dt_; }
 
@@ -149,7 +151,12 @@ private:
       "kernel-variant",
       po::value<std::string>()->default_value("unaligned"),
       "Dz finite-difference kernel variant: 'legacy' (scalar tap loop) or 'unaligned' "
-      "(Eigen unaligned-segment vectorization, default). A/B testable without recompiling.");
+      "(Eigen unaligned-segment vectorization, default). A/B testable without recompiling.")(
+      "fuse-fields",
+      po::value<bool>()->default_value(false)->implicit_value(true),
+      "Update all velocity (resp. stress) components of a tile in a single sweep, sharing the "
+      "diagonal-stress derivatives, instead of one sweep per component. Requires a "
+      "USE_BLOCKWISE_FDO build; ignored otherwise.");
 
     try {
 

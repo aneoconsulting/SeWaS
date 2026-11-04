@@ -72,6 +72,8 @@ configure_file(${CMAKE_SOURCE_DIR}/data/input/TestX.json ${CMAKE_CURRENT_BINARY_
 
 add_test(NAME TestC
          COMMAND $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 1 --nthreads 2 --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
+add_test(NAME TestCFused
+         COMMAND $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 1 --nthreads 2 --fuse-fields --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
             
 if (SEWAS_DISTRIBUTED)
     add_test(NAME TestCSplitX
@@ -80,4 +82,6 @@ if (SEWAS_DISTRIBUTED)
              COMMAND ${MPIEXEC_EXECUTABLE} -n 2 $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 2 --R 1 --nthreads 1 --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
     add_test(NAME TestCSplitZ
              COMMAND ${MPIEXEC_EXECUTABLE} -n 2 $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 2 --nthreads 1 --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
+    add_test(NAME TestCSplitZFused
+             COMMAND ${MPIEXEC_EXECUTABLE} -n 2 $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 2 --nthreads 1 --fuse-fields --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
 endif()
