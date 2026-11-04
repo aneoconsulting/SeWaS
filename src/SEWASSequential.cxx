@@ -78,9 +78,9 @@ SEWASSequential::run()
             }
           }
 
-          for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
-            LinearSeismicWaveModel::computeVelocityWrapper(d, ts, ii, jj, kk);
+          LinearSeismicWaveModel::computeVelocityTileWrapper(ts, ii, jj, kk);
 
+          for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
             for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
               HaloManager::extractVelocityHaloWrapper(l, d, ts, ii, jj, kk, vH_S(d)(ii, jj, kk)(l));
 
@@ -102,9 +102,9 @@ SEWASSequential::run()
             }
           }
 
-          for (auto sc : { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
-            LinearSeismicWaveModel::computeStressWrapper(sc, ts + 1, ii, jj, kk);
+          LinearSeismicWaveModel::computeStressTileWrapper(ts + 1, ii, jj, kk);
 
+          for (auto sc : { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
             for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
               HaloManager::extractStressHaloWrapper(l, sc, ts + 1, ii, jj, kk, sigmaH_S(sc)(ii, jj, kk)(l));
 

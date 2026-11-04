@@ -25,7 +25,7 @@ import csv
 import statistics
 import sys
 
-GROUP_KEYS = ["cx", "cy", "cz", "P", "Q", "R", "precision", "scheduler"]
+GROUP_KEYS = ["cx", "cy", "cz", "P", "Q", "R", "precision", "scheduler", "variant"]
 METRICS = ["total_time_s", "time_per_step_s"]
 ORDER_KEY = "timestamp"
 
@@ -55,14 +55,15 @@ def main():
 
     groups = {}
     for row in rows:
-        key = tuple(row[k] for k in GROUP_KEYS)
+        # CSVs written before the "variant" column existed have no such key.
+        key = tuple(row.get(k) or "default" if k == "variant" else row[k] for k in GROUP_KEYS)
         groups.setdefault(key, []).append(row)
 
     ok = True
     skipped_configs = 0
 
     for key, group_rows in sorted(groups.items()):
-        label = "cx={} cy={} cz={} P={} Q={} R={} precision={} scheduler={}".format(*key)
+        label = " ".join(f"{k}={v}" for k, v in zip(GROUP_KEYS, key))
 
         group_rows = sorted(group_rows, key=lambda r: r[ORDER_KEY])
         warm_rows = group_rows[args.warmup :]

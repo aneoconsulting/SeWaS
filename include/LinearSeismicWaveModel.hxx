@@ -51,6 +51,15 @@ public:
 
   static int computeStressWrapper(const int sc, const int ts, const int ii, const int jj, const int kk);
 
+  /* Tile-level entry points used by the sequential and StarPU engines: update every
+   * velocity (resp. stress) component of tile (ii, jj, kk). With --fuse-fields, all
+   * components are updated in a single (i, j) sweep (and the diagonal stresses share
+   * Dx(vX), Dy(vY), Dz(vZ)); otherwise this loops over computeVelocity/computeStress, one
+   * full-tile sweep per component. PaRSEC keeps the per-component wrappers above. */
+  static int computeVelocityTileWrapper(const int ts, const int ii, const int jj, const int kk);
+
+  static int computeStressTileWrapper(const int ts, const int ii, const int jj, const int kk);
+
 private:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW // To force an object of this class to be allocated as aligned
 
@@ -76,6 +85,20 @@ private:
                     const int& ii,
                     const int& jj,
                     const int& kk);
+
+  /* Single-sweep variants of the above over all components of one tile (Phase 1, item 0 of
+   * sewas_transformation_plan_en.md). Only defined with BLOCKWISE_FDO. */
+  template<SWS::KernelVariant Variant>
+  int computeVelocityFused(const int ts, const int ii, const int jj, const int kk);
+
+  template<SWS::KernelVariant Variant>
+  int computeStressFused(const int ts, const int ii, const int jj, const int kk);
+
+  template<SWS::KernelVariant Variant>
+  int computeVelocityTile(const int ts, const int ii, const int jj, const int kk);
+
+  template<SWS::KernelVariant Variant>
+  int computeStressTile(const int ts, const int ii, const int jj, const int kk);
 
   static LinearSeismicWaveModel* pInstance_;
 
