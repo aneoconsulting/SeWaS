@@ -15,6 +15,9 @@
 #                    matching TestA's 2x2x1 global tile grid at cx=cy=cz=100)
 #   DFILE            domain/material JSON (default data/input/TestA.json)
 #   LINF_THRESHOLD   passed through to compare_to_oracle.py (default 1e-10)
+#   KERNEL_VARIANT   --kernel-variant for the candidate run (legacy|unaligned);
+#                    empty (default) uses the binary's default. The oracle
+#                    always runs with its default.
 
 set -euo pipefail
 
@@ -29,6 +32,7 @@ CANDIDATE_Q="${CANDIDATE_Q:-2}"
 CANDIDATE_R="${CANDIDATE_R:-1}"
 DFILE="${DFILE:-$REPO_ROOT/data/input/TestA.json}"
 LINF_THRESHOLD="${LINF_THRESHOLD:-1e-10}"
+KERNEL_VARIANT="${KERNEL_VARIANT:-}"
 
 # TestA is nx=ny=200, nz=100; cx=cy=cz=100 gives a 2x2x1 = 4 global-tile case,
 # matching the plan's "e.g. 4 tiles, 100 steps" example.
@@ -51,12 +55,18 @@ echo "[run_check] oracle:    $ORACLE_BIN --P 1 --Q 1 --R 1"
   --dump-velocity="$ORACLE_DIR" \
   > "$WORKDIR/oracle.log" 2>&1
 
-echo "[run_check] candidate: $CANDIDATE_LAUNCH $CANDIDATE_BIN --P $CANDIDATE_P --Q $CANDIDATE_Q --R $CANDIDATE_R"
+CANDIDATE_EXTRA=()
+if [[ -n "$KERNEL_VARIANT" ]]; then
+  CANDIDATE_EXTRA+=(--kernel-variant "$KERNEL_VARIANT")
+fi
+
+echo "[run_check] candidate: $CANDIDATE_LAUNCH $CANDIDATE_BIN --P $CANDIDATE_P --Q $CANDIDATE_Q --R $CANDIDATE_R ${CANDIDATE_EXTRA[*]:-}"
 $CANDIDATE_LAUNCH "$CANDIDATE_BIN" \
   --cx "$CX" --cy "$CY" --cz "$CZ" \
   --P "$CANDIDATE_P" --Q "$CANDIDATE_Q" --R "$CANDIDATE_R" --nthreads 2 \
   --dfile="$DFILE" \
   --dump-velocity="$CANDIDATE_DIR" \
+  ${CANDIDATE_EXTRA[@]+"${CANDIDATE_EXTRA[@]}"} \
   > "$WORKDIR/candidate.log" 2>&1
 
 python3 "$SCRIPT_DIR/compare_to_oracle.py" \

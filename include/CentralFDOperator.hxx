@@ -213,6 +213,55 @@ public:
 #endif
   }
 
+  /* Dedicated, runtime-selectable Dz tap kernel (Phase 1.1 of
+   * sewas_transformation_plan_en.md). Deliberately NOT folded into the SWS::Z case of
+   * apply<d>() above: that function's return type is auto-deduced across all three cases
+   * of a single switch (X/Y still governed by the EIGEN_VECTORIZATION/BOOST_SIMD_VECTORIZATION
+   * build flags), so making just the Z case's return type depend on a template parameter
+   * would conflict with X/Y's build-flag-fixed return type. Kept standalone instead: with
+   * only the two branches below, `if constexpr` cleanly restricts type deduction to
+   * whichever variant is actually instantiated. Variant defaults to Unaligned, i.e. today's
+   * EIGEN_VECTORIZATION behavior for Z. */
+  template<SWS::KernelVariant Variant = SWS::KernelVariant::Unaligned>
+  inline auto applyZ(const SWS::SpatialBlockField<SWS::RealType>& fijk,
+                     const int i,
+                     const int j,
+                     const short DK) const noexcept
+  {
+    const auto kStart = fijk.kStart(), kEnd = fijk.kEnd();
+
+    const auto c1 = _c1(SWS::Z);
+    const auto c2 = _c2(SWS::Z);
+    const auto c3 = _c3(SWS::Z);
+    const auto c4 = _c4(SWS::Z);
+
+    const auto d1 = _d1(SWS::Z) + DK;
+    const auto d2 = _d2(SWS::Z) - DK;
+    const auto d3 = _d3(SWS::Z) + DK;
+    const auto d4 = _d4(SWS::Z) - DK;
+
+    if constexpr (Variant == SWS::KernelVariant::Legacy) {
+      // Scalar tap loop -- the pre-vectorization baseline, always available at runtime now
+      // (previously only reachable by building with EIGEN_VECTORIZATION off).
+      SWS::SpatialBlockField1D rij(1, kEnd - kStart);
+      rij = 0.0;
+
+      for (int k = kStart; k < kEnd; k++) {
+        rij(k - kStart) = c1 * fijk(i, j, k + d1) + c2 * fijk(i, j, k - d2) +
+                          c3 * fijk(i, j, k + d3) + c4 * fijk(i, j, k - d4);
+      }
+
+      return rij;
+    } else {
+      // Eigen unaligned-segment vectorization: the four taps are offset from kStart, so
+      // (unlike X/Y) the loads can never land on a packet boundary.
+      return c1 * fijk.get(i, j, kStart + d1) +
+             c2 * fijk.get(i, j, kStart - d2) +
+             c3 * fijk.get(i, j, kStart + d3) +
+             c4 * fijk.get(i, j, kStart - d4);
+    }
+  }
+
   template<SWS::Directions d, short DI, short DJ, short DK>
   inline auto apply(const SWS::SpatialBlockField<SWS::RealType>& fijk) const
     noexcept

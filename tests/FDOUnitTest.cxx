@@ -84,3 +84,45 @@ TEST_F(FDOTest, PartialDerivativeOverZ)
     }
   }
 }
+
+TEST_F(FDOTest, PartialDerivativeOverZ_LegacyKernelVariant)
+{
+  rijk_(i0_, j0_) += fdo_->applyZ<SWS::KernelVariant::Legacy>(fijk_, i0_, j0_, SWS::DK);
+
+  for (int k = fijk_.kStart(); k < fijk_.kEnd(); k++) {
+
+    const auto r = (c1_ * fijk_(i0_, j0_, k + 1) + c2_ * fijk_(i0_, j0_, k - 2) + c3_ * fijk_(i0_, j0_, k) +
+                    c4_ * fijk_(i0_, j0_, k - 1)) /
+                   ds_;
+
+    if constexpr (std::is_same<SWS::RealType, float>::value) {
+      EXPECT_FLOAT_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
+    } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+      EXPECT_DOUBLE_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
+    } else {
+      std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name() << "\n";
+      exit(SWS::INVALID_REAL_TYPE);
+    }
+  }
+}
+
+TEST_F(FDOTest, PartialDerivativeOverZ_UnalignedKernelVariant)
+{
+  rijk_(i0_, j0_) += fdo_->applyZ<SWS::KernelVariant::Unaligned>(fijk_, i0_, j0_, SWS::DK);
+
+  for (int k = fijk_.kStart(); k < fijk_.kEnd(); k++) {
+
+    const auto r = (c1_ * fijk_(i0_, j0_, k + 1) + c2_ * fijk_(i0_, j0_, k - 2) + c3_ * fijk_(i0_, j0_, k) +
+                    c4_ * fijk_(i0_, j0_, k - 1)) /
+                   ds_;
+
+    if constexpr (std::is_same<SWS::RealType, float>::value) {
+      EXPECT_FLOAT_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
+    } else if constexpr (std::is_same<SWS::RealType, double>::value) {
+      EXPECT_DOUBLE_EQ(rijk_(i0_, j0_, k), r) << " k = " << k;
+    } else {
+      std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name() << "\n";
+      exit(SWS::INVALID_REAL_TYPE);
+    }
+  }
+}

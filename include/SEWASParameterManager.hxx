@@ -56,6 +56,16 @@ public:
 
   inline const auto& dumpVelocityDir() const { return getOption<std::string>("dump-velocity"); }
 
+  inline SWS::KernelVariant kernelVariant() const
+  {
+    const auto& v = getOption<std::string>("kernel-variant");
+    if (v == "legacy") return SWS::KernelVariant::Legacy;
+    if (v == "unaligned") return SWS::KernelVariant::Unaligned;
+
+    std::cerr << "Unknown --kernel-variant " << std::quoted(v) << " (expected 'legacy' or 'unaligned'). Exiting...\n";
+    exit(-1);
+  }
+
   inline const auto& tmax() const { return tmax_; }
   inline const auto& dt() const { return dt_; }
 
@@ -135,7 +145,11 @@ private:
       po::value<std::string>()->default_value(""),
       "Directory to dump each local tile's final velocity field to, one raw binary file per "
       "(rank, component, tile); empty (default) disables dumping. Used by validation/ to compare "
-      "against the sequential oracle.");
+      "against the sequential oracle.")(
+      "kernel-variant",
+      po::value<std::string>()->default_value("unaligned"),
+      "Dz finite-difference kernel variant: 'legacy' (scalar tap loop) or 'unaligned' "
+      "(Eigen unaligned-segment vectorization, default). A/B testable without recompiling.");
 
     try {
 

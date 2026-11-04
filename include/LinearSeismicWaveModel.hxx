@@ -64,8 +64,13 @@ private:
 
   void addVelocitySource(const SWS::Directions& d, const int ts, const int ii, const int jj, const int kk);
 
+  /* Templated on the Dz kernel variant (see CentralFDOperator::applyZ<Variant>()) so the
+   * --kernel-variant choice is resolved once per (component, tile, phase) call in
+   * computeVelocityWrapper()/computeStressWrapper() below, not per grid cell. */
+  template<SWS::KernelVariant Variant>
   int computeVelocity(const SWS::Directions& d, const int& ts, const int& ii, const int& jj, const int& kk);
 
+  template<SWS::KernelVariant Variant>
   int computeStress(const SWS::StressFieldComponents& sc,
                     const int& ts,
                     const int& ii,
