@@ -60,6 +60,15 @@
 #                            built with FxT support (no prof_file produced).
 #   --starpu-fxt-tool PATH    starpu_fxt_tool binary (default: same directory
 #                            as --binary's StarPU install, if found on PATH)
+#   --sewas-args "ARGS"       extra arguments appended to every sewas run,
+#                            word-split on whitespace, e.g.
+#                            "--fuse-fields --kernel-variant legacy"
+#                            (default: none)
+#   --variant-label LABEL     free-form label for --sewas-args, recorded in the
+#                            CSV "variant" column and in the trace directory
+#                            name, so runs of the same configuration with
+#                            different --sewas-args stay distinguishable
+#                            (default: "default")
 
 set -euo pipefail
 
@@ -77,6 +86,8 @@ LAUNCHER_TEMPLATE="mpirun -np {np} --oversubscribe"
 CSV="$SCRIPT_DIR/baseline.csv"
 TRACE_DIR="$SCRIPT_DIR/traces"
 STARPU_FXT_TOOL="$(command -v starpu_fxt_tool || true)"
+SEWAS_ARGS=""
+VARIANT_LABEL="default"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -91,6 +102,8 @@ while [ $# -gt 0 ]; do
     --csv) CSV="$2"; shift 2 ;;
     --trace-dir) TRACE_DIR="$2"; shift 2 ;;
     --starpu-fxt-tool) STARPU_FXT_TOOL="$2"; shift 2 ;;
+    --sewas-args) SEWAS_ARGS="$2"; shift 2 ;;
+    --variant-label) VARIANT_LABEL="$2"; shift 2 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -108,9 +121,17 @@ else
   echo "[run_baseline] trace decomposition: disabled (starpu_fxt_tool not found; pass --starpu-fxt-tool or put it on PATH)"
 fi
 
+# Word-split on purpose: --sewas-args is a list of CLI flags.
+# shellcheck disable=SC2206
+SEWAS_EXTRA=($SEWAS_ARGS)
+
+CSV_HEADER="timestamp,cx,cy,cz,P,Q,R,nthreads,precision,scheduler,dfile,total_time_s,time_per_step_s,trace_span_s,pure_compute_s,overlap_s,pure_comm_s,idle_s,variant"
 if [ ! -f "$CSV" ]; then
   mkdir -p "$(dirname "$CSV")"
-  echo "timestamp,cx,cy,cz,P,Q,R,nthreads,precision,scheduler,dfile,total_time_s,time_per_step_s,trace_span_s,pure_compute_s,overlap_s,pure_comm_s,idle_s" > "$CSV"
+  echo "$CSV_HEADER" > "$CSV"
+elif [ "$(head -n 1 "$CSV")" != "$CSV_HEADER" ]; then
+  echo "Existing $CSV has a different header (likely written before the 'variant' column was added); use a new --csv file" >&2
+  exit 1
 fi
 
 parse_stat() {
@@ -127,14 +148,14 @@ parse_stat() {
 run_one() {
   local cx="$1" cy="$2" cz="$3" P="$4" Q="$5" R="$6"
   local np=$((P * Q * R))
-  local run_id="${cx}x${cy}x${cz}_${P}x${Q}x${R}_${PRECISION_LABEL}"
+  local run_id="${cx}x${cy}x${cz}_${P}x${Q}x${R}_${PRECISION_LABEL}_${VARIANT_LABEL}"
   local run_dir
   run_dir="$(mktemp -d)"
   trap 'rm -rf "$run_dir"' RETURN
 
   local launcher="${LAUNCHER_TEMPLATE//\{np\}/$np}"
 
-  echo "[run_baseline] $run_id: $launcher $BINARY --nthreads $NTHREADS"
+  echo "[run_baseline] $run_id: $launcher $BINARY --nthreads $NTHREADS ${SEWAS_EXTRA[*]:-}"
 
   # Every rank writes its raw trace under STARPU_FXT_PREFIX, and ranks can run
   # on different physical nodes -- this has to be reachable from all of them,
@@ -152,6 +173,7 @@ run_one() {
     --cx "$cx" --cy "$cy" --cz "$cz" \
     --P "$P" --Q "$Q" --R "$R" --nthreads "$NTHREADS" \
     --dfile="$DFILE" \
+    ${SEWAS_EXTRA[@]+"${SEWAS_EXTRA[@]}"} \
     > "$log" 2>&1
 
   local total_time
@@ -200,7 +222,7 @@ print(int(-(-d['tmax'] // d['dt'])))  # ceil, matches SEWASParameterManager::par
     fi
   fi
 
-  echo "$(date -Iseconds),$cx,$cy,$cz,$P,$Q,$R,$NTHREADS,$PRECISION_LABEL,$SCHEDULER,$DFILE,$total_time,$time_per_step,$trace_span,$pure_compute,$overlap,$pure_comm,$idle" >> "$CSV"
+  echo "$(date -Iseconds),$cx,$cy,$cz,$P,$Q,$R,$NTHREADS,$PRECISION_LABEL,$SCHEDULER,$DFILE,$total_time,$time_per_step,$trace_span,$pure_compute,$overlap,$pure_comm,$idle,$VARIANT_LABEL" >> "$CSV"
 }
 
 IFS=',' read -ra TILE_LIST <<< "$TILES"
