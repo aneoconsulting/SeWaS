@@ -51,15 +51,18 @@ enum Locations
   NB_LOCATIONS = _NB_LOCATIONS
 };
 
-/* Runtime-selectable Dz kernel variant (see CentralFDOperator::apply<SWS::Z, Variant>):
- * Legacy is the pre-vectorization scalar tap loop, Unaligned is the Eigen
- * unaligned-segment path (the default; matches today's EIGEN_VECTORIZATION behavior). Not
+/* Runtime-selectable kernel variant (see CentralFDOperator::applyZ<Variant>() and tap<d>()):
+ * Legacy is the pre-vectorization scalar Dz tap loop, Unaligned is the Eigen
+ * unaligned-segment Dz path (the default; matches today's EIGEN_VECTORIZATION behavior), Raw
+ * replaces the per-(i,j)-column Eigen expressions of all three directions by one raw-pointer
+ * single-sweep tile kernel (LinearSeismicWaveModel::computeVelocityRaw/computeStressRaw). Not
  * backed by a constants.h macro, unlike the enums above: it never crosses into PaRSEC's
  * generated C code. */
 enum KernelVariant
 {
   Legacy,
-  Unaligned
+  Unaligned,
+  Raw
 };
 
 enum Errors
@@ -69,7 +72,8 @@ enum Errors
   BAD_TOPOLOGY_FILE_CONFIGURATION,
   UNKNOWN_SPATIAL_DIRECTION,
   INSTANCE_ACCESS_VIOLATION,
-  INVALID_REAL_TYPE
+  INVALID_REAL_TYPE,
+  INVALID_KERNEL_VARIANT
 };
 
 enum LogLevels
