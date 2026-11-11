@@ -64,8 +64,9 @@ SEWASSequential::run()
   auto& sigmaH_S = sigmaH_[SEND];
   auto& sigmaH_R = sigmaH_[RECEIVE];
 
-  // With the `raw` kernels, the send halos are written by the compute sweep itself.
-  const bool inKernel = LinearSeismicWaveModel::extractsHaloInKernel();
+  // With the `raw` kernels, the compute sweep unpacks the receive halos and writes the send
+  // halos itself.
+  const bool inKernel = LinearSeismicWaveModel::exchangesHaloInKernel();
 
   for (int ts = 2; ts <= nt_ - 2; ts += 2) {
 
@@ -77,11 +78,14 @@ SEWASSequential::run()
 
           for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
             for (auto sc : { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
-              HaloManager::updateStressWrapper(l, sc, ts - 1, ii, jj, kk, sigmaH_R(sc)(ii, jj, kk)(l));
+              if (!inKernel) {
+                HaloManager::updateStressWrapper(l, sc, ts - 1, ii, jj, kk, sigmaH_R(sc)(ii, jj, kk)(l));
+              }
             }
           }
 
-          LinearSeismicWaveModel::computeVelocityTileWrapper(ts, ii, jj, kk, inKernel ? &vH_S : nullptr);
+          LinearSeismicWaveModel::computeVelocityTileWrapper(
+            ts, ii, jj, kk, inKernel ? &vH_S : nullptr, inKernel ? &sigmaH_R : nullptr);
 
           for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
             for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
@@ -103,12 +107,14 @@ SEWASSequential::run()
 
           for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
             for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
-              HaloManager::updateVelocityWrapper(l, d, ts, ii, jj, kk, vH_R(d)(ii, jj, kk)(l));
+              if (!inKernel) {
+                HaloManager::updateVelocityWrapper(l, d, ts, ii, jj, kk, vH_R(d)(ii, jj, kk)(l));
+              }
             }
           }
 
           LinearSeismicWaveModel::computeStressTileWrapper(
-            ts + 1, ii, jj, kk, inKernel ? &sigmaH_S : nullptr);
+            ts + 1, ii, jj, kk, inKernel ? &sigmaH_S : nullptr, inKernel ? &vH_R : nullptr);
 
           for (auto sc : { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
             for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {

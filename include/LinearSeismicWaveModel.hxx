@@ -60,19 +60,23 @@ public:
                                         const int ii,
                                         const int jj,
                                         const int kk,
-                                        const SWS::VelocityHalo* vH = nullptr);
+                                        const SWS::VelocityHalo* vHSend = nullptr,
+                                        const SWS::StressFieldHalo* sigmaHRecv = nullptr);
 
   static int computeStressTileWrapper(const int ts,
                                       const int ii,
                                       const int jj,
                                       const int kk,
-                                      const SWS::StressFieldHalo* sigmaH = nullptr);
+                                      const SWS::StressFieldHalo* sigmaHSend = nullptr,
+                                      const SWS::VelocityHalo* vHRecv = nullptr);
 
-  /* True when the tile kernels write the send halos themselves (the `raw` variant): the engine
-   * then passes its send buffers to compute*TileWrapper() and skips HaloManager's extraction.
-   * Only the interior part of each face is written (the face's edge cells, which lie in the
-   * tile's own halo margin, are never read by the stencil). */
-  static bool extractsHaloInKernel();
+  /* True when the tile kernels exchange halos with the buffers themselves (the `raw` variant):
+   * the engine then passes its send and receive buffers to compute*TileWrapper() and skips
+   * HaloManager's update and extraction. The kernels unpack the received faces they read right
+   * before reading them and write the send faces right after computing them. Only the cells the
+   * stencil can read are moved: the edge cells of a face, which lie in the tile's own halo
+   * margin, are skipped. */
+  static bool exchangesHaloInKernel();
 
 private:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW // To force an object of this class to be allocated as aligned
@@ -115,13 +119,15 @@ private:
                          const int ii,
                          const int jj,
                          const int kk,
-                         const SWS::VelocityHalo* vH = nullptr);
+                         const SWS::VelocityHalo* vHSend = nullptr,
+                         const SWS::StressFieldHalo* sigmaHRecv = nullptr);
 
   int computeStressRaw(const int ts,
                        const int ii,
                        const int jj,
                        const int kk,
-                       const SWS::StressFieldHalo* sigmaH = nullptr);
+                       const SWS::StressFieldHalo* sigmaHSend = nullptr,
+                       const SWS::VelocityHalo* vHRecv = nullptr);
 
   template<SWS::KernelVariant Variant>
   int computeVelocityTile(const int ts, const int ii, const int jj, const int kk);

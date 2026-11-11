@@ -426,16 +426,17 @@ SEWASStarPU::phaseAVelocityCodelet(void* /*buffers*/[], void* cl_arg)
   auto& sigmaH_R = pInstance_->sigmaH_[RECEIVE];
   auto& vH_S = pInstance_->vH_[SEND];
 
+  // With the `raw` kernels, the compute sweep unpacks the receive halos and writes the send
+  // halos itself.
+  if (LinearSeismicWaveModel::exchangesHaloInKernel()) {
+    LinearSeismicWaveModel::computeVelocityTileWrapper(ts, ii, jj, kk, &vH_S, &sigmaH_R);
+    return;
+  }
+
   for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
     for (auto sc : { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
       HaloManager::updateStressWrapper(l, sc, ts - 1, ii, jj, kk, sigmaH_R(sc)(lii, ljj, lkk)(l));
     }
-  }
-
-  // With the `raw` kernels, the send halos are written by the compute sweep itself.
-  if (LinearSeismicWaveModel::extractsHaloInKernel()) {
-    LinearSeismicWaveModel::computeVelocityTileWrapper(ts, ii, jj, kk, &vH_S);
-    return;
   }
 
   LinearSeismicWaveModel::computeVelocityTileWrapper(ts, ii, jj, kk);
@@ -456,15 +457,15 @@ SEWASStarPU::phaseBStressCodelet(void* /*buffers*/[], void* cl_arg)
   auto& vH_R = pInstance_->vH_[RECEIVE];
   auto& sigmaH_S = pInstance_->sigmaH_[SEND];
 
+  if (LinearSeismicWaveModel::exchangesHaloInKernel()) {
+    LinearSeismicWaveModel::computeStressTileWrapper(ts + 1, ii, jj, kk, &sigmaH_S, &vH_R);
+    return;
+  }
+
   for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
     for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
       HaloManager::updateVelocityWrapper(l, d, ts, ii, jj, kk, vH_R(d)(lii, ljj, lkk)(l));
     }
-  }
-
-  if (LinearSeismicWaveModel::extractsHaloInKernel()) {
-    LinearSeismicWaveModel::computeStressTileWrapper(ts + 1, ii, jj, kk, &sigmaH_S);
-    return;
   }
 
   LinearSeismicWaveModel::computeStressTileWrapper(ts + 1, ii, jj, kk);

@@ -20,6 +20,7 @@
 #define _USE_MATH_DEFINES // for C++
 #include <cassert>
 #include <cmath>
+#include <cstring>
 
 #include "ExecutionContext.hxx"
 
@@ -837,11 +838,13 @@ sameShape(const Tile& a, const Tile& b)
          a.dimension(SWS::Z) == b.dimension(SWS::Z);
 }
 
-/* Geometry of the six send-halo faces of a tile, in the buffer layout of HaloManager's
- * extract (setExtractOffsets + dense Y_MAJOR box): LEFT/RIGHT hold planes i in [hx, 2hx) /
- * [iEnd - hx, iEnd) over the full (j, k) storage extent, BACKWARD/FORWARD planes j in
- * [hy, 2hy) / [jEnd - hy, jEnd) over the full (i, k) extent, BOTTOM/TOP planes k in [hz, 2hz) /
- * [kEnd - hz, kEnd) over the full (i, j) extent. */
+/* Geometry of the six halo faces of a tile, in the buffer layouts of HaloManager (dense
+ * Y_MAJOR boxes, see setExtractOffsets/setUpdateOffsets). Send faces: LEFT/RIGHT hold planes
+ * i in [hx, 2hx) / [iEnd - hx, iEnd) over the full (j, k) storage extent, BACKWARD/FORWARD
+ * planes j in [hy, 2hy) / [jEnd - hy, jEnd) over the full (i, k) extent, BOTTOM/TOP planes k in
+ * [hz, 2hz) / [kEnd - hz, kEnd) over the full (i, j) extent. Receive faces: the same boxes
+ * landing on the tile's halo margin, i in [0, hx) / [iEnd, iEnd + hx), and so on. Tile cell
+ * (i, j, k) is at offset (i * ny + j) * nz + k. */
 struct HaloFaces
 {
   int ny, nz, hx, hy, hz, iEnd, jEnd, kEnd;
@@ -891,6 +894,36 @@ struct HaloFaces
     }
   }
 
+  /* Unpacks the received LEFT/RIGHT faces (whole planes, one contiguous copy each). */
+  inline void unpackX(SWS::RealType* const tile, SWS::RealType* const* buf) const noexcept
+  {
+    const size_t n = size_t(hx) * ny * nz;
+    std::memcpy(tile, buf[SWS::LEFT], n * sizeof(SWS::RealType));
+    std::memcpy(tile + long(iEnd) * ny * nz, buf[SWS::RIGHT], n * sizeof(SWS::RealType));
+  }
+
+  /* Unpacks the received BACKWARD/FORWARD faces of plane i (one contiguous run each). */
+  inline void unpackY(SWS::RealType* const tile, SWS::RealType* const* buf, const int i) const noexcept
+  {
+    const size_t n = size_t(hy) * nz;
+    std::memcpy(tile + long(i) * ny * nz, buf[SWS::BACKWARD] + long(i) * n, n * sizeof(SWS::RealType));
+    std::memcpy(
+      tile + (long(i) * ny + jEnd) * nz, buf[SWS::FORWARD] + long(i) * n, n * sizeof(SWS::RealType));
+  }
+
+  /* Unpacks the received BOTTOM/TOP cells of column (i, j); `col` points at tile cell (i, j, 0). */
+  inline void unpackZ(SWS::RealType* __restrict col,
+                      SWS::RealType* const* buf,
+                      const int i,
+                      const int j) const noexcept
+  {
+    const long ij = long(i) * ny + j;
+    for (int t = 0; t < hz; t++) {
+      col[t] = buf[SWS::BOTTOM][ij * hz + t];
+      col[kEnd + t] = buf[SWS::TOP][ij * hz + t];
+    }
+  }
+
   /* Writes the single tile cell (i, j, k) into every face that contains it; used after a
    * point update (source injection) that follows the sweep. */
   inline void extractCell(const SWS::RealType v,
@@ -914,7 +947,7 @@ struct HaloFaces
   }
 };
 
-/* Send-buffer pointers of one tile, [component][location]. */
+/* Halo-buffer pointers of one tile, [component][location]. */
 template<typename HaloField, int N>
 void
 haloPointers(const HaloField& h, const int ii, const int jj, const int kk, SWS::RealType* (&buf)[N][6])
@@ -937,7 +970,8 @@ LinearSeismicWaveModel::computeVelocityRaw(const int ts,
                                            const int ii,
                                            const int jj,
                                            const int kk,
-                                           const SWS::VelocityHalo* vH)
+                                           const SWS::VelocityHalo* vH,
+                                           const SWS::StressFieldHalo* sigmaHR)
 {
   MetricsManager::getInstance()->start("ComputeVelocity");
 
@@ -989,16 +1023,37 @@ LinearSeismicWaveModel::computeVelocityRaw(const int ts,
   const SWS::RealType dt = 2 * dt_;
 
   const HaloFaces faces(vX);
+  assert(s.x == long(faces.ny) * faces.nz && s.y == faces.nz && vX.index(0, 0, 0) == 0);
   SWS::RealType* hbuf[3][6];
   if (vH) {
     haloPointers(*vH, ii, jj, kk, hbuf);
+  }
+  // Received stress faces, unpacked right before the taps that read them: X faces of
+  // sxx/sxy/sxz, Y faces of syy/sxy/syz, Z faces of szz/sxz/syz. The writes go through pointers
+  // derived from the (restrict) read pointers.
+  SWS::RealType* rbuf[6][6];
+  if (sigmaHR) {
+    haloPointers(*sigmaHR, ii, jj, kk, rbuf);
+    faces.unpackX(const_cast<SWS::RealType*>(sxx), rbuf[SWS::XX]);
+    faces.unpackX(const_cast<SWS::RealType*>(sxy), rbuf[SWS::XY]);
+    faces.unpackX(const_cast<SWS::RealType*>(sxz), rbuf[SWS::XZ]);
   }
 
   LOG(SWS::LOG_TRACE, "[start] Computing raw velocity at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
 
   for (int i = iStart; i < iEnd; i++) {
+    if (sigmaHR) {
+      faces.unpackY(const_cast<SWS::RealType*>(syy), rbuf[SWS::YY], i);
+      faces.unpackY(const_cast<SWS::RealType*>(sxy), rbuf[SWS::XY], i);
+      faces.unpackY(const_cast<SWS::RealType*>(syz), rbuf[SWS::YZ], i);
+    }
     for (int j = jStart; j < jEnd; j++) {
       const long o = vX.index(i, j, 0);
+      if (sigmaHR) {
+        faces.unpackZ(const_cast<SWS::RealType*>(szz) + o, rbuf[SWS::ZZ], i, j);
+        faces.unpackZ(const_cast<SWS::RealType*>(sxz) + o, rbuf[SWS::XZ], i, j);
+        faces.unpackZ(const_cast<SWS::RealType*>(syz) + o, rbuf[SWS::YZ], i, j);
+      }
       // The tile arrays never alias, but GCC ignores __restrict on local pointers and gives up
       // on runtime alias checks for this many streams: assert independence explicitly.
 #if defined(__GNUC__) && !defined(__clang__)
@@ -1065,7 +1120,8 @@ LinearSeismicWaveModel::computeStressRaw(const int ts,
                                          const int ii,
                                          const int jj,
                                          const int kk,
-                                         const SWS::StressFieldHalo* sigmaH)
+                                         const SWS::StressFieldHalo* sigmaH,
+                                         const SWS::VelocityHalo* vHR)
 {
   MetricsManager::getInstance()->start("ComputeStress");
 
@@ -1122,16 +1178,39 @@ LinearSeismicWaveModel::computeStressRaw(const int ts,
   const SWS::RealType dt = 2 * dt_;
 
   const HaloFaces faces(sigmaXX);
+  assert(s.x == long(faces.ny) * faces.nz && s.y == faces.nz && tVx.index(0, 0, 0) == 0);
   SWS::RealType* hbuf[6][6];
   if (sigmaH) {
     haloPointers(*sigmaH, ii, jj, kk, hbuf);
+  }
+  // Received velocity faces (all three components are tapped along X, Y and Z), unpacked right
+  // before the taps that read them; see computeVelocityRaw().
+  SWS::RealType* rbuf[3][6];
+  SWS::RealType* const pv[3] = { const_cast<SWS::RealType*>(vx),
+                                 const_cast<SWS::RealType*>(vy),
+                                 const_cast<SWS::RealType*>(vz) };
+  if (vHR) {
+    haloPointers(*vHR, ii, jj, kk, rbuf);
+    for (int d = 0; d < 3; d++) {
+      faces.unpackX(pv[d], rbuf[d]);
+    }
   }
 
   LOG(SWS::LOG_TRACE, "[start] Computing raw stress at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
 
   for (int i = iStart; i < iEnd; i++) {
+    if (vHR) {
+      for (int d = 0; d < 3; d++) {
+        faces.unpackY(pv[d], rbuf[d], i);
+      }
+    }
     for (int j = jStart; j < jEnd; j++) {
       const long o = tVx.index(i, j, 0);
+      if (vHR) {
+        for (int d = 0; d < 3; d++) {
+          faces.unpackZ(pv[d] + o, rbuf[d], i, j);
+        }
+      }
       // The tile arrays never alias, but GCC ignores __restrict on local pointers and gives up
       // on runtime alias checks for this many streams: assert independence explicitly.
 #if defined(__GNUC__) && !defined(__clang__)
@@ -1214,7 +1293,7 @@ LinearSeismicWaveModel::computeStressTile(const int ts, const int ii, const int 
 }
 
 bool
-LinearSeismicWaveModel::extractsHaloInKernel()
+LinearSeismicWaveModel::exchangesHaloInKernel()
 {
   return pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Raw;
 }
@@ -1224,7 +1303,8 @@ LinearSeismicWaveModel::computeVelocityTileWrapper(const int ts,
                                                    const int ii,
                                                    const int jj,
                                                    const int kk,
-                                                   const SWS::VelocityHalo* vH)
+                                                   const SWS::VelocityHalo* vHSend,
+                                                   const SWS::StressFieldHalo* sigmaHRecv)
 {
   auto* pMesh = Mesh3DPartitioning::getInstance();
 
@@ -1234,7 +1314,7 @@ LinearSeismicWaveModel::computeVelocityTileWrapper(const int ts,
 
   const auto variant = pInstance_->pm_.kernelVariant();
   if (variant == SWS::KernelVariant::Raw) {
-    return pInstance_->computeVelocityRaw(ts, lii, ljj, lkk, vH);
+    return pInstance_->computeVelocityRaw(ts, lii, ljj, lkk, vHSend, sigmaHRecv);
   }
   if (variant == SWS::KernelVariant::Legacy) {
     return pInstance_->computeVelocityTile<SWS::KernelVariant::Legacy>(ts, lii, ljj, lkk);
@@ -1247,7 +1327,8 @@ LinearSeismicWaveModel::computeStressTileWrapper(const int ts,
                                                  const int ii,
                                                  const int jj,
                                                  const int kk,
-                                                 const SWS::StressFieldHalo* sigmaH)
+                                                 const SWS::StressFieldHalo* sigmaHSend,
+                                                 const SWS::VelocityHalo* vHRecv)
 {
   auto* pMesh = Mesh3DPartitioning::getInstance();
 
@@ -1257,7 +1338,7 @@ LinearSeismicWaveModel::computeStressTileWrapper(const int ts,
 
   const auto variant = pInstance_->pm_.kernelVariant();
   if (variant == SWS::KernelVariant::Raw) {
-    return pInstance_->computeStressRaw(ts, lii, ljj, lkk, sigmaH);
+    return pInstance_->computeStressRaw(ts, lii, ljj, lkk, sigmaHSend, vHRecv);
   }
   if (variant == SWS::KernelVariant::Legacy) {
     return pInstance_->computeStressTile<SWS::KernelVariant::Legacy>(ts, lii, ljj, lkk);
