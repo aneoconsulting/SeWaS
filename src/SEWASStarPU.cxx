@@ -432,6 +432,12 @@ SEWASStarPU::phaseAVelocityCodelet(void* /*buffers*/[], void* cl_arg)
     }
   }
 
+  // With the `raw` kernels, the send halos are written by the compute sweep itself.
+  if (LinearSeismicWaveModel::extractsHaloInKernel()) {
+    LinearSeismicWaveModel::computeVelocityTileWrapper(ts, ii, jj, kk, &vH_S);
+    return;
+  }
+
   LinearSeismicWaveModel::computeVelocityTileWrapper(ts, ii, jj, kk);
 
   for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
@@ -454,6 +460,11 @@ SEWASStarPU::phaseBStressCodelet(void* /*buffers*/[], void* cl_arg)
     for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
       HaloManager::updateVelocityWrapper(l, d, ts, ii, jj, kk, vH_R(d)(lii, ljj, lkk)(l));
     }
+  }
+
+  if (LinearSeismicWaveModel::extractsHaloInKernel()) {
+    LinearSeismicWaveModel::computeStressTileWrapper(ts + 1, ii, jj, kk, &sigmaH_S);
+    return;
   }
 
   LinearSeismicWaveModel::computeStressTileWrapper(ts + 1, ii, jj, kk);

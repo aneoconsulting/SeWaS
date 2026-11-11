@@ -56,9 +56,23 @@ public:
    * components are updated in a single (i, j) sweep (and the diagonal stresses share
    * Dx(vX), Dy(vY), Dz(vZ)); otherwise this loops over computeVelocity/computeStress, one
    * full-tile sweep per component. PaRSEC keeps the per-component wrappers above. */
-  static int computeVelocityTileWrapper(const int ts, const int ii, const int jj, const int kk);
+  static int computeVelocityTileWrapper(const int ts,
+                                        const int ii,
+                                        const int jj,
+                                        const int kk,
+                                        const SWS::VelocityHalo* vH = nullptr);
 
-  static int computeStressTileWrapper(const int ts, const int ii, const int jj, const int kk);
+  static int computeStressTileWrapper(const int ts,
+                                      const int ii,
+                                      const int jj,
+                                      const int kk,
+                                      const SWS::StressFieldHalo* sigmaH = nullptr);
+
+  /* True when the tile kernels write the send halos themselves (the `raw` variant): the engine
+   * then passes its send buffers to compute*TileWrapper() and skips HaloManager's extraction.
+   * Only the interior part of each face is written (the face's edge cells, which lie in the
+   * tile's own halo margin, are never read by the stencil). */
+  static bool extractsHaloInKernel();
 
 private:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW // To force an object of this class to be allocated as aligned
@@ -97,9 +111,17 @@ private:
   /* `raw` kernel variant (Phase 1.1b): single-sweep raw-pointer tile kernels over all
    * components, built on CentralFDOperator::tap<d>(). Independent of BLOCKWISE_FDO and
    * --fuse-fields. */
-  int computeVelocityRaw(const int ts, const int ii, const int jj, const int kk);
+  int computeVelocityRaw(const int ts,
+                         const int ii,
+                         const int jj,
+                         const int kk,
+                         const SWS::VelocityHalo* vH = nullptr);
 
-  int computeStressRaw(const int ts, const int ii, const int jj, const int kk);
+  int computeStressRaw(const int ts,
+                       const int ii,
+                       const int jj,
+                       const int kk,
+                       const SWS::StressFieldHalo* sigmaH = nullptr);
 
   template<SWS::KernelVariant Variant>
   int computeVelocityTile(const int ts, const int ii, const int jj, const int kk);

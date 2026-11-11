@@ -64,6 +64,9 @@ SEWASSequential::run()
   auto& sigmaH_S = sigmaH_[SEND];
   auto& sigmaH_R = sigmaH_[RECEIVE];
 
+  // With the `raw` kernels, the send halos are written by the compute sweep itself.
+  const bool inKernel = LinearSeismicWaveModel::extractsHaloInKernel();
+
   for (int ts = 2; ts <= nt_ - 2; ts += 2) {
 
     LOG(SWS::LOG_TRACE, "[start] Processing time-step {}", ts);
@@ -78,11 +81,13 @@ SEWASSequential::run()
             }
           }
 
-          LinearSeismicWaveModel::computeVelocityTileWrapper(ts, ii, jj, kk);
+          LinearSeismicWaveModel::computeVelocityTileWrapper(ts, ii, jj, kk, inKernel ? &vH_S : nullptr);
 
           for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
             for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
-              HaloManager::extractVelocityHaloWrapper(l, d, ts, ii, jj, kk, vH_S(d)(ii, jj, kk)(l));
+              if (!inKernel) {
+                HaloManager::extractVelocityHaloWrapper(l, d, ts, ii, jj, kk, vH_S(d)(ii, jj, kk)(l));
+              }
 
               sendreceive(vH_S, d, ii, jj, kk, l);
             }
@@ -102,11 +107,14 @@ SEWASSequential::run()
             }
           }
 
-          LinearSeismicWaveModel::computeStressTileWrapper(ts + 1, ii, jj, kk);
+          LinearSeismicWaveModel::computeStressTileWrapper(
+            ts + 1, ii, jj, kk, inKernel ? &sigmaH_S : nullptr);
 
           for (auto sc : { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
             for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
-              HaloManager::extractStressHaloWrapper(l, sc, ts + 1, ii, jj, kk, sigmaH_S(sc)(ii, jj, kk)(l));
+              if (!inKernel) {
+                HaloManager::extractStressHaloWrapper(l, sc, ts + 1, ii, jj, kk, sigmaH_S(sc)(ii, jj, kk)(l));
+              }
 
               sendreceive(sigmaH_S, sc, ii, jj, kk, l);
             }
