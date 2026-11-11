@@ -201,7 +201,42 @@ private:
   int nyy_;
   int nzz_;
 
+  /* Send targets for kernels that exchange halos themselves (see
+   * LinearSeismicWaveModel::exchangesHaloInKernel()): a copy of the SEND pointer table where every
+   * face with a neighbor points at that neighbor's RECEIVE slot instead, so the kernel writes the
+   * face where it is consumed and sendreceive() has nothing left to copy. Safe because RECEIVE
+   * buffers of a field are only read in the other phase, and each slot has a single writer. */
+  template<typename H>
+  inline void buildSendTargets(H& target, const H& send, const H& receive, const int ncomp) noexcept
+  {
+    target = send;
+    for (int c = 0; c < ncomp; c++) {
+      for (int ii = 0; ii < nxx_; ii++) {
+        for (int jj = 0; jj < nyy_; jj++) {
+          for (int kk = 0; kk < nzz_; kk++) {
+            auto& t = target(c)(ii, jj, kk);
+            if (ii > 0)
+              t(SWS::LEFT) = receive(c)(ii - 1, jj, kk)(SWS::RIGHT);
+            if (ii < nxx_ - 1)
+              t(SWS::RIGHT) = receive(c)(ii + 1, jj, kk)(SWS::LEFT);
+            if (jj > 0)
+              t(SWS::BACKWARD) = receive(c)(ii, jj - 1, kk)(SWS::FORWARD);
+            if (jj < nyy_ - 1)
+              t(SWS::FORWARD) = receive(c)(ii, jj + 1, kk)(SWS::BACKWARD);
+            if (kk > 0)
+              t(SWS::BOTTOM) = receive(c)(ii, jj, kk - 1)(SWS::TOP);
+            if (kk < nzz_ - 1)
+              t(SWS::TOP) = receive(c)(ii, jj, kk + 1)(SWS::BOTTOM);
+          }
+        }
+      }
+    }
+  }
+
   // Allocate send/receive temporary buffers
   SWS::StressFieldHalo sigmaH_[2];
   SWS::VelocityHalo vH_[2];
+
+  SWS::StressFieldHalo sigmaHTarget_;
+  SWS::VelocityHalo vHTarget_;
 };

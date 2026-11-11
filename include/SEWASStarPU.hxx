@@ -84,6 +84,9 @@ private:
 
   static SWS::Locations opposite(const SWS::Locations l) noexcept;
 
+  template<typename H>
+  void buildSendTargets(H& target, const H& send, const H& receive, const int ncomp) const noexcept;
+
   static void initializeFieldsCodelet(void* buffers[], void* cl_arg);
   static void phaseAVelocityCodelet(void* buffers[], void* cl_arg);
   static void phaseBStressCodelet(void* buffers[], void* cl_arg);
@@ -107,6 +110,17 @@ private:
    * sizing): sigmaH_[u](sc)(lii,ljj,lkk)(l), vH_[u](d)(lii,ljj,lkk)(l). */
   SWS::StressFieldHalo sigmaH_[2];
   SWS::VelocityHalo vH_[2];
+
+  /* Send targets for kernels that exchange halos themselves (see
+   * LinearSeismicWaveModel::exchangesHaloInKernel()): the SEND pointer table with every face whose
+   * neighbor lives on this rank redirected to that neighbor's RECEIVE slot, so the same-rank
+   * memcpy of exchange*Halo() disappears. Safe because each phase ends with
+   * starpu_task_wait_for_all(), RECEIVE buffers of a field are only read in the other phase, and
+   * each slot has a single writer (the opposite neighbor). Cross-rank faces keep their SEND
+   * buffer and go through MPI as before. */
+  SWS::StressFieldHalo sigmaHTarget_;
+  SWS::VelocityHalo vHTarget_;
+  bool inKernelExchange_ = false;
 
   /* StarPU handles wrapping the buffers above, flattened per (component,
    * local tile, location); only used for cross-rank transfers -- same-rank
