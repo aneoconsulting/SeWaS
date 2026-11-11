@@ -56,7 +56,7 @@ private:
           for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
             const auto hsize = HaloManager::getInstance()->getHaloSize(l, ii, jj, kk);
             halo(u)(ii, jj, kk)(l) = new SWS::RealType[hsize];
-            memset(halo(u)(ii, jj, kk)(l), 0, hsize);
+            memset(halo(u)(ii, jj, kk)(l), 0, hsize * sizeof(SWS::RealType));
           }
 
         } // kk
