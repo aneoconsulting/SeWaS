@@ -17,6 +17,7 @@
 ==============================================================================*/
 
 #include <cassert>
+#include <cstring>
 #include <iostream>
 
 #include "CartesianMesh3D.hxx"
@@ -27,6 +28,81 @@
 #include "MetricsManager.hxx"
 
 HaloManager* HaloManager::pInstance_ = nullptr;
+
+namespace {
+
+/*
+  Copies the box [0,ni)x[0,nj)x[0,nk) between a halo buffer (dense, same ordering as the tiles) and a tile,
+  the tile side being offset by (iS, jS, kS). Pack = true copies tile -> buffer (extract), false copies
+  buffer -> tile (update). With the Y_MAJOR ordering, the box is moved as contiguous runs: a single run for
+  LEFT/RIGHT faces (full j and k extents), one run of nj*nk per i for BACKWARD/FORWARD faces, and one run of
+  nk per (i, j) for BOTTOM/TOP faces.
+*/
+template<bool Pack>
+inline void
+copyHaloBox(SWS::SpatialBlockField<SWS::RealType>& tile,
+            SWS::RealType* const buffer,
+            const int ni,
+            const int nj,
+            const int nk,
+            const int iS,
+            const int jS,
+            const int kS) noexcept
+{
+  SWS::RealType* const t = tile.data().data();
+
+  const auto run = [](SWS::RealType* const pt, SWS::RealType* const pb, const size_t n) {
+    if constexpr (Pack) {
+      std::memcpy(pb, pt, n * sizeof(SWS::RealType));
+    } else {
+      std::memcpy(pt, pb, n * sizeof(SWS::RealType));
+    }
+  };
+
+  if constexpr (SWS::Orderings::Y_MAJOR == SWS::Ordering) {
+    const int ny = tile.ny();
+    const int nz = tile.nz();
+
+    if (nj == ny && nk == nz) {
+      run(t + tile.index(iS, 0, 0), buffer, size_t(ni) * nj * nk);
+    } else if (nk == nz) {
+      for (int i = 0; i < ni; i++) {
+        run(t + tile.index(i + iS, jS, 0), buffer + size_t(i) * nj * nk, size_t(nj) * nk);
+      }
+    } else {
+      for (int i = 0; i < ni; i++) {
+        for (int j = 0; j < nj; j++) {
+          SWS::RealType* const pt = t + tile.index(i + iS, j + jS, kS);
+          SWS::RealType* const pb = buffer + (size_t(i) * nj + j) * nk;
+          for (int k = 0; k < nk; k++) {
+            if constexpr (Pack) {
+              pb[k] = pt[k];
+            } else {
+              pt[k] = pb[k];
+            }
+          }
+        }
+      }
+    }
+  } else {
+    Indexer<SWS::Ordering> indexer(ni, nj, nk);
+    for (int i = 0; i < ni; i++) {
+      for (int j = 0; j < nj; j++) {
+        for (int k = 0; k < nk; k++) {
+          auto& vt = tile(i + iS, j + jS, k + kS);
+          auto& vb = buffer[indexer(i, j, k)];
+          if constexpr (Pack) {
+            vb = vt;
+          } else {
+            vt = vb;
+          }
+        }
+      }
+    }
+  }
+}
+
+} // namespace
 
 HaloManager*
 HaloManager::getInstance(SWS::StressField& sigma,
@@ -200,18 +276,10 @@ HaloManager::updateStress(const SWS::Locations l,
 
   setUpdateOffsets(l, ii, jj, kk, iStartH, iEndH, jStartH, jEndH, kStartH, kEndH, iShift, jShift, kShift);
 
-  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+  assert(iStartH == 0 && jStartH == 0 && kStartH == 0);
 
-  size_t index = 0;
-  for (int i = iStartH; i < iEndH; i++) {
-    for (int j = jStartH; j < jEndH; j++) {
-      for (int k = kStartH; k < kEndH; k++) {
-        index = indexer(i, j, k);
-        assert(index < getHaloSize(l, ii, jj, kk));
-        sigma_(sc)(ii, jj, kk)(i + iShift, j + jShift, k + kShift) = sigmaH_(sc)(ii, jj, kk)(l)[index];
-      }
-    }
-  }
+  copyHaloBox<false>(
+    sigma_(sc)(ii, jj, kk), sigmaH_(sc)(ii, jj, kk)(l), iEndH, jEndH, kEndH, iShift, jShift, kShift);
 
   // MetricsManager::getInstance()->stop("UpdateStress");
 
@@ -238,19 +306,9 @@ HaloManager::updateVelocity(const SWS::Locations l,
 
   setUpdateOffsets(l, ii, jj, kk, iStartH, iEndH, jStartH, jEndH, kStartH, kEndH, iShift, jShift, kShift);
 
-  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+  assert(iStartH == 0 && jStartH == 0 && kStartH == 0);
 
-  size_t index = 0;
-  for (int i = iStartH; i < iEndH; i++) {
-    for (int j = jStartH; j < jEndH; j++) {
-      for (int k = kStartH; k < kEndH; k++) {
-        index = indexer(i, j, k);
-        assert(index < getHaloSize(l, ii, jj, kk));
-
-        v_(d)(ii, jj, kk)(i + iShift, j + jShift, k + kShift) = vH_(d)(ii, jj, kk)(l)[index];
-      }
-    }
-  }
+  copyHaloBox<false>(v_(d)(ii, jj, kk), vH_(d)(ii, jj, kk)(l), iEndH, jEndH, kEndH, iShift, jShift, kShift);
 
   // MetricsManager::getInstance()->stop("UpdateVelocity");
 
@@ -285,19 +343,10 @@ HaloManager::extractStressHalo(const SWS::Locations l,
 
   setExtractOffsets(l, ii, jj, kk, iStartH, iEndH, jStartH, jEndH, kStartH, kEndH, iShift, jShift, kShift);
 
-  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+  assert(iStartH == 0 && jStartH == 0 && kStartH == 0);
 
-  // TODO the following copy can be optimized by viewing the Halo data pointer as an Eigen's Array
-  size_t index = 0;
-  for (int i = iStartH; i < iEndH; i++) {
-    for (int j = jStartH; j < jEndH; j++) {
-      for (int k = kStartH; k < kEndH; k++) {
-        index = indexer(i, j, k);
-        assert(index < getHaloSize(l, ii, jj, kk));
-        sigmaH_(sc)(ii, jj, kk)(l)[index] = sigma_(sc)(ii, jj, kk)(i + iShift, j + jShift, k + kShift);
-      }
-    }
-  }
+  copyHaloBox<true>(
+    sigma_(sc)(ii, jj, kk), sigmaH_(sc)(ii, jj, kk)(l), iEndH, jEndH, kEndH, iShift, jShift, kShift);
 
   // MetricsManager::getInstance()->stop("ExtractStressHalo");
   LOG(SWS::LOG_TRACE,
@@ -340,20 +389,9 @@ HaloManager::extractVelocityHalo(const SWS::Locations l,
 
   setExtractOffsets(l, ii, jj, kk, iStartH, iEndH, jStartH, jEndH, kStartH, kEndH, iShift, jShift, kShift);
 
-  Indexer<SWS::Ordering> indexer(iEndH, jEndH, kEndH);
+  assert(iStartH == 0 && jStartH == 0 && kStartH == 0);
 
-  size_t index = 0;
-  for (int i = iStartH; i < iEndH; i++) {
-    for (int j = jStartH; j < jEndH; j++) {
-      for (int k = kStartH; k < kEndH; k++) {
-        index = indexer(i, j, k);
-
-        assert(index < getHaloSize(l, ii, jj, kk));
-
-        vH_(d)(ii, jj, kk)(l)[index] = v_(d)(ii, jj, kk)(i + iShift, j + jShift, k + kShift);
-      }
-    }
-  }
+  copyHaloBox<true>(v_(d)(ii, jj, kk), vH_(d)(ii, jj, kk)(l), iEndH, jEndH, kEndH, iShift, jShift, kShift);
 
   // MetricsManager::getInstance()->stop("ExtractVelocityHalo");
   LOG(SWS::LOG_TRACE,
