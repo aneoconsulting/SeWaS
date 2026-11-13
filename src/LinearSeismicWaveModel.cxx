@@ -647,6 +647,223 @@ LinearSeismicWaveModel::computeStress(const SWS::StressFieldComponents& sc,
   return 0;
 }
 
+#ifdef BLOCKWISE_FDO
+/* Same per-component expressions as computeVelocity(), evaluated in one (i, j) sweep so that
+ * each sigma column is reused across the components that read it while still in cache,
+ * instead of reloading it in three separate full-tile sweeps. The three components only
+ * read sigma, so updating them together (and adding the sources afterwards) is
+ * value-identical to the per-component order. */
+template<SWS::KernelVariant Variant>
+int
+LinearSeismicWaveModel::computeVelocityFused(const int ts, const int ii, const int jj, const int kk)
+{
+  MetricsManager::getInstance()->start("ComputeVelocity");
+
+  IOManager::getInstance().start<COMPUTE_VELOCITY>(ts, ii, jj, kk);
+
+  const auto& bx = DataSet::getInstance()->b(SWS::X)(ii, jj, kk);
+  const auto& by = DataSet::getInstance()->b(SWS::Y)(ii, jj, kk);
+  const auto& bz = DataSet::getInstance()->b(SWS::Z)(ii, jj, kk);
+
+  auto& vX = v_(SWS::X)(ii, jj, kk);
+  auto& vY = v_(SWS::Y)(ii, jj, kk);
+  auto& vZ = v_(SWS::Z)(ii, jj, kk);
+
+  const auto& sigmaXX = sigma_(SWS::XX)(ii, jj, kk);
+  const auto& sigmaYY = sigma_(SWS::YY)(ii, jj, kk);
+  const auto& sigmaZZ = sigma_(SWS::ZZ)(ii, jj, kk);
+  const auto& sigmaXY = sigma_(SWS::XY)(ii, jj, kk);
+  const auto& sigmaXZ = sigma_(SWS::XZ)(ii, jj, kk);
+  const auto& sigmaYZ = sigma_(SWS::YZ)(ii, jj, kk);
+
+  const auto iStart = vX.iStart();
+  const auto iEnd = vX.iEnd();
+
+  const auto jStart = vX.jStart();
+  const auto jEnd = vX.jEnd();
+
+  const auto dt = 2 * dt_;
+
+  LOG(SWS::LOG_TRACE, "[start] Computing fused velocity at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+
+  for (int i = iStart; i < iEnd; i++) {
+    for (int j = jStart; j < jEnd; j++) {
+      vX(i, j) +=
+        (fdo_.apply<SWS::X>(sigmaXX, i, j, SWS::DK) + fdo_.apply<SWS::Y>(sigmaXY, i, j, SWS::DK) +
+         fdo_.applyZ<Variant>(sigmaXZ, i, j, SWS::DK)) *
+        dt * bx(i, j);
+
+      vY(i, j) +=
+        (fdo_.apply<SWS::X>(sigmaXY, i + 1, j, SWS::DK) + fdo_.apply<SWS::Y>(sigmaYY, i, j + 1, SWS::DK) +
+         fdo_.applyZ<Variant>(sigmaYZ, i, j, SWS::DK)) *
+        dt * by(i, j);
+
+      vZ(i, j) +=
+        (fdo_.apply<SWS::X>(sigmaXZ, i + 1, j, SWS::DK) + fdo_.apply<SWS::Y>(sigmaYZ, i, j, SWS::DK) +
+         fdo_.applyZ<Variant>(sigmaZZ, i, j, SWS::DK + 1)) *
+        dt * bz(i, j);
+    }
+  }
+
+  LOG(SWS::LOG_TRACE, "[stop] Computing fused velocity at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+
+  addVelocitySource(SWS::X, ts, ii, jj, kk);
+  addVelocitySource(SWS::Y, ts, ii, jj, kk);
+
+  IOManager::getInstance().stop<COMPUTE_VELOCITY>(ts, ii, jj, kk, SWS::DIM);
+
+  MetricsManager::getInstance()->stop("ComputeVelocity");
+
+  return 0;
+}
+
+/* Same per-component expressions as computeStress(), evaluated in one (i, j) sweep. The
+ * diagonal stresses use the same three derivatives Dx(vX), Dy(vY), Dz(vZ) at the same
+ * offsets, so each is evaluated once per column into a reusable buffer (9 evaluations -> 3).
+ * They also share one lambda/mu pair: DataSet::initialize() fills lambda(sc) and mu(sc)
+ * with identical values for every sc (co-located, isotropic model), so reading the XX
+ * arrays for YY and ZZ is value-identical (DataSet::initialize() checks this when fusion is on). The off-diagonals keep their own mu(sc) and
+ * cross-derivatives (nothing to share there). */
+template<SWS::KernelVariant Variant>
+int
+LinearSeismicWaveModel::computeStressFused(const int ts, const int ii, const int jj, const int kk)
+{
+  MetricsManager::getInstance()->start("ComputeStress");
+
+  IOManager::getInstance().start<COMPUTE_STRESS>(ts, ii, jj, kk);
+
+  const auto& lambda = DataSet::getInstance()->lambda(SWS::XX)(ii, jj, kk);
+  const auto& mu = DataSet::getInstance()->mu(SWS::XX)(ii, jj, kk);
+  const auto& muXY = DataSet::getInstance()->mu(SWS::XY)(ii, jj, kk);
+  const auto& muXZ = DataSet::getInstance()->mu(SWS::XZ)(ii, jj, kk);
+  const auto& muYZ = DataSet::getInstance()->mu(SWS::YZ)(ii, jj, kk);
+
+  const auto& vX = v_(SWS::X)(ii, jj, kk);
+  const auto& vY = v_(SWS::Y)(ii, jj, kk);
+  const auto& vZ = v_(SWS::Z)(ii, jj, kk);
+
+  auto& sigmaXX = sigma_(SWS::XX)(ii, jj, kk);
+  auto& sigmaYY = sigma_(SWS::YY)(ii, jj, kk);
+  auto& sigmaZZ = sigma_(SWS::ZZ)(ii, jj, kk);
+  auto& sigmaXY = sigma_(SWS::XY)(ii, jj, kk);
+  auto& sigmaXZ = sigma_(SWS::XZ)(ii, jj, kk);
+  auto& sigmaYZ = sigma_(SWS::YZ)(ii, jj, kk);
+
+  const auto iStart = vX.iStart();
+  const auto iEnd = vX.iEnd();
+
+  const auto jStart = vX.jStart();
+  const auto jEnd = vX.jEnd();
+
+  const auto kStart = vX.kStart();
+  const auto kEnd = vX.kEnd();
+
+  const auto dt = 2 * dt_;
+
+  SWS::SpatialBlockField1D dxvx(1, kEnd - kStart);
+  SWS::SpatialBlockField1D dyvy(1, kEnd - kStart);
+  SWS::SpatialBlockField1D dzvz(1, kEnd - kStart);
+
+  LOG(SWS::LOG_TRACE, "[start] Computing fused stress at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+
+  for (int i = iStart; i < iEnd; i++) {
+    for (int j = jStart; j < jEnd; j++) {
+      dxvx = fdo_.apply<SWS::X>(vX, i + 1, j, SWS::DK);
+      dyvy = fdo_.apply<SWS::Y>(vY, i, j, SWS::DK);
+      dzvz = fdo_.applyZ<Variant>(vZ, i, j, SWS::DK);
+
+      sigmaXX(i, j) += ((dyvy + dzvz) * lambda(i, j) + (lambda(i, j) + 2.0 * mu(i, j)) * dxvx) * dt;
+
+      sigmaYY(i, j) += ((dxvx + dzvz) * lambda(i, j) + (lambda(i, j) + 2.0 * mu(i, j)) * dyvy) * dt;
+
+      sigmaZZ(i, j) += ((dxvx + dyvy) * lambda(i, j) + (lambda(i, j) + 2.0 * mu(i, j)) * dzvz) * dt;
+
+      sigmaXY(i, j) +=
+        (fdo_.apply<SWS::Y>(vX, i, j + 1, SWS::DK) + fdo_.apply<SWS::X>(vY, i, j, SWS::DK)) * muXY(i, j) * dt;
+
+      sigmaXZ(i, j) +=
+        (fdo_.applyZ<Variant>(vX, i, j, SWS::DK + 1) + fdo_.apply<SWS::X>(vZ, i, j, SWS::DK)) * muXZ(i, j) * dt;
+
+      sigmaYZ(i, j) +=
+        (fdo_.applyZ<Variant>(vY, i, j, SWS::DK + 1) + fdo_.apply<SWS::Y>(vZ, i, j + 1, SWS::DK)) * muYZ(i, j) *
+        dt;
+    }
+  }
+
+  LOG(SWS::LOG_TRACE, "[stop] Computing fused stress at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+
+  IOManager::getInstance().stop<COMPUTE_STRESS>(ts, ii, jj, kk, SWS::NB_STRESS_FIELD_COMPONENTS);
+
+  MetricsManager::getInstance()->stop("ComputeStress");
+
+  return 0;
+}
+#endif // BLOCKWISE_FDO
+
+template<SWS::KernelVariant Variant>
+int
+LinearSeismicWaveModel::computeVelocityTile(const int ts, const int ii, const int jj, const int kk)
+{
+#ifdef BLOCKWISE_FDO
+  if (pm_.fuseFields()) {
+    return computeVelocityFused<Variant>(ts, ii, jj, kk);
+  }
+#endif
+
+  for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
+    computeVelocity<Variant>(d, ts, ii, jj, kk);
+  }
+
+  return 0;
+}
+
+template<SWS::KernelVariant Variant>
+int
+LinearSeismicWaveModel::computeStressTile(const int ts, const int ii, const int jj, const int kk)
+{
+#ifdef BLOCKWISE_FDO
+  if (pm_.fuseFields()) {
+    return computeStressFused<Variant>(ts, ii, jj, kk);
+  }
+#endif
+
+  for (auto sc : { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
+    computeStress<Variant>(sc, ts, ii, jj, kk);
+  }
+
+  return 0;
+}
+
+int
+LinearSeismicWaveModel::computeVelocityTileWrapper(const int ts, const int ii, const int jj, const int kk)
+{
+  auto* pMesh = Mesh3DPartitioning::getInstance();
+
+  const int lii = pMesh->lii(ii);
+  const int ljj = pMesh->ljj(jj);
+  const int lkk = pMesh->lkk(kk);
+
+  if (pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Legacy) {
+    return pInstance_->computeVelocityTile<SWS::KernelVariant::Legacy>(ts, lii, ljj, lkk);
+  }
+  return pInstance_->computeVelocityTile<SWS::KernelVariant::Unaligned>(ts, lii, ljj, lkk);
+}
+
+int
+LinearSeismicWaveModel::computeStressTileWrapper(const int ts, const int ii, const int jj, const int kk)
+{
+  auto* pMesh = Mesh3DPartitioning::getInstance();
+
+  const int lii = pMesh->lii(ii);
+  const int ljj = pMesh->ljj(jj);
+  const int lkk = pMesh->lkk(kk);
+
+  if (pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Legacy) {
+    return pInstance_->computeStressTile<SWS::KernelVariant::Legacy>(ts, lii, ljj, lkk);
+  }
+  return pInstance_->computeStressTile<SWS::KernelVariant::Unaligned>(ts, lii, ljj, lkk);
+}
+
 template int LinearSeismicWaveModel::computeVelocity<SWS::KernelVariant::Legacy>(
   const SWS::Directions&, const int&, const int&, const int&, const int&);
 template int LinearSeismicWaveModel::computeVelocity<SWS::KernelVariant::Unaligned>(

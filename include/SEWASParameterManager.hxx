@@ -66,6 +66,8 @@ public:
     exit(-1);
   }
 
+  inline bool fuseFields() const { return getOption<bool>("fuse-fields"); }
+
   inline const auto& tmax() const { return tmax_; }
   inline const auto& dt() const { return dt_; }
 
@@ -149,7 +151,12 @@ private:
       "kernel-variant",
       po::value<std::string>()->default_value("unaligned"),
       "Dz finite-difference kernel variant: 'legacy' (scalar tap loop) or 'unaligned' "
-      "(Eigen unaligned-segment vectorization, default). A/B testable without recompiling.");
+      "(Eigen unaligned-segment vectorization, default). A/B testable without recompiling.")(
+      "fuse-fields",
+      po::value<bool>()->default_value(false)->implicit_value(true),
+      "Update all velocity (resp. stress) components of a tile in a single sweep, sharing the "
+      "diagonal-stress derivatives, instead of one sweep per component. Requires a "
+      "USE_BLOCKWISE_FDO build without SEWAS_WITH_PARSEC; rejected otherwise.");
 
     try {
 
@@ -173,6 +180,15 @@ private:
         std::cout << desc << "\n";
         return 0;
       }
+
+#if !defined(BLOCKWISE_FDO) || defined(SEWAS_WITH_PARSEC)
+      // The fused kernels exist only in BLOCKWISE_FDO builds and are not wired into the
+      // PaRSEC task graph. Refuse the flag rather than silently run the unfused code.
+      if (getOption<bool>("fuse-fields")) {
+        std::cerr << "--fuse-fields requires a USE_BLOCKWISE_FDO build without SEWAS_WITH_PARSEC. Exiting...\n";
+        exit(-1);
+      }
+#endif
     } catch (const po::error& e) {
       std::cerr << e.what() << "\n";
       return -1;

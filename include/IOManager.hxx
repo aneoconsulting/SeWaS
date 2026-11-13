@@ -84,11 +84,13 @@ public:
 #endif
   }
 
+  /* processedTasks_ counts per-component tasks (3 velocity, 6 stress per tile). A fused
+     kernel updates all components of a tile at once and passes the number it completed. */
   template<short TaskType>
-  inline void stop(const int ts, const int ii, const int jj, const int kk)
+  inline void stop(const int ts, const int ii, const int jj, const int kk, const int nComponents = 1)
   {
 #ifdef ENABLE_IO
-    processedTasks_[ts]++;
+    processedTasks_[ts] += nComponents;
 #endif
   }
 
