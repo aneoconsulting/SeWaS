@@ -149,5 +149,24 @@ DataSet::initialize(const int ii, const int jj, const int kk)
 
   } // k
 
+  /* computeStressFused() reads lambda(XX) and mu(XX) for all three diagonal stresses. That is
+     only valid while lambda(sc) and mu(sc) hold the same values for every diagonal sc, as the
+     loop above writes them. Check it once per tile so a future change to that loop (e.g.
+     component-specific averaging) fails loudly instead of silently diverging. */
+  if (pm_.fuseFields()) {
+    for (auto sc : { SWS::YY, SWS::ZZ }) {
+      if ((lambda_(sc)(lii, ljj, lkk).data() != lambda_(SWS::XX)(lii, ljj, lkk).data()).any() ||
+          (mu_(sc)(lii, ljj, lkk).data() != mu_(SWS::XX)(lii, ljj, lkk).data()).any()) {
+        LOG(SWS::LOG_CRITICAL,
+            "--fuse-fields assumes identical Lamé parameters for the diagonal stress components, "
+            "but they differ on tile ({}, {}, {}). Exiting...",
+            ii,
+            jj,
+            kk);
+        exit(-1);
+      }
+    }
+  }
+
   LOG(SWS::LOG_INFO, "[stop] Initializing Lamé parameters on tile ({}, {}, {})", ii, jj, kk);
 }

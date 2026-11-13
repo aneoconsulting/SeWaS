@@ -710,7 +710,7 @@ LinearSeismicWaveModel::computeVelocityFused(const int ts, const int ii, const i
   addVelocitySource(SWS::X, ts, ii, jj, kk);
   addVelocitySource(SWS::Y, ts, ii, jj, kk);
 
-  IOManager::getInstance().stop<COMPUTE_VELOCITY>(ts, ii, jj, kk);
+  IOManager::getInstance().stop<COMPUTE_VELOCITY>(ts, ii, jj, kk, SWS::DIM);
 
   MetricsManager::getInstance()->stop("ComputeVelocity");
 
@@ -722,7 +722,7 @@ LinearSeismicWaveModel::computeVelocityFused(const int ts, const int ii, const i
  * offsets, so each is evaluated once per column into a reusable buffer (9 evaluations -> 3).
  * They also share one lambda/mu pair: DataSet::initialize() fills lambda(sc) and mu(sc)
  * with identical values for every sc (co-located, isotropic model), so reading the XX
- * arrays for YY and ZZ is value-identical. The off-diagonals keep their own mu(sc) and
+ * arrays for YY and ZZ is value-identical (DataSet::initialize() checks this when fusion is on). The off-diagonals keep their own mu(sc) and
  * cross-derivatives (nothing to share there). */
 template<SWS::KernelVariant Variant>
 int
@@ -792,7 +792,7 @@ LinearSeismicWaveModel::computeStressFused(const int ts, const int ii, const int
 
   LOG(SWS::LOG_TRACE, "[stop] Computing fused stress at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
 
-  IOManager::getInstance().stop<COMPUTE_STRESS>(ts, ii, jj, kk);
+  IOManager::getInstance().stop<COMPUTE_STRESS>(ts, ii, jj, kk, SWS::NB_STRESS_FIELD_COMPONENTS);
 
   MetricsManager::getInstance()->stop("ComputeStress");
 

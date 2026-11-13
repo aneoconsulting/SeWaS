@@ -85,3 +85,40 @@ if (SEWAS_DISTRIBUTED)
     add_test(NAME TestCSplitZFused
              COMMAND ${MPIEXEC_EXECUTABLE} -n 2 $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 2 --nthreads 1 --fuse-fields --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
 endif()
+
+# The tests above only check that sewas exits cleanly. The ones below check that --fuse-fields
+# gives the same final velocity field as the per-component kernels: the unfused single-rank run
+# is the reference, the fused run the candidate (validation/run_check.sh, TestA, 100 steps).
+# A stencil error gives O(1) relative differences; 1e-12 leaves room only for rounding.
+find_package(Python3 COMPONENTS Interpreter)
+set(SEWAS_HAVE_NUMPY FALSE)
+if (Python3_Interpreter_FOUND)
+    execute_process(COMMAND ${Python3_EXECUTABLE} -c "import numpy"
+                    RESULT_VARIABLE _numpy_result OUTPUT_QUIET ERROR_QUIET)
+    if (_numpy_result EQUAL 0)
+        set(SEWAS_HAVE_NUMPY TRUE)
+    endif()
+endif()
+
+if (SEWAS_HAVE_NUMPY)
+    set(_fused_check_env
+        "ORACLE_BIN=$<TARGET_FILE:sewas>"
+        "CANDIDATE_BIN=$<TARGET_FILE:sewas>"
+        "FUSE_FIELDS=1"
+        "LINF_THRESHOLD=1e-12"
+        "PYTHON=${Python3_EXECUTABLE}")
+
+    add_test(NAME FusedMatchesUnfused
+             COMMAND bash ${CMAKE_SOURCE_DIR}/validation/run_check.sh)
+    set_tests_properties(FusedMatchesUnfused PROPERTIES
+        ENVIRONMENT "${_fused_check_env};CANDIDATE_P=1;CANDIDATE_Q=1;CANDIDATE_R=1")
+
+    if (SEWAS_DISTRIBUTED)
+        add_test(NAME FusedMatchesUnfusedSplitXY
+                 COMMAND bash ${CMAKE_SOURCE_DIR}/validation/run_check.sh)
+        set_tests_properties(FusedMatchesUnfusedSplitXY PROPERTIES
+            ENVIRONMENT "${_fused_check_env};CANDIDATE_LAUNCH=${MPIEXEC_EXECUTABLE} -n 4;CANDIDATE_P=2;CANDIDATE_Q=2;CANDIDATE_R=1")
+    endif()
+else()
+    message(WARNING "python3 with numpy not found: skipping the fused-vs-unfused comparison tests")
+endif()

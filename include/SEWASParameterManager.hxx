@@ -156,7 +156,7 @@ private:
       po::value<bool>()->default_value(false)->implicit_value(true),
       "Update all velocity (resp. stress) components of a tile in a single sweep, sharing the "
       "diagonal-stress derivatives, instead of one sweep per component. Requires a "
-      "USE_BLOCKWISE_FDO build; ignored otherwise.");
+      "USE_BLOCKWISE_FDO build without SEWAS_WITH_PARSEC; rejected otherwise.");
 
     try {
 
@@ -180,6 +180,15 @@ private:
         std::cout << desc << "\n";
         return 0;
       }
+
+#if !defined(BLOCKWISE_FDO) || defined(SEWAS_WITH_PARSEC)
+      // The fused kernels exist only in BLOCKWISE_FDO builds and are not wired into the
+      // PaRSEC task graph. Refuse the flag rather than silently run the unfused code.
+      if (getOption<bool>("fuse-fields")) {
+        std::cerr << "--fuse-fields requires a USE_BLOCKWISE_FDO build without SEWAS_WITH_PARSEC. Exiting...\n";
+        exit(-1);
+      }
+#endif
     } catch (const po::error& e) {
       std::cerr << e.what() << "\n";
       return -1;
