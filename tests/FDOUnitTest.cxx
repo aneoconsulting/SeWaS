@@ -16,6 +16,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ==============================================================================*/
 
+#include <cmath>
 #include <type_traits>
 
 #include <gtest/gtest.h>
@@ -123,6 +124,45 @@ TEST_F(FDOTest, PartialDerivativeOverZ_UnalignedKernelVariant)
     } else {
       std::cerr << "Unsupported element type for SWS::RealType : " << typeid(SWS::RealType).name() << "\n";
       exit(SWS::INVALID_REAL_TYPE);
+    }
+  }
+}
+
+/* CentralFDOperator::tap<d>() (raw kernel variant) must reproduce apply<d>/applyZ for every
+ * direction and both stencil shifts, on a non-polynomial field that also fills the halos. */
+TEST_F(FDOTest, RawTapMatchesApplyAllDirectionsAndShifts)
+{
+  for (int i = 0; i < cx_; i++)
+    for (int j = 0; j < cy_; j++)
+      for (int k = 0; k < cz_; k++)
+        fijk_(i, j, k) =
+          static_cast<SWS::RealType>(std::sin(0.7 * i + 0.3 * j) * std::cos(0.5 * k) + 0.1 * i * j);
+
+  const long o = fijk_.index(0, 0, 0);
+  const long sx = fijk_.index(1, 0, 0) - o, sy = fijk_.index(0, 1, 0) - o, sz = fijk_.index(0, 0, 1) - o;
+  const SWS::RealType* p = fijk_.data().data();
+
+  const double tol = std::is_same<SWS::RealType, float>::value ? 1e-4 : 1e-11;
+
+  for (short shift = 0; shift <= 1; shift++) {
+    for (int i = fijk_.iStart(); i < fijk_.iEnd(); i++) {
+      for (int j = fijk_.jStart(); j < fijk_.jEnd(); j++) {
+        SWS::SpatialBlockField1D rx = fdo_->apply<SWS::X>(fijk_, i + shift, j, SWS::DK);
+        SWS::SpatialBlockField1D ry = fdo_->apply<SWS::Y>(fijk_, i, j + shift, SWS::DK);
+        SWS::SpatialBlockField1D rz =
+          fdo_->applyZ<SWS::KernelVariant::Unaligned>(fijk_, i, j, SWS::DK + shift);
+
+        for (int k = fijk_.kStart(); k < fijk_.kEnd(); k++) {
+          const auto c = fijk_.index(i, j, k);
+          const auto kk = k - fijk_.kStart();
+          EXPECT_NEAR(fdo_->tap<SWS::X>(p + c, sx, shift), rx(kk), tol * std::abs(rx(kk)) + tol)
+            << "X shift " << shift << " at " << i << "," << j << "," << k;
+          EXPECT_NEAR(fdo_->tap<SWS::Y>(p + c, sy, shift), ry(kk), tol * std::abs(ry(kk)) + tol)
+            << "Y shift " << shift << " at " << i << "," << j << "," << k;
+          EXPECT_NEAR(fdo_->tap<SWS::Z>(p + c, sz, shift), rz(kk), tol * std::abs(rz(kk)) + tol)
+            << "Z shift " << shift << " at " << i << "," << j << "," << k;
+        }
+      }
     }
   }
 }

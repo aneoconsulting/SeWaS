@@ -262,6 +262,22 @@ public:
     }
   }
 
+  /* Raw-pointer tap kernel (the `raw` kernel variant, Phase 1.1b of
+   * sewas_transformation_plan_en.md): derivative along d at the cell p points to, with s the
+   * tap stride along d in elements (layout-agnostic: the caller derives it from
+   * SpatialBlockField::index()). shift in {0, 1} moves the stencil by one cell along d, which
+   * is what apply<d>(f, i + 1, j, ...) / applyZ(f, i, j, DK + 1) express for X/Z in the model:
+   *   c1 f[p + (1+shift) s] + c2 f[p - (2-shift) s] + c3 f[p + shift s] + c4 f[p - (1-shift) s]
+   * Same coefficients and summation order as apply<d>/applyZ, and one body for all three
+   * directions. Templated on the element type so that a SIMD pack (DLI scratch, Phase 3) can
+   * reuse it unchanged; T must support scalar*T and T+T. */
+  template<SWS::Directions d, typename T>
+  inline T tap(const T* __restrict p, const long s, const short shift = 0) const noexcept
+  {
+    return _c1(d) * p[(_d1(d) + shift) * s] + _c2(d) * p[-(_d2(d) - shift) * s] +
+           _c3(d) * p[(_d3(d) + shift) * s] + _c4(d) * p[-(_d4(d) - shift) * s];
+  }
+
   template<SWS::Directions d, short DI, short DJ, short DK>
   inline auto apply(const SWS::SpatialBlockField<SWS::RealType>& fijk) const
     noexcept

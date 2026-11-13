@@ -94,6 +94,13 @@ private:
   template<SWS::KernelVariant Variant>
   int computeStressFused(const int ts, const int ii, const int jj, const int kk);
 
+  /* `raw` kernel variant (Phase 1.1b): single-sweep raw-pointer tile kernels over all
+   * components, built on CentralFDOperator::tap<d>(). Independent of BLOCKWISE_FDO and
+   * --fuse-fields. */
+  int computeVelocityRaw(const int ts, const int ii, const int jj, const int kk);
+
+  int computeStressRaw(const int ts, const int ii, const int jj, const int kk);
+
   template<SWS::KernelVariant Variant>
   int computeVelocityTile(const int ts, const int ii, const int jj, const int kk);
 

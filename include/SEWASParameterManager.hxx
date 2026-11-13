@@ -61,8 +61,10 @@ public:
     const auto& v = getOption<std::string>("kernel-variant");
     if (v == "legacy") return SWS::KernelVariant::Legacy;
     if (v == "unaligned") return SWS::KernelVariant::Unaligned;
+    if (v == "raw") return SWS::KernelVariant::Raw;
 
-    std::cerr << "Unknown --kernel-variant " << std::quoted(v) << " (expected 'legacy' or 'unaligned'). Exiting...\n";
+    std::cerr << "Unknown --kernel-variant " << std::quoted(v)
+              << " (expected 'legacy', 'unaligned' or 'raw'). Exiting...\n";
     exit(-1);
   }
 
@@ -150,8 +152,11 @@ private:
       "against the sequential oracle.")(
       "kernel-variant",
       po::value<std::string>()->default_value("unaligned"),
-      "Dz finite-difference kernel variant: 'legacy' (scalar tap loop) or 'unaligned' "
-      "(Eigen unaligned-segment vectorization, default). A/B testable without recompiling.")(
+      "Finite-difference kernel variant: 'legacy' (scalar Dz tap loop), 'unaligned' "
+      "(Eigen unaligned-segment Dz vectorization, default) or 'raw' (single-sweep raw-pointer "
+      "tile kernel for all directions and components; implies the fused sweep, independent of "
+      "--fuse-fields and BLOCKWISE_FDO; sequential and StarPU engines only). A/B testable "
+      "without recompiling.")(
       "fuse-fields",
       po::value<bool>()->default_value(false)->implicit_value(true),
       "Update all velocity (resp. stress) components of a tile in a single sweep, sharing the "

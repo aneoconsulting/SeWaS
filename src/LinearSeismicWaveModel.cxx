@@ -18,6 +18,7 @@
 
 #include <iostream>
 #define _USE_MATH_DEFINES // for C++
+#include <cassert>
 #include <cmath>
 
 #include "ExecutionContext.hxx"
@@ -144,6 +145,12 @@ LinearSeismicWaveModel::computeVelocityWrapper(const int d,
   const int ljj = pMesh->ljj(jj);
   const int lkk = pMesh->lkk(kk);
 
+  if (pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Raw) {
+    LOG(SWS::LOG_CRITICAL,
+        "--kernel-variant raw needs a tile-level engine (sequential or StarPU), not the "
+        "per-component PaRSEC tasks. Exiting...");
+    exit(SWS::INVALID_KERNEL_VARIANT);
+  }
   if (pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Legacy) {
     return pInstance_->computeVelocity<SWS::KernelVariant::Legacy>((SWS::Directions)d, ts, lii, ljj, lkk);
   }
@@ -354,6 +361,12 @@ LinearSeismicWaveModel::computeStressWrapper(const int sc,
   const int ljj = pMesh->ljj(jj);
   const int lkk = pMesh->lkk(kk);
 
+  if (pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Raw) {
+    LOG(SWS::LOG_CRITICAL,
+        "--kernel-variant raw needs a tile-level engine (sequential or StarPU), not the "
+        "per-component PaRSEC tasks. Exiting...");
+    exit(SWS::INVALID_KERNEL_VARIANT);
+  }
   if (pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Legacy) {
     return pInstance_->computeStress<SWS::KernelVariant::Legacy>((SWS::StressFieldComponents)sc, ts, lii, ljj, lkk);
   }
@@ -800,6 +813,232 @@ LinearSeismicWaveModel::computeStressFused(const int ts, const int ii, const int
 }
 #endif // BLOCKWISE_FDO
 
+namespace {
+/* Tap strides (in elements) of a tile along X, Y, Z, derived from its indexer so the raw
+ * kernels stay layout-agnostic. */
+struct Strides
+{
+  long x, y, z;
+};
+
+template<typename Tile>
+Strides
+stridesOf(const Tile& f)
+{
+  const long o = f.index(0, 0, 0);
+  return { long(f.index(1, 0, 0)) - o, long(f.index(0, 1, 0)) - o, long(f.index(0, 0, 1)) - o };
+}
+
+template<typename Tile>
+bool
+sameShape(const Tile& a, const Tile& b)
+{
+  return a.dimension(SWS::X) == b.dimension(SWS::X) && a.dimension(SWS::Y) == b.dimension(SWS::Y) &&
+         a.dimension(SWS::Z) == b.dimension(SWS::Z);
+}
+} // namespace
+
+/* `raw` kernel variant (Phase 1.1b of sewas_transformation_plan_en.md): the fused velocity
+ * update as one (i, j, k) sweep over raw pointers, with CentralFDOperator::tap<d>() for all
+ * three directions, instead of per-(i, j)-column Eigen expressions. Same expressions, shifts
+ * and summation order as computeVelocityFused(); not bit-identical (the compiler may contract
+ * differently), validated against the oracle like the other variants. */
+int
+LinearSeismicWaveModel::computeVelocityRaw(const int ts, const int ii, const int jj, const int kk)
+{
+  MetricsManager::getInstance()->start("ComputeVelocity");
+
+  IOManager::getInstance().start<COMPUTE_VELOCITY>(ts, ii, jj, kk);
+
+  auto* pData = DataSet::getInstance();
+
+  auto& vX = v_(SWS::X)(ii, jj, kk);
+  auto& vY = v_(SWS::Y)(ii, jj, kk);
+  auto& vZ = v_(SWS::Z)(ii, jj, kk);
+
+  const auto& tBx = pData->b(SWS::X)(ii, jj, kk);
+  const auto& tBy = pData->b(SWS::Y)(ii, jj, kk);
+  const auto& tBz = pData->b(SWS::Z)(ii, jj, kk);
+
+  const auto& tSxx = sigma_(SWS::XX)(ii, jj, kk);
+  const auto& tSyy = sigma_(SWS::YY)(ii, jj, kk);
+  const auto& tSzz = sigma_(SWS::ZZ)(ii, jj, kk);
+  const auto& tSxy = sigma_(SWS::XY)(ii, jj, kk);
+  const auto& tSxz = sigma_(SWS::XZ)(ii, jj, kk);
+  const auto& tSyz = sigma_(SWS::YZ)(ii, jj, kk);
+
+  assert(sameShape(vX, vY) && sameShape(vX, vZ) && sameShape(vX, tBx) && sameShape(vX, tBy) &&
+         sameShape(vX, tBz) && sameShape(vX, tSxx) && sameShape(vX, tSyy) && sameShape(vX, tSzz) &&
+         sameShape(vX, tSxy) && sameShape(vX, tSxz) && sameShape(vX, tSyz));
+
+  const auto s = stridesOf(vX);
+  // z is the contiguous axis (Y_MAJOR): the k loop below relies on a compile-time unit stride
+  // to vectorize with plain vector loads.
+  assert(s.z == 1);
+
+  SWS::RealType* __restrict pvx = vX.data().data();
+  SWS::RealType* __restrict pvy = vY.data().data();
+  SWS::RealType* __restrict pvz = vZ.data().data();
+  const SWS::RealType* __restrict bx = tBx.data().data();
+  const SWS::RealType* __restrict by = tBy.data().data();
+  const SWS::RealType* __restrict bz = tBz.data().data();
+  const SWS::RealType* __restrict sxx = tSxx.data().data();
+  const SWS::RealType* __restrict syy = tSyy.data().data();
+  const SWS::RealType* __restrict szz = tSzz.data().data();
+  const SWS::RealType* __restrict sxy = tSxy.data().data();
+  const SWS::RealType* __restrict sxz = tSxz.data().data();
+  const SWS::RealType* __restrict syz = tSyz.data().data();
+
+  const int iStart = vX.iStart(), iEnd = vX.iEnd();
+  const int jStart = vX.jStart(), jEnd = vX.jEnd();
+  const int kStart = vX.kStart(), kEnd = vX.kEnd();
+
+  const SWS::RealType dt = 2 * dt_;
+
+  LOG(SWS::LOG_TRACE, "[start] Computing raw velocity at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+
+  for (int i = iStart; i < iEnd; i++) {
+    for (int j = jStart; j < jEnd; j++) {
+      const long o = vX.index(i, j, 0);
+      // The tile arrays never alias, but GCC ignores __restrict on local pointers and gives up
+      // on runtime alias checks for this many streams: assert independence explicitly.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC ivdep
+#elif defined(__clang__)
+#pragma clang loop vectorize(assume_safety)
+#endif
+      for (int k = kStart; k < kEnd; k++) {
+        const long c = o + k;
+
+        pvx[c] +=
+          (fdo_.tap<SWS::X>(sxx + c, s.x) + fdo_.tap<SWS::Y>(sxy + c, s.y) + fdo_.tap<SWS::Z>(sxz + c, 1L)) *
+          dt * bx[c];
+
+        pvy[c] += (fdo_.tap<SWS::X>(sxy + c, s.x, 1) + fdo_.tap<SWS::Y>(syy + c, s.y, 1) +
+                   fdo_.tap<SWS::Z>(syz + c, 1L)) *
+                  dt * by[c];
+
+        pvz[c] += (fdo_.tap<SWS::X>(sxz + c, s.x, 1) + fdo_.tap<SWS::Y>(syz + c, s.y) +
+                   fdo_.tap<SWS::Z>(szz + c, 1L, 1)) *
+                  dt * bz[c];
+      }
+    }
+  }
+
+  LOG(SWS::LOG_TRACE, "[stop] Computing raw velocity at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+
+  addVelocitySource(SWS::X, ts, ii, jj, kk);
+  addVelocitySource(SWS::Y, ts, ii, jj, kk);
+
+  IOManager::getInstance().stop<COMPUTE_VELOCITY>(ts, ii, jj, kk);
+
+  MetricsManager::getInstance()->stop("ComputeVelocity");
+
+  return 0;
+}
+
+/* `raw` counterpart of computeStressFused(): one (i, j, k) sweep, the three diagonal
+ * derivatives evaluated once per cell, lambda/mu of the XX component shared by the diagonal
+ * stresses (see computeStressFused() for why that is value-identical). */
+int
+LinearSeismicWaveModel::computeStressRaw(const int ts, const int ii, const int jj, const int kk)
+{
+  MetricsManager::getInstance()->start("ComputeStress");
+
+  IOManager::getInstance().start<COMPUTE_STRESS>(ts, ii, jj, kk);
+
+  auto* pData = DataSet::getInstance();
+
+  const auto& tLambda = pData->lambda(SWS::XX)(ii, jj, kk);
+  const auto& tMu = pData->mu(SWS::XX)(ii, jj, kk);
+  const auto& tMuXY = pData->mu(SWS::XY)(ii, jj, kk);
+  const auto& tMuXZ = pData->mu(SWS::XZ)(ii, jj, kk);
+  const auto& tMuYZ = pData->mu(SWS::YZ)(ii, jj, kk);
+
+  const auto& tVx = v_(SWS::X)(ii, jj, kk);
+  const auto& tVy = v_(SWS::Y)(ii, jj, kk);
+  const auto& tVz = v_(SWS::Z)(ii, jj, kk);
+
+  auto& sigmaXX = sigma_(SWS::XX)(ii, jj, kk);
+  auto& sigmaYY = sigma_(SWS::YY)(ii, jj, kk);
+  auto& sigmaZZ = sigma_(SWS::ZZ)(ii, jj, kk);
+  auto& sigmaXY = sigma_(SWS::XY)(ii, jj, kk);
+  auto& sigmaXZ = sigma_(SWS::XZ)(ii, jj, kk);
+  auto& sigmaYZ = sigma_(SWS::YZ)(ii, jj, kk);
+
+  assert(sameShape(tVx, tVy) && sameShape(tVx, tVz) && sameShape(tVx, tLambda) && sameShape(tVx, tMu) &&
+         sameShape(tVx, tMuXY) && sameShape(tVx, tMuXZ) && sameShape(tVx, tMuYZ) && sameShape(tVx, sigmaXX) &&
+         sameShape(tVx, sigmaYY) && sameShape(tVx, sigmaZZ) && sameShape(tVx, sigmaXY) &&
+         sameShape(tVx, sigmaXZ) && sameShape(tVx, sigmaYZ));
+
+  const auto s = stridesOf(tVx);
+  // z is the contiguous axis (Y_MAJOR): the k loop below relies on a compile-time unit stride
+  // to vectorize with plain vector loads.
+  assert(s.z == 1);
+
+  const SWS::RealType* __restrict vx = tVx.data().data();
+  const SWS::RealType* __restrict vy = tVy.data().data();
+  const SWS::RealType* __restrict vz = tVz.data().data();
+  const SWS::RealType* __restrict lambda = tLambda.data().data();
+  const SWS::RealType* __restrict mu = tMu.data().data();
+  const SWS::RealType* __restrict muXY = tMuXY.data().data();
+  const SWS::RealType* __restrict muXZ = tMuXZ.data().data();
+  const SWS::RealType* __restrict muYZ = tMuYZ.data().data();
+  SWS::RealType* __restrict sxx = sigmaXX.data().data();
+  SWS::RealType* __restrict syy = sigmaYY.data().data();
+  SWS::RealType* __restrict szz = sigmaZZ.data().data();
+  SWS::RealType* __restrict sxy = sigmaXY.data().data();
+  SWS::RealType* __restrict sxz = sigmaXZ.data().data();
+  SWS::RealType* __restrict syz = sigmaYZ.data().data();
+
+  const int iStart = tVx.iStart(), iEnd = tVx.iEnd();
+  const int jStart = tVx.jStart(), jEnd = tVx.jEnd();
+  const int kStart = tVx.kStart(), kEnd = tVx.kEnd();
+
+  const SWS::RealType dt = 2 * dt_;
+
+  LOG(SWS::LOG_TRACE, "[start] Computing raw stress at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+
+  for (int i = iStart; i < iEnd; i++) {
+    for (int j = jStart; j < jEnd; j++) {
+      const long o = tVx.index(i, j, 0);
+      // The tile arrays never alias, but GCC ignores __restrict on local pointers and gives up
+      // on runtime alias checks for this many streams: assert independence explicitly.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC ivdep
+#elif defined(__clang__)
+#pragma clang loop vectorize(assume_safety)
+#endif
+      for (int k = kStart; k < kEnd; k++) {
+        const long c = o + k;
+
+        const SWS::RealType dxvx = fdo_.tap<SWS::X>(vx + c, s.x, 1);
+        const SWS::RealType dyvy = fdo_.tap<SWS::Y>(vy + c, s.y);
+        const SWS::RealType dzvz = fdo_.tap<SWS::Z>(vz + c, 1L);
+
+        const SWS::RealType l = lambda[c];
+        const SWS::RealType l2m = l + SWS::RealType(2.0) * mu[c];
+
+        sxx[c] += ((dyvy + dzvz) * l + l2m * dxvx) * dt;
+        syy[c] += ((dxvx + dzvz) * l + l2m * dyvy) * dt;
+        szz[c] += ((dxvx + dyvy) * l + l2m * dzvz) * dt;
+
+        sxy[c] += (fdo_.tap<SWS::Y>(vx + c, s.y, 1) + fdo_.tap<SWS::X>(vy + c, s.x)) * muXY[c] * dt;
+        sxz[c] += (fdo_.tap<SWS::Z>(vx + c, 1L, 1) + fdo_.tap<SWS::X>(vz + c, s.x)) * muXZ[c] * dt;
+        syz[c] += (fdo_.tap<SWS::Z>(vy + c, 1L, 1) + fdo_.tap<SWS::Y>(vz + c, s.y, 1)) * muYZ[c] * dt;
+      }
+    }
+  }
+
+  LOG(SWS::LOG_TRACE, "[stop] Computing raw stress at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
+
+  IOManager::getInstance().stop<COMPUTE_STRESS>(ts, ii, jj, kk);
+
+  MetricsManager::getInstance()->stop("ComputeStress");
+
+  return 0;
+}
+
 template<SWS::KernelVariant Variant>
 int
 LinearSeismicWaveModel::computeVelocityTile(const int ts, const int ii, const int jj, const int kk)
@@ -843,7 +1082,11 @@ LinearSeismicWaveModel::computeVelocityTileWrapper(const int ts, const int ii, c
   const int ljj = pMesh->ljj(jj);
   const int lkk = pMesh->lkk(kk);
 
-  if (pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Legacy) {
+  const auto variant = pInstance_->pm_.kernelVariant();
+  if (variant == SWS::KernelVariant::Raw) {
+    return pInstance_->computeVelocityRaw(ts, lii, ljj, lkk);
+  }
+  if (variant == SWS::KernelVariant::Legacy) {
     return pInstance_->computeVelocityTile<SWS::KernelVariant::Legacy>(ts, lii, ljj, lkk);
   }
   return pInstance_->computeVelocityTile<SWS::KernelVariant::Unaligned>(ts, lii, ljj, lkk);
@@ -858,7 +1101,11 @@ LinearSeismicWaveModel::computeStressTileWrapper(const int ts, const int ii, con
   const int ljj = pMesh->ljj(jj);
   const int lkk = pMesh->lkk(kk);
 
-  if (pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Legacy) {
+  const auto variant = pInstance_->pm_.kernelVariant();
+  if (variant == SWS::KernelVariant::Raw) {
+    return pInstance_->computeStressRaw(ts, lii, ljj, lkk);
+  }
+  if (variant == SWS::KernelVariant::Legacy) {
     return pInstance_->computeStressTile<SWS::KernelVariant::Legacy>(ts, lii, ljj, lkk);
   }
   return pInstance_->computeStressTile<SWS::KernelVariant::Unaligned>(ts, lii, ljj, lkk);

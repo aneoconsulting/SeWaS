@@ -74,6 +74,8 @@ add_test(NAME TestC
          COMMAND $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 1 --nthreads 2 --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
 add_test(NAME TestCFused
          COMMAND $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 1 --nthreads 2 --fuse-fields --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
+add_test(NAME TestCRaw
+         COMMAND $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 1 --nthreads 2 --kernel-variant raw --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
             
 if (SEWAS_DISTRIBUTED)
     add_test(NAME TestCSplitX
@@ -84,6 +86,8 @@ if (SEWAS_DISTRIBUTED)
              COMMAND ${MPIEXEC_EXECUTABLE} -n 2 $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 2 --nthreads 1 --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
     add_test(NAME TestCSplitZFused
              COMMAND ${MPIEXEC_EXECUTABLE} -n 2 $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 2 --nthreads 1 --fuse-fields --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
+    add_test(NAME TestCSplitZRaw
+             COMMAND ${MPIEXEC_EXECUTABLE} -n 2 $<TARGET_FILE:sewas> --cx 51 --cy 37 --cz 23 --P 1 --Q 1 --R 2 --nthreads 1 --kernel-variant raw --dfile=${CMAKE_SOURCE_DIR}/data/input/TestC.json)
 endif()
 
 # The tests above only check that sewas exits cleanly. The ones below check that --fuse-fields

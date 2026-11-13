@@ -17,7 +17,7 @@
 #   LINF_THRESHOLD   passed through to compare_to_oracle.py (default 1e-10)
 #   PYTHON           interpreter (with numpy) for compare_to_oracle.py
 #                    (default python3)
-#   KERNEL_VARIANT   --kernel-variant for the candidate run (legacy|unaligned);
+#   KERNEL_VARIANT   --kernel-variant for the candidate run (legacy|unaligned|raw);
 #                    empty (default) uses the binary's default. The oracle
 #                    always runs with its default.
 #   FUSE_FIELDS      if non-empty, pass --fuse-fields to the candidate run
