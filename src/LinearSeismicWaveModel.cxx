@@ -20,6 +20,7 @@
 #define _USE_MATH_DEFINES // for C++
 #include <cassert>
 #include <cmath>
+#include <cstring>
 
 #include "ExecutionContext.hxx"
 
@@ -836,6 +837,127 @@ sameShape(const Tile& a, const Tile& b)
   return a.dimension(SWS::X) == b.dimension(SWS::X) && a.dimension(SWS::Y) == b.dimension(SWS::Y) &&
          a.dimension(SWS::Z) == b.dimension(SWS::Z);
 }
+
+/* Geometry of the six halo faces of a tile, in the buffer layouts of HaloManager (dense
+ * Y_MAJOR boxes, see setExtractOffsets/setUpdateOffsets). Send faces: LEFT/RIGHT hold planes
+ * i in [hx, 2hx) / [iEnd - hx, iEnd) over the full (j, k) storage extent, BACKWARD/FORWARD
+ * planes j in [hy, 2hy) / [jEnd - hy, jEnd) over the full (i, k) extent, BOTTOM/TOP planes k in
+ * [hz, 2hz) / [kEnd - hz, kEnd) over the full (i, j) extent. Receive faces: the same boxes
+ * landing on the tile's halo margin, i in [0, hx) / [iEnd, iEnd + hx), and so on. Tile cell
+ * (i, j, k) is at offset (i * ny + j) * nz + k. */
+struct HaloFaces
+{
+  int ny, nz, hx, hy, hz, iEnd, jEnd, kEnd;
+
+  template<typename Tile>
+  explicit HaloFaces(const Tile& t)
+    : ny(t.ny())
+    , nz(t.nz())
+    , hx(t.hnx())
+    , hy(t.hny())
+    , hz(t.hnz())
+    , iEnd(t.iEnd())
+    , jEnd(t.jEnd())
+    , kEnd(t.kEnd())
+  {
+  }
+
+  /* Copies the interior cells [kStart, kEnd) of the freshly computed column (i, j), plus its two
+   * Z-face runs, into the faces that contain it. `col` points at the tile cell (i, j, 0). */
+  inline void extractColumn(const SWS::RealType* __restrict col,
+                            SWS::RealType* const* buf,
+                            const int i,
+                            const int j) const noexcept
+  {
+    const int kStart = hz;
+    const long ij = long(i) * ny + j;
+    for (int t = 0; t < hz; t++) {
+      buf[SWS::BOTTOM][ij * hz + t] = col[hz + t];
+      buf[SWS::TOP][ij * hz + t] = col[kEnd - hz + t];
+    }
+    const auto run = [&](SWS::RealType* __restrict dst) {
+      for (int k = kStart; k < kEnd; k++) {
+        dst[k] = col[k];
+      }
+    };
+    if (i < 2 * hx) {
+      run(buf[SWS::LEFT] + (long(i - hx) * ny + j) * nz);
+    }
+    if (i >= iEnd - hx) {
+      run(buf[SWS::RIGHT] + (long(i - (iEnd - hx)) * ny + j) * nz);
+    }
+    if (j < 2 * hy) {
+      run(buf[SWS::BACKWARD] + (long(i) * hy + (j - hy)) * nz);
+    }
+    if (j >= jEnd - hy) {
+      run(buf[SWS::FORWARD] + (long(i) * hy + (j - (jEnd - hy))) * nz);
+    }
+  }
+
+  /* Unpacks the received LEFT/RIGHT faces (whole planes, one contiguous copy each). */
+  inline void unpackX(SWS::RealType* const tile, SWS::RealType* const* buf) const noexcept
+  {
+    const size_t n = size_t(hx) * ny * nz;
+    std::memcpy(tile, buf[SWS::LEFT], n * sizeof(SWS::RealType));
+    std::memcpy(tile + long(iEnd) * ny * nz, buf[SWS::RIGHT], n * sizeof(SWS::RealType));
+  }
+
+  /* Unpacks the received BACKWARD/FORWARD faces of plane i (one contiguous run each). */
+  inline void unpackY(SWS::RealType* const tile, SWS::RealType* const* buf, const int i) const noexcept
+  {
+    const size_t n = size_t(hy) * nz;
+    std::memcpy(tile + long(i) * ny * nz, buf[SWS::BACKWARD] + long(i) * n, n * sizeof(SWS::RealType));
+    std::memcpy(
+      tile + (long(i) * ny + jEnd) * nz, buf[SWS::FORWARD] + long(i) * n, n * sizeof(SWS::RealType));
+  }
+
+  /* Unpacks the received BOTTOM/TOP cells of column (i, j); `col` points at tile cell (i, j, 0). */
+  inline void unpackZ(SWS::RealType* __restrict col,
+                      SWS::RealType* const* buf,
+                      const int i,
+                      const int j) const noexcept
+  {
+    const long ij = long(i) * ny + j;
+    for (int t = 0; t < hz; t++) {
+      col[t] = buf[SWS::BOTTOM][ij * hz + t];
+      col[kEnd + t] = buf[SWS::TOP][ij * hz + t];
+    }
+  }
+
+  /* Writes the single tile cell (i, j, k) into every face that contains it; used after a
+   * point update (source injection) that follows the sweep. */
+  inline void extractCell(const SWS::RealType v,
+                          SWS::RealType* const* buf,
+                          const int i,
+                          const int j,
+                          const int k) const noexcept
+  {
+    if (i >= hx && i < 2 * hx)
+      buf[SWS::LEFT][(long(i - hx) * ny + j) * nz + k] = v;
+    if (i >= iEnd - hx && i < iEnd)
+      buf[SWS::RIGHT][(long(i - (iEnd - hx)) * ny + j) * nz + k] = v;
+    if (j >= hy && j < 2 * hy)
+      buf[SWS::BACKWARD][(long(i) * hy + (j - hy)) * nz + k] = v;
+    if (j >= jEnd - hy && j < jEnd)
+      buf[SWS::FORWARD][(long(i) * hy + (j - (jEnd - hy))) * nz + k] = v;
+    if (k >= hz && k < 2 * hz)
+      buf[SWS::BOTTOM][(long(i) * ny + j) * hz + (k - hz)] = v;
+    if (k >= kEnd - hz && k < kEnd)
+      buf[SWS::TOP][(long(i) * ny + j) * hz + (k - (kEnd - hz))] = v;
+  }
+};
+
+/* Halo-buffer pointers of one tile, [component][location]. */
+template<typename HaloField, int N>
+void
+haloPointers(const HaloField& h, const int ii, const int jj, const int kk, SWS::RealType* (&buf)[N][6])
+{
+  for (int c = 0; c < N; c++) {
+    for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
+      buf[c][l] = h(c)(ii, jj, kk)(l);
+    }
+  }
+}
 } // namespace
 
 /* `raw` kernel variant (Phase 1.1b of sewas_transformation_plan_en.md): the fused velocity
@@ -844,7 +966,12 @@ sameShape(const Tile& a, const Tile& b)
  * and summation order as computeVelocityFused(); not bit-identical (the compiler may contract
  * differently), validated against the oracle like the other variants. */
 int
-LinearSeismicWaveModel::computeVelocityRaw(const int ts, const int ii, const int jj, const int kk)
+LinearSeismicWaveModel::computeVelocityRaw(const int ts,
+                                           const int ii,
+                                           const int jj,
+                                           const int kk,
+                                           const SWS::VelocityHalo* vH,
+                                           const SWS::StressFieldHalo* sigmaHR)
 {
   MetricsManager::getInstance()->start("ComputeVelocity");
 
@@ -895,11 +1022,38 @@ LinearSeismicWaveModel::computeVelocityRaw(const int ts, const int ii, const int
 
   const SWS::RealType dt = 2 * dt_;
 
+  const HaloFaces faces(vX);
+  assert(s.x == long(faces.ny) * faces.nz && s.y == faces.nz && vX.index(0, 0, 0) == 0);
+  SWS::RealType* hbuf[3][6];
+  if (vH) {
+    haloPointers(*vH, ii, jj, kk, hbuf);
+  }
+  // Received stress faces, unpacked right before the taps that read them: X faces of
+  // sxx/sxy/sxz, Y faces of syy/sxy/syz, Z faces of szz/sxz/syz. The writes go through pointers
+  // derived from the (restrict) read pointers.
+  SWS::RealType* rbuf[6][6];
+  if (sigmaHR) {
+    haloPointers(*sigmaHR, ii, jj, kk, rbuf);
+    faces.unpackX(const_cast<SWS::RealType*>(sxx), rbuf[SWS::XX]);
+    faces.unpackX(const_cast<SWS::RealType*>(sxy), rbuf[SWS::XY]);
+    faces.unpackX(const_cast<SWS::RealType*>(sxz), rbuf[SWS::XZ]);
+  }
+
   LOG(SWS::LOG_TRACE, "[start] Computing raw velocity at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
 
   for (int i = iStart; i < iEnd; i++) {
+    if (sigmaHR) {
+      faces.unpackY(const_cast<SWS::RealType*>(syy), rbuf[SWS::YY], i);
+      faces.unpackY(const_cast<SWS::RealType*>(sxy), rbuf[SWS::XY], i);
+      faces.unpackY(const_cast<SWS::RealType*>(syz), rbuf[SWS::YZ], i);
+    }
     for (int j = jStart; j < jEnd; j++) {
       const long o = vX.index(i, j, 0);
+      if (sigmaHR) {
+        faces.unpackZ(const_cast<SWS::RealType*>(szz) + o, rbuf[SWS::ZZ], i, j);
+        faces.unpackZ(const_cast<SWS::RealType*>(sxz) + o, rbuf[SWS::XZ], i, j);
+        faces.unpackZ(const_cast<SWS::RealType*>(syz) + o, rbuf[SWS::YZ], i, j);
+      }
       // The tile arrays never alias, but GCC ignores __restrict on local pointers and gives up
       // on runtime alias checks for this many streams: assert independence explicitly.
 #if defined(__GNUC__) && !defined(__clang__)
@@ -922,6 +1076,14 @@ LinearSeismicWaveModel::computeVelocityRaw(const int ts, const int ii, const int
                    fdo_.tap<SWS::Z>(szz + c, 1L, 1)) *
                   dt * bz[c];
       }
+
+      // The column is still in L1: write its share of the send halos now rather than re-read
+      // the tile from memory in a separate extraction pass.
+      if (vH) {
+        faces.extractColumn(pvx + o, hbuf[SWS::X], i, j);
+        faces.extractColumn(pvy + o, hbuf[SWS::Y], i, j);
+        faces.extractColumn(pvz + o, hbuf[SWS::Z], i, j);
+      }
     }
   }
 
@@ -929,6 +1091,19 @@ LinearSeismicWaveModel::computeVelocityRaw(const int ts, const int ii, const int
 
   addVelocitySource(SWS::X, ts, ii, jj, kk);
   addVelocitySource(SWS::Y, ts, ii, jj, kk);
+
+  // Sources are injected after the sweep: refresh the halo copies of the source cells.
+  if (vH) {
+    for (auto d : { SWS::X, SWS::Y }) {
+      const auto& t = v_(d)(ii, jj, kk);
+      if (t.hasSource()) {
+        for (size_t n = 0; n < t.is().size(); n++) {
+          const int i = t.is()[n], j = t.js()[n], k = t.ks()[n];
+          faces.extractCell(t(i, j, k), hbuf[d], i, j, k);
+        }
+      }
+    }
+  }
 
   IOManager::getInstance().stop<COMPUTE_VELOCITY>(ts, ii, jj, kk);
 
@@ -941,7 +1116,12 @@ LinearSeismicWaveModel::computeVelocityRaw(const int ts, const int ii, const int
  * derivatives evaluated once per cell, lambda/mu of the XX component shared by the diagonal
  * stresses (see computeStressFused() for why that is value-identical). */
 int
-LinearSeismicWaveModel::computeStressRaw(const int ts, const int ii, const int jj, const int kk)
+LinearSeismicWaveModel::computeStressRaw(const int ts,
+                                         const int ii,
+                                         const int jj,
+                                         const int kk,
+                                         const SWS::StressFieldHalo* sigmaH,
+                                         const SWS::VelocityHalo* vHR)
 {
   MetricsManager::getInstance()->start("ComputeStress");
 
@@ -997,11 +1177,40 @@ LinearSeismicWaveModel::computeStressRaw(const int ts, const int ii, const int j
 
   const SWS::RealType dt = 2 * dt_;
 
+  const HaloFaces faces(sigmaXX);
+  assert(s.x == long(faces.ny) * faces.nz && s.y == faces.nz && tVx.index(0, 0, 0) == 0);
+  SWS::RealType* hbuf[6][6];
+  if (sigmaH) {
+    haloPointers(*sigmaH, ii, jj, kk, hbuf);
+  }
+  // Received velocity faces (all three components are tapped along X, Y and Z), unpacked right
+  // before the taps that read them; see computeVelocityRaw().
+  SWS::RealType* rbuf[3][6];
+  SWS::RealType* const pv[3] = { const_cast<SWS::RealType*>(vx),
+                                 const_cast<SWS::RealType*>(vy),
+                                 const_cast<SWS::RealType*>(vz) };
+  if (vHR) {
+    haloPointers(*vHR, ii, jj, kk, rbuf);
+    for (int d = 0; d < 3; d++) {
+      faces.unpackX(pv[d], rbuf[d]);
+    }
+  }
+
   LOG(SWS::LOG_TRACE, "[start] Computing raw stress at time-step {} on tile ({}, {}, {})", ts, ii, jj, kk);
 
   for (int i = iStart; i < iEnd; i++) {
+    if (vHR) {
+      for (int d = 0; d < 3; d++) {
+        faces.unpackY(pv[d], rbuf[d], i);
+      }
+    }
     for (int j = jStart; j < jEnd; j++) {
       const long o = tVx.index(i, j, 0);
+      if (vHR) {
+        for (int d = 0; d < 3; d++) {
+          faces.unpackZ(pv[d] + o, rbuf[d], i, j);
+        }
+      }
       // The tile arrays never alias, but GCC ignores __restrict on local pointers and gives up
       // on runtime alias checks for this many streams: assert independence explicitly.
 #if defined(__GNUC__) && !defined(__clang__)
@@ -1026,6 +1235,16 @@ LinearSeismicWaveModel::computeStressRaw(const int ts, const int ii, const int j
         sxy[c] += (fdo_.tap<SWS::Y>(vx + c, s.y, 1) + fdo_.tap<SWS::X>(vy + c, s.x)) * muXY[c] * dt;
         sxz[c] += (fdo_.tap<SWS::Z>(vx + c, 1L, 1) + fdo_.tap<SWS::X>(vz + c, s.x)) * muXZ[c] * dt;
         syz[c] += (fdo_.tap<SWS::Z>(vy + c, 1L, 1) + fdo_.tap<SWS::Y>(vz + c, s.y, 1)) * muYZ[c] * dt;
+      }
+
+      // See computeVelocityRaw(): extract the send halos while the column is hot.
+      if (sigmaH) {
+        faces.extractColumn(sxx + o, hbuf[SWS::XX], i, j);
+        faces.extractColumn(syy + o, hbuf[SWS::YY], i, j);
+        faces.extractColumn(szz + o, hbuf[SWS::ZZ], i, j);
+        faces.extractColumn(sxy + o, hbuf[SWS::XY], i, j);
+        faces.extractColumn(sxz + o, hbuf[SWS::XZ], i, j);
+        faces.extractColumn(syz + o, hbuf[SWS::YZ], i, j);
       }
     }
   }
@@ -1073,8 +1292,19 @@ LinearSeismicWaveModel::computeStressTile(const int ts, const int ii, const int 
   return 0;
 }
 
+bool
+LinearSeismicWaveModel::exchangesHaloInKernel()
+{
+  return pInstance_->pm_.kernelVariant() == SWS::KernelVariant::Raw;
+}
+
 int
-LinearSeismicWaveModel::computeVelocityTileWrapper(const int ts, const int ii, const int jj, const int kk)
+LinearSeismicWaveModel::computeVelocityTileWrapper(const int ts,
+                                                   const int ii,
+                                                   const int jj,
+                                                   const int kk,
+                                                   const SWS::VelocityHalo* vHSend,
+                                                   const SWS::StressFieldHalo* sigmaHRecv)
 {
   auto* pMesh = Mesh3DPartitioning::getInstance();
 
@@ -1084,7 +1314,7 @@ LinearSeismicWaveModel::computeVelocityTileWrapper(const int ts, const int ii, c
 
   const auto variant = pInstance_->pm_.kernelVariant();
   if (variant == SWS::KernelVariant::Raw) {
-    return pInstance_->computeVelocityRaw(ts, lii, ljj, lkk);
+    return pInstance_->computeVelocityRaw(ts, lii, ljj, lkk, vHSend, sigmaHRecv);
   }
   if (variant == SWS::KernelVariant::Legacy) {
     return pInstance_->computeVelocityTile<SWS::KernelVariant::Legacy>(ts, lii, ljj, lkk);
@@ -1093,7 +1323,12 @@ LinearSeismicWaveModel::computeVelocityTileWrapper(const int ts, const int ii, c
 }
 
 int
-LinearSeismicWaveModel::computeStressTileWrapper(const int ts, const int ii, const int jj, const int kk)
+LinearSeismicWaveModel::computeStressTileWrapper(const int ts,
+                                                 const int ii,
+                                                 const int jj,
+                                                 const int kk,
+                                                 const SWS::StressFieldHalo* sigmaHSend,
+                                                 const SWS::VelocityHalo* vHRecv)
 {
   auto* pMesh = Mesh3DPartitioning::getInstance();
 
@@ -1103,7 +1338,7 @@ LinearSeismicWaveModel::computeStressTileWrapper(const int ts, const int ii, con
 
   const auto variant = pInstance_->pm_.kernelVariant();
   if (variant == SWS::KernelVariant::Raw) {
-    return pInstance_->computeStressRaw(ts, lii, ljj, lkk);
+    return pInstance_->computeStressRaw(ts, lii, ljj, lkk, sigmaHSend, vHRecv);
   }
   if (variant == SWS::KernelVariant::Legacy) {
     return pInstance_->computeStressTile<SWS::KernelVariant::Legacy>(ts, lii, ljj, lkk);

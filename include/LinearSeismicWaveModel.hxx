@@ -56,9 +56,27 @@ public:
    * components are updated in a single (i, j) sweep (and the diagonal stresses share
    * Dx(vX), Dy(vY), Dz(vZ)); otherwise this loops over computeVelocity/computeStress, one
    * full-tile sweep per component. PaRSEC keeps the per-component wrappers above. */
-  static int computeVelocityTileWrapper(const int ts, const int ii, const int jj, const int kk);
+  static int computeVelocityTileWrapper(const int ts,
+                                        const int ii,
+                                        const int jj,
+                                        const int kk,
+                                        const SWS::VelocityHalo* vHSend = nullptr,
+                                        const SWS::StressFieldHalo* sigmaHRecv = nullptr);
 
-  static int computeStressTileWrapper(const int ts, const int ii, const int jj, const int kk);
+  static int computeStressTileWrapper(const int ts,
+                                      const int ii,
+                                      const int jj,
+                                      const int kk,
+                                      const SWS::StressFieldHalo* sigmaHSend = nullptr,
+                                      const SWS::VelocityHalo* vHRecv = nullptr);
+
+  /* True when the tile kernels exchange halos with the buffers themselves (the `raw` variant):
+   * the engine then passes its send and receive buffers to compute*TileWrapper() and skips
+   * HaloManager's update and extraction. The kernels unpack the received faces they read right
+   * before reading them and write the send faces right after computing them. Only the cells the
+   * stencil can read are moved: the edge cells of a face, which lie in the tile's own halo
+   * margin, are skipped. */
+  static bool exchangesHaloInKernel();
 
 private:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW // To force an object of this class to be allocated as aligned
@@ -97,9 +115,19 @@ private:
   /* `raw` kernel variant (Phase 1.1b): single-sweep raw-pointer tile kernels over all
    * components, built on CentralFDOperator::tap<d>(). Independent of BLOCKWISE_FDO and
    * --fuse-fields. */
-  int computeVelocityRaw(const int ts, const int ii, const int jj, const int kk);
+  int computeVelocityRaw(const int ts,
+                         const int ii,
+                         const int jj,
+                         const int kk,
+                         const SWS::VelocityHalo* vHSend = nullptr,
+                         const SWS::StressFieldHalo* sigmaHRecv = nullptr);
 
-  int computeStressRaw(const int ts, const int ii, const int jj, const int kk);
+  int computeStressRaw(const int ts,
+                       const int ii,
+                       const int jj,
+                       const int kk,
+                       const SWS::StressFieldHalo* sigmaHSend = nullptr,
+                       const SWS::VelocityHalo* vHRecv = nullptr);
 
   template<SWS::KernelVariant Variant>
   int computeVelocityTile(const int ts, const int ii, const int jj, const int kk);

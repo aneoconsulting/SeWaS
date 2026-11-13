@@ -176,6 +176,33 @@ SEWASStarPU::neighborCoords(const int ii,
   return true;
 }
 
+template<typename H>
+void
+SEWASStarPU::buildSendTargets(H& target, const H& send, const H& receive, const int ncomp) const noexcept
+{
+  target = send;
+  for (int c = 0; c < ncomp; c++) {
+    for (int ii = 0; ii < nxx_; ii++) {
+      for (int jj = 0; jj < nyy_; jj++) {
+        for (int kk = 0; kk < nzz_; kk++) {
+          if (Mesh3DPartitioning::rank_of(ii, jj, kk) != rank_)
+            continue;
+
+          for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
+            int nii, njj, nkk;
+            if (!neighborCoords(ii, jj, kk, l, nii, njj, nkk) ||
+                Mesh3DPartitioning::rank_of(nii, njj, nkk) != rank_) {
+              continue;
+            }
+            target(c)(ii % lnxx_, jj % lnyy_, kk % lnzz_)(l) =
+              receive(c)(nii % lnxx_, njj % lnyy_, nkk % lnzz_)(opposite(l));
+          }
+        }
+      }
+    }
+  }
+}
+
 SWS::Locations
 SEWASStarPU::opposite(const SWS::Locations l) noexcept
 {
@@ -347,6 +374,9 @@ SEWASStarPU::exchangeVelocityHalo(const SWS::Directions d, const int ts)
           const auto lOpp = opposite(l);
 
           if (nrank == rank_) {
+            if (inKernelExchange_) {
+              continue; // already written into the neighbor's RECEIVE slot by the kernel
+            }
             const int nlii = nii % lnxx_, nljj = njj % lnyy_, nlkk = nkk % lnzz_;
             memcpy(vH_R(d)(nlii, nljj, nlkk)(lOpp), vH_S(d)(lii, ljj, lkk)(l), hsize * sizeof(SWS::RealType));
           } else {
@@ -391,6 +421,9 @@ SEWASStarPU::exchangeStressHalo(const SWS::StressFieldComponents sc, const int t
           const auto lOpp = opposite(l);
 
           if (nrank == rank_) {
+            if (inKernelExchange_) {
+              continue; // already written into the neighbor's RECEIVE slot by the kernel
+            }
             const int nlii = nii % lnxx_, nljj = njj % lnyy_, nlkk = nkk % lnzz_;
             memcpy(
               sigmaH_R(sc)(nlii, nljj, nlkk)(lOpp), sigmaH_S(sc)(lii, ljj, lkk)(l), hsize * sizeof(SWS::RealType));
@@ -426,6 +459,13 @@ SEWASStarPU::phaseAVelocityCodelet(void* /*buffers*/[], void* cl_arg)
   auto& sigmaH_R = pInstance_->sigmaH_[RECEIVE];
   auto& vH_S = pInstance_->vH_[SEND];
 
+  // With the `raw` kernels, the compute sweep unpacks the receive halos and writes the send
+  // halos itself.
+  if (LinearSeismicWaveModel::exchangesHaloInKernel()) {
+    LinearSeismicWaveModel::computeVelocityTileWrapper(ts, ii, jj, kk, &pInstance_->vHTarget_, &sigmaH_R);
+    return;
+  }
+
   for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
     for (auto sc : { SWS::XX, SWS::YY, SWS::ZZ, SWS::XY, SWS::XZ, SWS::YZ }) {
       HaloManager::updateStressWrapper(l, sc, ts - 1, ii, jj, kk, sigmaH_R(sc)(lii, ljj, lkk)(l));
@@ -449,6 +489,11 @@ SEWASStarPU::phaseBStressCodelet(void* /*buffers*/[], void* cl_arg)
 
   auto& vH_R = pInstance_->vH_[RECEIVE];
   auto& sigmaH_S = pInstance_->sigmaH_[SEND];
+
+  if (LinearSeismicWaveModel::exchangesHaloInKernel()) {
+    LinearSeismicWaveModel::computeStressTileWrapper(ts + 1, ii, jj, kk, &pInstance_->sigmaHTarget_, &vH_R);
+    return;
+  }
 
   for (auto l : { SWS::LEFT, SWS::RIGHT, SWS::BACKWARD, SWS::FORWARD, SWS::BOTTOM, SWS::TOP }) {
     for (auto d : { SWS::X, SWS::Y, SWS::Z }) {
@@ -475,6 +520,12 @@ SEWASStarPU::run()
   static struct starpu_codelet phaseBCl = makeCodelet(phaseBStressCodelet, "phaseBStressCodelet");
 
   auto* pPriorityManager = Mesh3DPartitioning::getInstance()->getTaskPriorityManager();
+
+  inKernelExchange_ = LinearSeismicWaveModel::exchangesHaloInKernel();
+  if (inKernelExchange_) {
+    buildSendTargets(vHTarget_, vH_[SEND], vH_[RECEIVE], SWS::DIM);
+    buildSendTargets(sigmaHTarget_, sigmaH_[SEND], sigmaH_[RECEIVE], SWS::NB_STRESS_FIELD_COMPONENTS);
+  }
 
   auto forEachLocalTile = [this](auto&& fn) {
     for (int ii = 0; ii < nxx_; ii++) {
